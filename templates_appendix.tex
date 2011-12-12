@@ -1,0 +1,240 @@
+\newpage
+\part*{Appendices}
+\addcontentsline{toc}{part}{Appendices}
+\appendix
+\section{A Crash Course on the \D{is}\DD{(...)} Expression}\label{isexpression}
+
+\subsection{General Syntax} \label{issyntax}
+
+The \D{is}\DD{(...)} expression gives you some compile-time introspection\index{compile-time!introspection} on types (and, as a side-effect, on D expressions). It's described \href{http://www.d-programming-language.org/expression.html#IsExpression}{here} in the D website. This expression has a quirky syntax, but the basic use is very simple and it's very useful in conjunction with \D{static if} (see section \ref{staticif} and template constraints (see section \ref{constraints}). The common syntaxes are:
+
+\index{syntax!is expression@\D{is} expression}
+\begin{verbatim}
+is( Type (optional identifier) )
+is( Type (optional identifier) :  OtherType, 
+         (optional template parameters list) )
+is( Type (optional identifier) == OtherType, 
+         (optional template parameters list) )
+\end{verbatim}
+
+If what's inside the parenthesis is valid (see below), \D{is}\DD{()} returns \D{true} at compile-time, else it returns \D{false}.
+
+\subsection{\D{is}\DD{(Type)}} \label{istype}
+
+Let's begin with the very first syntax: if \DD{Type} is a valid D type in the scope\index{scope!local scope} of the \D{is} expression, \D{is}\DD{()} returns \D{true}. As a bonus, inside a \D{static if}, the optional \DD{identifier} becomes an alias for the type. For 
+
+\index{example!is expression@\D{is} expression}
+\begin{verbatim}
+template CanBeInstantiatedWith(alias templateName, Types...)
+{
+    // is templateName!(Types) a valid type?
+    static if (is( templateName!(Types) ResultType ))
+    // here you can use ResultType (== templateName!(Types))
+        alias ResultType CanBeInstantiatedWith;
+    else
+        alias void       CanBeInstantiatedWith;
+}
+\end{verbatim}
+
+Note that the previous code was done with templates in mind, but it is quite robust: if you pass as \DD{templateName} something that's not a template name (a func\-tion name, for ex\-am\-ple), the \D{is} will see \DD{templateName!(Types)} has no valid type and will return \D{false}.  \DD{CanBeInstantiatedWith} will cor\-rec\-tly be set to \D{void} and your program does not crash.
+
+\aparte{Testing for an alias}{Sometimes you do not know if the template argument you received is a type or an alias (for example, when dealing with tuples elements). In that case, you can use \DD{!}\D{is}\DD{(symbol)} as a test. If it really is an alias and not a type, this will return \D{true}.}
+
+An interesting use for this form of \D{is}, is testing whether or not some D code is valid. Consider: D blocks are seen as delegates by the compiler (Their type is \D{void delegate}\DD{()}). Using this in conjunction with \D{typeof} let you test the validity of a block statement: if \DD{some code} is valid, \D{typeof}\DD{(\{ some code \}())} (note the \DD{()} at the end of the delegate to 'activate' it) has a real D type and \D{is} will return true.
+
+Let's put this to some use. Imagine you have a function template \DD{fun} and some arguments, but you do not know if \DD{fun} can be called with this particular bunch of arguments. If it's a common case in your code, you should abstract it as a template. Let's call it \DD{validCall} and make it a function template also, to easily use it with the arguments:
+
+\index{example!is(typeof())@\D{is}\DD{(}\D{typeof}\DD{())}}
+\begin{verbatim}
+bool validCall(alias fun, Args...)(Args args) 
+{
+    static if (is( typeof({ /* code to test */
+                            fun(args);
+                            /* end of code to test */
+                          }())))
+        return true;
+    else
+        return false;
+}
+
+// Usage:
+T add(T)(T a, T b) { return a+b;}
+
+assert( validCall!add(1, 2.3));   // generates add!(double)
+assert(!validCall!add(1, "abc")); // no template instantiation possible
+
+string conc(A,B)(A a, B b) { return to!string(a) ~ to!string(b);}
+
+assert( validCall!conc(1, "abc")); // conc!(int, string) is OK.
+assert(!validCall!conc(1)       ); // no 1-argument version for conc
+
+struct S {}
+
+assert(!validCall!S(1, 2.3); // S is not callable
+\end{verbatim}
+
+Note that the tested code is simply `\DD{fun(args);}'. That is, there is no condition on \DD{fun}'s type: it could be a function, a delegate or even a struct or class with \D{opCall} defined. There are basically two ways \DD{fun(args);} can be invalid code: either \DD{fun} is not callable as a function, or it is callable, but \DD{args} are not valid arguments.
+
+By the way, fun as it may be to use this trick, D provides you with a cleaner way to test for valid compilation:
+
+\begin{verbatim}
+__traits(compiles, { /* some code */ })
+\end{verbatim}
+
+\D{\_\_traits} is another of D numerous Swiss Army knife constructs. You can find the \DD{compiles} documentation \href{http://www.d-programming-language.org/traits.html#compiles}{here}. Section \ref{traits} is dedicated to it.
+
+\subsection{\D{is}\DD{(Type : AnotherType)} and \D{is}\DD{(Type == AnotherType)}}
+\label{istypeanothertype}
+
+The two other basic forms of \D{is} return true if \DD{Type} can be implicitly converted to (is derived from) \DD{AnotherType} and if \DD{Type} is exactly \DD{AnotherType}, respectively.  I find them most interesting in their more complex form, with a list of template parameters afterwards. In this case, the template parameters act a bit as type variables in an equation. Let me explain:
+
+\index{syntax!is expression@\D{is} expression}
+\begin{verbatim}
+is(Type identifier == SomeComplexTypeDependingOnUAndV, U, V)
+\end{verbatim}
+
+really means: `excuse me, Mr. D Compiler, but is \DD{Type} perchance some complex type depending on \DD{U} and \DD{V} for some \DD{U} and \DD{V}? If yes, please give me those.'
+For 
+
+\index{example!is expression@\D{is} expression}
+\begin{verbatim}
+template ArrayElement(T)
+{
+    // is T an array of U, for some U?
+    static if (is(T t : U[], U)) 
+        alias U ArrayElement; // U can be used, let's expose it
+    else
+        alias void ArrayElement;
+}
+
+template isAssociativeArray(AA)
+{
+    static if (is( AA aa == Value[Key], Value, Key))  
+        /* code here can use Value and Key, 
+           they have been deduced by the compiler. */ 
+    else
+        /* AA is not an associative array
+          Value and Key are not defined. */
+}
+\end{verbatim}
+
+Strangely, you can only use it with the \D{is}\DD{(Type identifier, ...)} syntax: you \emph{must} have \DD{identifier}. The good new is, the complex types being inspected can be templated types and the parameter list can be any template parameter: not only types, but integral values, \ldots.
+For example, suppose you do what everybody does when encountering D templates: you create a templated  n-dimensional vector type.
+
+\begin{verbatim}
+struct Vector(Type, int dim) { ... }
+\end{verbatim}
+
+If you did not expose \DD{Type} and \DD{dim} (as aliases for example, as seen in sections \ref{inneralias} and \ref{givingaccess}), you can use \D{is} to extract them for you:
+
+\begin{verbatim}
+Vector!( ?, ?) myVec;
+// is myVec a vector of ints, of any dimension?
+static if (is(typeof(myVec) mv == Vector!(int, dim), dim))
+
+// is it a 1-dimensional vector?
+static if (is(typeof(myVec) mv == Vector!(T, 1), T))
+\end{verbatim}
+
+\aparte{is( A != B)?}{No, sorry, this doesn't exist. Use \DD{!}\D{is}\DD{(A == B)}. But beware this will also fire if \DD{A} or \DD{B} are not legal types (which makes sense: if \DD{A} is not defined, then by definition it cannot be equal to \DD{B}). If necessary, you can use \D{is}\DD{(A) \&\& }\D{is}\DD{(B) \&\& !}\D{is}\DD{(A == B)}.}
+
+\aparte{is A a supertype to B?}{ Hey, \D{is}\DD{(MyType : SuperType)} is good to know if \DD{MyType} is a subtype to \DD{SuperType}. How do I ask if \DD{MyType} is a supertype to \DD{SubType}? Easy, just use \D{is}\DD{(SubType : MyType)}.}
+
+For me, the main limitation\index{is expression@\D{is} expression!limitation} is that template tuple parameters are not accepted. Too bad. See, imagine you use \href{www.d-programming-language.org/phobos/std_typecons.html#Tuple}{std.typecons.Tuple}s\index{std!typecons}\index{Phobos} a lot. At one point, you need a template to test if something is a \DD{Tuple!(T...)} for some \DD{T} which can be 0 or more types. Though luck, \D{is} is a bit of a letdown there, as you cannot do:
+
+\begin{verbatim}
+template isTuple(T)
+{
+    static if (is(T tup == Tuple!(InnerTypes), InnerTypes...)
+(...)                                          ^^^^^^^^^^^^^
+\end{verbatim}
+
+But sometimes D channels its inner perl\index{perl!inner perl in D} and, lo! There is more than one way to do it! You can use IFTI\index{IFTI} (see \ref{ifti}) and our good friend the \D{is}\DD{(}\D{typeof}\DD{({...}()))} expression there. You can also use \D{\_\_traits}, depending on you mood, but since this appendix is specifically on \D{is}:
+
+\index{example!is(typeof())@\D{is}\DD{(}\D{typeof}\DD{())}}
+\begin{verbatim}
+template isTuple(T)
+{
+    static if (is(typeof({
+              void tupleTester(InnerTypes...)(Tuple!(InnerTypes) tup) {}
+              T.init possibleTuple;
+              tupleTester(possibleTuple);
+              }())))
+        enum bool isTuple = true;
+    else
+        enum bool isTuple = false;
+}
+\end{verbatim}
+
+Line 4 defines the function template \DD{tupleTester}, that only accepts \DD{Tuple}s as arguments (even though it does nothing with them). We create something of type \DD{T} on line 5, using the \DD{.init} property inherent in all D types, and try to call \DD{tupleTester} with it. If \DD{T} is indeed a \DD{Tuple} this entire block statement is valid, the resulting delegate call indeed has a type and \D{is} returns \D{true}.
+
+There are two things to note here: first, \DD{isTuple} works for any templated type called \DD{Tuple}, not only \DD{std.typecons.Tuple}\index{std!typecons}. If you want to restrict it, change \DD{tupleTester} definition. Secondly, we do not get access to the inner types this way. For \DD{std.typecons.Tuple} it's not really a problem, as they can be accessed with the \DD{someTuple.Types} alias, but still\ldots
+
+By the way, the template parameter list elements can themselves use the \DD{A : B} or \DD{A == B} syntax:
+
+\begin{verbatim}
+static if (is( T t == A!(U,V), U : SomeClass!W, V == int[n], W, int n))
+\end{verbatim}
+
+This will be OK if \DD{T} is indeed an \DD{A} instantiated with an \DD{U} and a \DD{V}, themselves verifying that this \DD{U} is derived from \DD{SomeClass!W} for some \DD{W} type and that \DD{V} is a static array of \D{int}s of length \DD{n} to be determined (and possibly used afterwards). In the if branch of the \D{static if} \DD{U}, \DD{V}, \DD{W} and \DD{n} are all defined. 
+
+\subsection{Type Specializations}\label{typespecializations}
+
+There is a last thing to know about \D{is}: with the \D{is}\DD{(Type (identifier) == Something)} version, \DD{Something} can also be a type specialization\index{is expression@\D{is} expression!types specializations}, one of the following D keywords: \D{function}, \D{delegate}, \D{return}, \D{struct}, \D{enum}, \D{union}, \D{class}, \D{interface}, \D{super}, \D{const}, \D{immutable} or \D{shared}. The condition is satisfied if \DD{Type} is one of those (except for \D{super} and \D{return}, see below). \DD{identifier} then becomes an alias for some property of \DD{Type}, as described in table \ref{table:typespecializations}.
+
+\begin{table}[htb]
+\centering
+\begin{tabular}[c]{|c|p{9em}|p{17em}|}
+\hline
+Specialization & Satisfied if &\ \DD{identifier} becomes \\ \hline \hline
+\D{function}& \DD{Type} is a function & The function parameters type tuple \\ \hline
+\D{delegate}& \DD{Type} is a delegate & The delegate function type \\ \hline
+\D{return}& \DD{Type} is a function or a delegate & The return type \\ \hline \hline
+\D{struct}& \DD{Type} is a struct & The struct type\\ \hline
+\D{enum}& \DD{Type} is an enum & The enum base type\\ \hline
+\D{union}& \DD{Type} is an union& The union type\\ \hline
+\D{class}& \DD{Type} is a class& The class type\\ \hline
+\D{interface}& \DD{Type} is an interface & The interface type\\ \hline
+\D{super}& \DD{Type} is a class& The type tuple (Base Class, Inter\-fa\-ces)\\ \hline \hline
+\D{const}& \DD{Type} is const & The type\\ \hline
+\D{immutable}& \DD{Type} is immutable & The type\\ \hline
+\D{shared}& \DD{Type} is shared & The type\\ \hline
+\end{tabular}
+\caption{Effect of type specializations in \D{is}}
+\label{table:typespecializations}
+\end{table}
+
+Let's put that to some use: we want a factory template that will create a new struct or a new class, given its name as a template parameter:
+
+\index{example!is expression@\D{is} expression!types specialization}
+\index{std!algorithm}
+\begin{verbatim}
+import std.algorithm;
+
+template make(alias aggregate) 
+    if (is(typeof(aggregate) == class ) 
+     || is(typeof(aggregate) == struct))
+{
+    auto make(Args...)(Args args)
+    {
+        alias typeof(aggregate) A;        
+        static if (is(A a == class))
+            return new A(args);
+        else
+            return A(args);
+    }
+}
+
+struct S {int i;}
+class C {int i; this(int ii) { i = ii;}}
+
+auto array = [0,1,2,3];
+
+auto structRange = map!( make!S )(array);
+auto classRange  = map!( make!C )(array);
+
+assert(equal(structRange, [S(0), S(1), S(2), S(3)]));
+assert(equal(structRange, [new C(0), new C(1), new C(2), new C(3)]));
+\end{verbatim}
+
+You can find another example of this kind of \D{is} in section \ref{classtemplates}, with the \DD{duplicator} template.

@@ -1,0 +1,418 @@
+\newpage
+\part{Examples}\label{examples}
+
+\section{Type Sorcery}
+
+\subsection{Mapping, Filtering and Folding Types}
+
+\TODO{Say something about mapping with a typetuple-returning template}
+\begin{verbatim}
+template Qual(T)
+{
+    alias TypeTuple!(T,T[],const(T)[],immutable(T)[], shared(T)[], 
+const T, immutable T, shared T, const T[], immutable T[], shared T[]) Qual;
+}
+
+alias TypeTuple!(bool,ubyte,byte,ushort,short,uint,int,ulong,long,float,double,real,char,wchar,dchar) 
+ValueTypes;
+
+alias staticMap!(Qual,ValueTypes) QualifiedTypes;
+\end{verbatim}
+
+\subsection{Interspersing Types, Crossing Types}
+
+\begin{verbatim}
+/**
+Helper template. Given T0, T1, T2, ..., Tn, Tn+1, ... T2n, will returns
+the interleaving of the first part with the second part: T0, Tn+1, T1, Tn+2, ... Tn, T2n
+It's fragile: no test, etc. A better way to do this would be as a two-steps template: Interleave!(T...).With!(U...)
+*/
+template Interleave(T...)
+{
+    static if (T.length > 1)
+        alias TypeTuple!(T[0], T[$/2], Interleave!(T[1..$/2], T[$/2+1 .. $])) Interleave;
+    else
+        alias T Interleave;
+}
+\end{verbatim}
+
+\section{Relational Algebra}
+
+Inspiration for this example comes from \href{http://david.rothlis.net/d/templates}{This blog article}.
+
+\TODO{Extracting from a tuple: project, select. Also, natural/inner/outer join, cartesian product. And intersection/union/difference. rename!( "oldField", "newField"). Databases are just dynamic arrays of tuples.}.
+
+\section{Cloning, sort of}
+
+\TODO{(Elsewhere) creating a class from a struct?}
+
+\section{Recording Successive States}
+
+From Andrej Mitrovic.
+
+\begin{verbatim}
+import std.stdio;
+import std.traits;
+
+struct Shape
+{
+    int x, y;
+    void foo(int val) { x += val; }
+    int bar(int val) { y += val; return y; }
+}
+
+struct RecorderImpl(T)
+{
+    T t;
+    T[] t_states;
+    
+    this(T t)
+    {
+        this.t = t;
+        t_states ~= t;
+    }
+    
+    auto opDispatch(string method, Args...)(Args args)
+    {
+        static if (mixin("is(ReturnType!(t." ~ method ~ ") == void)"))
+        {
+            mixin("t." ~ method ~ "(args);");
+            t_states ~= t;
+        }
+        else
+        {
+            mixin("auto result = t." ~ method ~ "(args);");
+            t_states ~= t;
+            return result;
+        }
+    }
+    
+    auto opIndex(size_t index)
+    {
+        assert(index < t_states.length);
+        return t_states[index];
+    }
+    
+    auto opSlice(size_t lowerBound, size_t upperBound)
+    {
+        return t_states[lowerBound..upperBound];
+    }
+    
+    auto opSlice()
+    {
+        return t_states[];
+    }
+}
+
+auto Recorder(T)(T t)
+{
+    return RecorderImpl!T(t);
+}
+
+void main()
+{
+    auto shape = Recorder(Shape(0, 0));
+    
+    shape.foo(5);
+    shape.bar(5);
+    
+    writeln(shape[0]);
+    writeln(shape[]);
+}
+\end{verbatim}
+
+
+
+\section{Fields}
+
+From Jacob's Carlborg Orange.
+
+\TODO{Test typeof(s.tupleof)}
+
+\begin{verbatim}
+/**
+ * Evaluates to an array of strings containing the names of the fields in the given type
+ */
+template fieldsOf (T)
+{
+	const fieldsOf = fieldsOfImpl!(T, 0);
+}
+
+/**
+ * Implementation for fieldsOf
+ * 
+ * Returns: an array of strings containing the names of the fields in the given type
+ */
+template fieldsOfImpl (T, size_t i)
+{
+	static if (T.tupleof.length == 0)
+		const fieldsOfImpl = [""];
+
+	else static if (T.tupleof.length - 1 == i)
+		const fieldsOfImpl = [T.tupleof[i].stringof[1 + T.stringof.length + 2 .. $]];
+
+	else
+		const fieldsOfImpl = T.tupleof[i].stringof[1 + T.stringof.length + 2 .. $] ~ fieldsOfImpl!(T, i + 1);
+}
+\end{verbatim}
+
+\section{Extending an enum}
+
+\begin{verbatim}
+string EnumDefAsString(T)() if (is(T == enum)) {
+  string result = "";
+  foreach (e; __traits(allMembers, T)) {
+      result ~= e ~ " = T." ~ e ~ ",";
+  }
+  return result;
+}
+
+template ExtendEnum(T, string s) if (is(T == enum) &&
+is(typeof({mixin("enum a{"~s~"}");}))) {
+  mixin("enum ExtendEnum {" ~
+      EnumDefAsString!T() ~ s ~
+  "}");
+}
+
+unittest {
+  enum bar {
+      a = 1,
+      b = 7,
+      c = 19
+  }
+
+  import std.typetuple;
+
+  alias ExtendEnum!(bar, q{ // Usage example here.
+      d = 25
+  }) bar2;
+
+  foreach (i, e; __traits(allMembers, bar2)) {
+      static assert( e == TypeTuple!("a", "b", "c", "d")[i] );
+  }
+
+  assert( bar2.a == bar.a );
+  assert( bar2.b == bar.b );
+  assert( bar2.c == bar.c );
+  assert( bar2.d == 25 );
+
+  static assert(!is(typeof( ExtendEnum!(int, "a"))));
+  static assert(!is(typeof( ExtendEnum!(bar, "25"))));
+}
+
+//(Simen Kjaeraas)
+\end{verbatim}
+
+\section{Static Switching} \label{examples:staticswitch}
+
+\TODO{What, no compile-time switch? Let's create one}.
+Example of: tuples, type filtering (in constraints), recursion, etc.
+
+\begin{verbatim}
+template staticSwitch(List...) // List[0] is the value commanding the switching
+                               // It can be a type or a symbol.
+{
+    static if (List.length == 1) // No slot left: error
+        static assert(0, "StaticSwitch: no match for " ~ List[0].stringof);
+    else static if (List.length == 2) // One slot left: default case
+        enum staticSwitch = List[1];
+    else static if (is(List[0] == List[1]) // Comparison on types
+                || (  !is(List[0])         // Comparison on values
+                   && !is(List[1])
+                   && is(typeof(List[0] == List[1]))
+                   && (List[0] == List[1])))
+        enum staticSwitch = List[2];
+    else
+        enum staticSwitch = staticSwitch!(List[0], List[3..$]);
+}
+\end{verbatim}
+
+\section{Gobble}\label{gobble}
+
+\begin{verbatim}
+
+struct Gobbler(T...)
+{
+    T store;
+    Gobbler!(T, string,U) opBinary(string op, U)(U u) if (op == "~")
+    {
+        return Gobbler!(T,string, U)(store, op, u);
+    }
+}
+
+Gobbler!() gobble() { return Gobbler!()();}
+\end{verbatim}
+
+\section{A Polymorphic Tree}\label{polymorphictree}
+
+\section{Polymorphic Association Lists}\label{associationlists}
+
+Usage: a bit like Lua tables: structs, classes (you can put anonymous functions in them?),  namespaces.
+Also, maybe to add metadata to a type?
+
+\begin{verbatim}
+template Half(T...)
+{
+    static if (T.length <= 1)
+        alias TypeTuple!() Half;
+    else
+        alias TypeTuple!(T[0], Half!(T[2..$])) Half;
+}
+
+struct AList(T...)
+{
+    static if (T.length >= 2 && T.length % 2 == 0)
+        alias Half!T Keys;
+    else static if (T.length >= 2 && T.length % 2 == 1)
+        alias Half!(T[0..$-1]) Keys;
+    else
+        alias TypeTuple!() Keys;
+
+    static if (T.length >= 2)
+        alias Half!(T[1..$]) Values;
+    else
+        alias TypeTuple!() Values;
+
+    template at(alias a)
+    {
+        static if ((staticIndexOf!(a, Keys) == -1) && (T.length % 2 == 1)) // key not found, but default value present
+            enum at = T[$-1]; // default value
+        else static if ((staticIndexOf!(a, Keys) == -1) && (T.length % 2 == 0))
+            static assert(0, "AList: no key equal to " ~ a.stringof);
+        else //static if (Keys[staticIndexOf!(a, Keys)] == a)
+            enum at = Values[staticIndexOf!(a, Keys)];
+    }
+}
+
+alias AList!( 1,     "abc"
+            , 2,     'd'
+            , 3,     "def"
+            , "foo", 3.14
+            ,        "Default") al;
+
+writeln("Keys: ", al.Keys);
+writeln("Values: ", al.Values);
+writeln("at!1: ", al.at!(1));
+writeln("at!2: ", al.at!(2));
+writeln("at!\"foo\": ", al.at!("foo"));
+writeln("Default: ", al.at!4);
+\end{verbatim}
+
+\section{Expression Templates}\label{expressiontemplates}
+
+\section{Wrapping a Function}
+
+Making it accept a tuple, for example.
+
+\begin{verbatim}
+template tuplify(alias fun)
+{
+    auto tuplify(T...)(Tuple!T tup)
+    {
+        return fun(tup.expand);
+    }
+}
+\end{verbatim}
+
+Another interesting (and much more complicated) example is \DD{juxtapose}.
+
+\section{Mapping n ranges in parallel}\label{parallelmapping}
+
+\begin{verbatim}
+// Very easy to do, now:
+auto nmap(alias fun, R...)(R ranges) if (allSatisfy!(isInputRange,R))
+{
+    return map!(tuplify!fun)(zip(ranges));
+}
+\end{verbatim}
+
+More complicated: \DD{std.algorithm.map} accepts to take more than one function as template argument. In that case, the functions are all mapped in parallel on the range, internally using \DD{std.functional.adjoin}.
+Here we can extend \DD{nmap} to accept $n$ functions in parallel too. There is a first difficulty:
+
+\begin{verbatim}
+auto nmap(fun..., R...)(R ranges) if (allSatisfy!(isInputRange, R))
+{ ... 
+\end{verbatim}
+
+See the problem? Tuples must be the last parameter of a template: there can be only one. Double-stage templates come to the rescue:
+
+\begin{verbatim}
+template nmap(fun...) if (fun.length >= 1)
+{
+    auto nmap(R...)(R ranges) if (allSatisfy!(isInputRange, R))
+    {...}
+}
+\end{verbatim}
+
+Final code:
+
+\begin{verbatim}
+template nmap(fun...) if (fun.length >= 1)
+{
+    auto nmap(R...)(R ranges) if (allSatisfy!(isInputRange, R))
+    {
+        alias adjoin!(staticMap!(tuplify, fun)) _fun;
+        return map!(_fun)(zip(ranges));
+    }
+}
+\end{verbatim}
+
+Give an example with \DD{max}, it works!
+
+And here is the $n$-ranges version of \DD{std.algorithm.filter}:
+
+\begin{verbatim}
+auto nfilter(alias fun, R...)(R ranges) if (allSatisfy!(isInputRange, R))
+{
+    return filter!(tuplify!fun)(zip(ranges));
+}
+\end{verbatim}
+
+\section{Statically-Checked Writeln}
+
+\section{Extending a Class}\label{extendingaclass}
+
+There is regularly a wish in the D community for something called Universal Function Call Syntax (UFCS):\index{syntax!Universal Function Call Syntax}\index{UFCS} the automatic transformation of \DD{a.foo(b)} into \DD{foo(a,b)} when \DD{a} has no member called \DD{foo} and there \emph{is} a free function called \DD{foo} in the local scope\index{scope!local scope}. This already works for arrays\index{arrays!UFCS} (hence, for strings) but not for other types.
+
+There is no way to get that in D for built-in types except by hacking the compiler, but for user-defined types, you can call templates to the rescue.
+
+\DD{opDispatch} can be used to forward to an external free function. A call \D{this}\DD{.method(a,b)} becomes \DD{method(}\D{this}\DD{,a,b)}.
+
+\begin{verbatim}
+mixin template Forwarder
+{
+    auto opDispatch(string name, Args...)(Args args)
+    {
+        mixin("return " ~ name ~ "(args);");
+    }
+}
+\end{verbatim}
+
+In D, a void \D{return} clause is legal: 
+
+\begin{verbatim}
+return;
+// or
+return void;
+\end{verbatim}
+
+So if \DD{name(}\D{this}\DD{,a,b)} is a \D{void}-returning function, all is OK.
+
+
+\section{Pattern Matching With Functions}
+
+\section{Generating a Switch for Tuples}
+Case 0:, etc.
+
+\section{Tuples as Sequences}
+
+\subsection{Mapping on Tuples}
+
+\subsection{Filtering Tuples}
+
+\begin{verbatim}
+(1, "abc", 2, "def", 3.14)
+->
+((1,2),("abc","def"),(3,14))
+\end{verbatim}
+

@@ -1,0 +1,18 @@
+\newpage
+\phantomsection
+\part*{Introduction}\label{intro} %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addcontentsline{toc}{part}{Introduction}
+
+Templates are a central feature of D, giving you powerful compile-time code generation abilities that'll make your code cleaner, more flexible and even more efficient. They are used everywhere in \href{http://www.d-programming-language.org/phobos.html}{Phobos}\index{Phobos}, D standard library and any D user should know about them. But, based on C++\index{C++}'s templates as they are, they can be a bit daunting at first. The \href{http://www.d-programming-language.org}{D Programming Language} website's \href{http://www.d-programming-language.org/templates.html}{documentation} is a good start, though its description of templates is spread among many different files and (as it's a language reference) its material doesn't so much \emph{teach} you how to use templates as \emph{show} you their syntax and semantics.
+
+This document aims to be a kind of tutorial on D templates, to show the beginning D coder what can be achieved with them. When I was doing C++\index{C++}, I remember \emph{never} using templates for more than \emph{containers-of-T} stuff, and considered Boost-level\footnote{ The \href{htpp://www.boost.org}{Boost}\index{Boost} C++ library collection makes heavy use of templates.} metaprogramming the kind of code I could never understand, never mind produce. Well, D's sane syntax for templates, nifty things like \D{static if}, \D{alias} or tuples cured me of that impression. I hope this document will help you also.
+
+\autoref{basics} deals with the very basics: how to declare and instantiate a template, the standard `building blocks' you'll use in almost all your templates, along with function (\ref{functiontemplates}), struct (\ref{structtemplates}) and class (\ref{classtemplates}) templates. Throughout the text, examples will present applications of these concepts. 
+
+\autoref{advanced} is about more advanced topics a D template user will probably use, but not on a daily basis, like template constraints (\ref{constraints}), mixin templates (\ref{mixintemplates}) or operator overloading (\ref{operatoroverloading}). 
+
+\autoref{around} presents other meta\-pro\-gram\-ming tools: string mixins (\ref{stringmixins}), compile-time function evaluation (\ref{ctfe}) and \D{\_\_traits} (\ref{traits}). These are seen from a template-y point of view: how they can interact with templates and what you can build with them in conjunction with templates.
+
+\autoref{examples} presents more developed examples of what can be done with templates, based on real needs I had at some time and that could be fulfilled with templates.
+
+Finally, an appendix on the ubiquitous \D{is} expression (\ref{isexpression}) completes this document.

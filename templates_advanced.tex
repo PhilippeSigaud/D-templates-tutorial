@@ -1,0 +1,1507 @@
+\newpage
+\part{Some More Advanced Considerations}\label{advanced} %%%%%%%%%%%%%%%
+
+In the previous part, we saw what everyone should know about D templates. But in fact, there is much more to them than that. What follows is not necessarily more complicated, but it's probably a little less commonly used. As this document matures, some subjects may flow from \autoref{basics} into \autoref{advanced} and the other way round.
+
+\section{Constraints}\label{constraints}
+
+Templates constraints\index{template!constraints} are a way to block a template instantiation if some condition is not met. Any condition that can be determined at compile-time is authorized, which makes constraints a superset of templates specializations\index{template!specialization} (see \ref{specializations}). As such, their usage grew rapidly once they were introduced and, if Phobos\index{Phobos} is any indication, templates specializations are on the contrary becoming less common.
+
+\subsection{Syntax}\label{constraintssyntax}
+
+To obtain a constraint, put an \D{if} clause just after the template parameter list, and before the enclosed scope\index{scope!constraint}:
+
+\index{syntax!templates constraints}
+\begin{verbatim}
+template templateName(T,U,V) if (someCondition on T, U or V)
+{
+   ...
+}
+\end{verbatim}
+
+When the compiler tries to instantiate a template, if will first check the constraint. If it evaluates to \D{false}, the template declaration is not part of the considered set. That way, using constraints, you can keep or drop templates at your leasure. \D{is} expressions\index{is expression@\D{is} expression} are your friend there, allowing you to get compile-time introspection\index{compile-time!introspection} on types. See the appendix (\ref{isexpression}) for a crash course on it. 
+
+You may have many template declarations with the same name and differing constraints (in fact, that's the very use case for constraints). Depending on the activated constraints, some or all will be considered by the compiler.
+
+\index{example!template constraints}
+\begin{verbatim}
+template Constrained(T) 
+    if (is(T : int)) { ... } // #1
+template Constrained(T) 
+    if (is(T : float)) { ... } // #2
+template Constrained(T,U) 
+    if (is(T : int) && !is(U : float)) { ... } // #3
+template Constrained(T,U) 
+    if (is(T : int) && is(U : float)) { ... } // #4
+
+Constrained!(byte) // #1
+Constrained!(string) // Error, no declaration fits (string)
+Constrained!(int,string) // #3 and #4 considered, but #4 is dropped.
+                         // So #3 it is.
+\end{verbatim}
+
+This syntax is the same for the special-cases templates seen in sections \ref{functiontemplates}, \ref{structtemplates}, \ref{classtemplates} and \ref{othertemplates}. The only tricky part is for class templates, where you may wonder where to put the constraint: before or after the inheritance list? The answer is: before.
+
+\index{syntax!template constraints!for class templates}
+\begin{verbatim}
+T theFunction(T)(T argument)
+    if (is(T : int) || is(T : double)) { ... }
+
+struct TheStruct(T) 
+    if (is(T : int) || is(T : double)) { ... }
+
+class TheClass(T) 
+    if (is(T : int) || is(T : double)) 
+    : BaseClass!T, Interface1 { ... }
+\end{verbatim}
+
+When you write constraints, just remember they are a compile-time construct. For \DD{theFunction}, \DD{argument} is not known at compile-time, only its type, \DD{T}. So you should not use \DD{argument} in your constraint. If you need a value of type \DD{T}, use \DD{T.init}. For 
+
+\index{example!template constraints}
+\begin{verbatim}
+auto callTwice(alias fun, T)(T arg)
+    // Is it OK to do fun(fun(some T))?
+    if (is(typeof({ fun(fun(T.init)); }()))) 
+{
+    return fun(fun(arg));
+}
+\end{verbatim}
+
+\subsection{Constraints Usage}\label{constraintsusage}
+
+Constraints come from the same idea than C++0x\index{C++!C++0x} \DD{concept}, er..., concept, although simpler to define, understand and, as shown by D, implement. The idea is to define a set of conditions a type must respect to be a representative of a `concept', and check for it before instantiating.
+
+Have a look at constraints poster-child: \emph{ranges}\index{range}.\footnote{ Ranges are overdue a tutorial.} They were rapidly described in section \ref{functionflatten}.
+
+\href{www.d-programming-org/phobos/std_range.html}{std.range}\index{std!range}\index{Phobos} defines a set of templates\index{predicate templates!for ranges} that check the different ranges concepts, called \DD{isInputRange}, \DD{isForwardRange}\ldots I call these \D{bool}-becoming templates \emph{predicate templates} and talk about them in section \ref{predicates}. Usage is quite simple:
+
+\index{example!predicate templates}
+\index{example!range templates}
+\begin{verbatim}
+import std.range;
+
+struct RangeWrapper(Range) 
+    // Does Range comply with the input range 'concept'?
+    if (isInputRange!Range) 
+{ 
+   /* Here we know that Range has at least three member functions:
+      .front(), .popFront() and .empty(). We can use them happily.*/
+}
+
+// In the factory function too.
+auto rangeWrapper(Range) if (isInputRange!Range) 
+{
+    return RangeWrapper!(Range)( ... );
+}
+\end{verbatim}
+
+In fact, it's a bit like a sort of compile-time interface or compile-time duck-typing: we do \emph{not} care about \DD{Range}'s `kind': it may by a \D{struct} or a \D{class} for all we know. What is important is that it respects the \emph{input range} concept.
+
+The good news is that the compiler will complain\footnote{ I think \emph{compiler} and \emph{complain} must have the same root.} when it cannot instantiate a template due to constraints being not respected. It gives better error messages this way (although not as good as you might need).
+
+\subsection{Constraints Limits}\label{constraintslimits}
+
+The main problem is that, compared to templates specializations, you cannot do:
+
+\index{example!templates constraints limitations}
+\begin{verbatim}
+template Temp(T) if (is(T:int)) // #1
+{ ... } // specialized for ints
+
+template Temp(T) // #2
+{ ... } // generic case
+
+Temp!int // Error!
+\end{verbatim}
+
+Why an error? Because the compiler finds that both the \D{int}-specialized and the generic version can be instantiated. It cannot decide which one you mean and, quite correctly, does nothing, humble code that it is. No problem, says you, we will just add a constraint to the generic version:
+
+\begin{verbatim}
+template Temp(T) if (is(T:int)) // #1
+{ ... } // specialized for ints
+
+template Temp(T) if (!is(T:int))// #2
+{ ... } // generic case
+
+Temp!int // Works!
+\end{verbatim}
+
+Now, when you try to instantiate with an \D{int}, template \#2 is not present (its constraint is false and was dropped from the considered template list) and we can have \#1. Hurrah? Not quite. The \#1-constraint wormed its way into the generic version, adding code where none was initially. Imagine you had not one, but three different specialized versions:
+
+\begin{verbatim}
+template Temp(T) if (is(T:int[])) // #1a
+{ ... } // specialized for arrays of ints
+
+template Temp(T) if (isRange!T) // #1b
+{ ... } // specialized for ranges
+
+template Temp(T) if (is(T:double[n], int n)) // #1c
+{ ... } // specialized for static arrays of double
+
+template Temp(T) // #2, generic
+   if ( /* What constraint? */
+{ ... }
+\end{verbatim}
+
+OK, quick: what constraint for \#2? The complement to \emph{all} other constraints. See:
+
+\begin{verbatim}
+template Temp(T) // #2, generic
+   if ( !(is(T:int[]))
+     && !isRange!T
+     && !is(T:double[n], int n))
+{ ... }
+\end{verbatim}
+
+That's becoming complicated to maintain. If someone else adds a fourth specialization, you need to add a fourth inverted version of its constraint. Too bad, you still compile and calls \DD{Temp}: \DD{Temp!(}\D{int}\DD{[])}. And there: error! Why? Because constraints \#1a and \#1b are not mutually exclusive: an \D{int}\DD{[]} is also a input range. Which means that for \#1b, you need to add a clause excluding arrays of \D{int} and maybe modify constraint \#2.
+
+Ouch. 
+
+So, yes, constraints are wonderful, but they do have drawbacks. As a data point, this author uses them all the time, even though specializations (\ref{specializations}) are sometimes more user-friendly: most of what I want to impose and check on my types cannot be done by specializations. 
+
+\subsection{Constraints, Specializations and \D{static if}:}
+\label{constraintsorspecializations}
+
+I mean, come on! Three different ways to decide if your template exists or not? 
+
+\begin{verbatim}
+template Specialized(T : U[], U)
+{ ... }
+
+template Constrained(T) if (is(T : U[], U))
+{ ... }
+
+template StaticIfied(T)
+{
+    static if (is(T : U[], U))
+    { ... }
+    else // stop compilation
+        static assert(0, "StaticIfied cannot be instantiated.");
+}
+\end{verbatim}
+
+What were the D designers thinking? Well, they got specializations (\ref{specializations}) from D's cousin, C++\index{C++}. The two other subsystems were added a few years later, as the power of D compile-time metaprogramming\index{compile-time!introspection} became apparent and more powerful tools were needed. So, the 'modern' subsystems are constraints and \D{static if} (\ref{staticif})\index{static if@\D{static if}}. Constraints are much more powerful than specializations, as anything you can test with specialization, you can test with an \D{is} expression in a constraint\index{is expression@\D{is} expression!in a constraint}. And \D{static if} is wonderfully useful outside of template instantiation, so these two are well implanted in D and are there to stay.
+What about specializations, now? First, they are quite nice to have when porting some C++\index{C++} code. Second, they have a nice effet that constraints do \emph{not} have: when more than one definition could be instantiated, priority is given to the more specialized. You saw the explanation in the previous subsection.
+
+So in the end, the conclusion is a bit of \emph{D Zen}\index{D Zen}: you are given tools, powerful tools. As these are powerful, they sometimes can do what other options in your toolbox can do also. D does not constrain (!) you, chose wisely.
+
+\section{Predicate Templates}\label{predicates}
+
+When you find yourself typing again and again the same \D{is} expression\index{is expression@\D{is} expression} or the same complicated constraint\index{template!constraints}, it's time to abstract it into another template, a \D{bool}-becoming one.\index{predicate templates} If you have a look a section \ref{istype}, you'll see a way to test if a particular piece of D code is OK (compilable) or not. Another way to obtain this is by using \D{\_\_traits}\DD{(compiles, some Code)}\index{traits@\D{\_\_traits}}.
+
+\subsection{Testing for a member}
+
+For example, if you want to test is some type can be serialized, through a \D{size\_t}\DD{ serialize()} member function:
+
+\index{example!predicate templates!member testing}
+\begin{verbatim}
+template isSerialazable(Type)
+{
+    static if (__traits(compiles, {
+                                   Type type;
+                                   size_t num = type.serialize;
+                                  }))
+        enum bool isSerialazable = true;
+    else
+        enum bool isSerialazable = false;
+}
+\end{verbatim}
+
+\subsection{Testing for operations}
+
+As seen in previous sections (\ref{structflatten}, \ref{constraintsusage}), we are writing here a kind of compile-time interface. Any type can pass this test, as long as it has a \DD{.serialize} member that returns a \D{size\_t}. Of course, you're not limited to testing member functions. Here is a template that verify some type has arithmetic operations:
+
+\index{example!predicate templates!operator testing}
+\begin{verbatim}
+template hasArithmeticOperations(Type)
+{
+    static if (__traits(compiles, 
+                       {   
+                           Type t;
+                           t + t; // addition
+                           t / t; // substraction
+                           t * t; // multiplication
+                           t / t; // division
+                           +t;    // unary +
+                           -t;    // unary -
+                       }))
+        enum bool hasArithmeticOperations = true;
+    else
+        enum bool hasArithmeticOperations = false;
+}
+
+static assert(hasArithmeticOperation!int);
+static assert(hasArithmeticOperation!double);
+
+struct S {}
+static assert(!hasArithmeticOperation!S);
+\end{verbatim}
+
+As you can see, you can test for any type of D code, which means it's \emph{much} more powerful than templates specializations (\ref{specializations}\index{templates specialization!compared to constraints}) or the \D{is} expression (Appendix \ref{isexpression})\index{is expression@\D{is} expression!compared to constraints}.
+
+You may also get a certain feel of a... \emph{pattern} emerging from the previous two examples. All the scaffolding, the boilerplate, is the same. And we could easily template it on what operator to test, for example. It's possible to do that, but it means crafting code at compile-time. Wait until you see string mixins\index{string mixins} (\ref{stringmixins}) and CTFE\index{CTFE} (\ref{ctfe}) in \autoref{around}.
+
+\subsection{Completing the \DD{Flatten} range:} 
+
+Let's come back to \DD{Flatten} from section \ref{structflatten}. Using concept-checking templates, we will verify the range-ness of the wrapper type and promote \DD{Flatten} to forward range status if \DD{Range} itself is a forward range:
+
+\index{example!predicate templates}
+\index{example!range}
+\begin{verbatim}
+import std.range;
+
+struct Flatten(Range) if (isInputRange!Range)
+{
+    /* same code than before */
+
+    static if (isForwardRange!Range)
+        Flatten save() @property
+        {
+           return this;
+        }
+}
+\end{verbatim}
+
+The struct is enriched in two ways: first, it cannot be instantiated on a non-range. That's good because with the code from section \ref{structflatten}, you could bypass the factory function and manually create a \DD{Flatten!}\D{int}, which wouldn't do. Now, you cannot. Secondly, if the wrapped range is a forward range, then \DD{Flatten!Range} is one also. That opens up whole new algorithms to \DD{Flatten}, for just a quite-readable little piece of code.
+
+You could extend the pattern in the same way by allowing \DD{Flatten} to be a bidirectional range, but you would need to introduce a \DD{backSubRange} member that keeps trace of the range's back state.
+
+
+\section{Template Tuple Parameters}\label{tuples}
+
+\subsection{Definition and Basic Properties}\label{tupleproperties}
+
+And now comes one of my favourite subjects: template tuple parameters\index{template!parameters!tuple}. As seen in section \ref{declarations} these are declared by putting a \DD{identifier...} at the last parameter of a template. The tuple will then absorb any type, alias or literal passed to it. 
+For this very reason (that it can bunch of types interspersed with symbols), some people consider it a mongrel addition to D templates. That is true, but the ease of use and the flexibility it gives us is in my opinion well worth the cost of a little cleanliness.
+D template tuples have a \DD{.length} member (defined at compile-time, obviously), their elements can be accessed using the standard indexing syntax and they can even be sliced (the \DD{\$} symbol is aliased to the tuple length):
+
+\index{example!template tuple parameter}
+\index{example!type tuple}
+\begin{verbatim}
+template DropFront(T...)
+{
+    static if ( T.length > 0     // .length. At least 1 element
+             && is(T[0] == int)) // Indexing
+        alias T[1..$] DropFront; // Slicing
+    else
+        alias void DropFront;
+}
+
+alias DropFront!(int, double, string) Shortened;
+static assert(is( Shortened[0] == double);
+static assert(is( Shortened[1] == string);
+\end{verbatim}
+
+You can declare a value of type `tuple'. This value (called an expression tuple) also has a length, can be indexed and can be sliced. You can also pass it directly to a function if the types check with a function parameter list. If you throw it into an array\index{arrays!and expression tuples}, it will `melt' and initialize the array:
+
+\index{example!expression tuple}
+\begin{verbatim}
+template TupleDemonstration(T...)
+{
+    alias T TupleDemonstration; 
+}
+
+TupleDemonstration!(string, int, double) t;
+
+assert(t.length == 3);
+t[0] = "abc";
+t[1] = 1;
+t[2] = 3.14;
+auto t2 = t[1..$];
+assert(t2[0] = 1)
+assert(t2[1] = 3.14);
+
+void foo(int i, double d) {}
+foo(t2); // OK.
+
+double[] array = [t2]; // see, between [ and ]
+assert(array == [1.0, 3.14]);
+\end{verbatim}
+
+The simplest possible tuple is already defined in Phobos\index{Phobos} in \DD{std.typetuple} as \DD{TypeTuple}:
+
+\begin{verbatim}
+template TypeTuple(T...)
+{
+   alias T TypeTuple; // It just exposes the T's
+}
+
+alias TypeTuple!(int, string, double) ISD;
+static assert(is( TypeTuple!(ISD[0], ISD[1], ISD[2]) == ISD ));
+\end{verbatim}
+
+Pure template parameter tuples are auto-flattening: they do \emph{not} nest:
+
+\begin{verbatim}
+alias TypeTuple!(int, string, double) ISD;
+alias TypeTuple!(ISD, ISD) ISDISD; 
+// ISDISD is *not* ((int, string, double), (int, string, double))
+// It's (int, string, double, int, string, double)
+static assert(is(ISDISD == TypeTuple!(int,string,double,int,string,double)));
+\end{verbatim}
+
+This is both a bug and a feature. On the negative side, that condemns us to linear structures: no trees of type tuples. And since a branching structure can give rise to a linear, that would have been strictly more powerful. On the positive side, that allow us to concatenate tuples easily (and from that, to iterate easily), as you'll see in sections \ref{variadicfunctions} and \ref{inheritancelist}. If you need recursive/branching structures, you can have them by using \DD{std.typecons.Tuple}\index{std!typecons} or really any kind of struct/class template: the types are not flattened there. See for example section \ref{polymorphictree} for a fully polymorphic tree.
+
+The last property tuples have is that they can be iterated over: use a \D{foreach} expression, like you would for an array. With \D{foreach}, you can iterate on both type tuples and expression tuples. The indexed version is also possible, but you cannot ask directly for a \D{ref} access to the values (but see the example below). This iteration is done at compile-time and is in fact one of the main ways to get looping at compile-time\index{compile-time!looping} in D.
+
+\begin{verbatim}
+// keeping the same t and T than the previous examples.
+string[T.length] s;
+
+foreach(index, Type; T) // Iteration on types.
+                        // Type is a different, er, type at each position
+{
+    static if(is(Type == double))
+        s[index] = Type.stringof;
+}
+assert(s ==  ["", "", "double"]);
+
+void bar(T)(ref T d) { T t; d = t;}
+
+foreach(index, value; t) // Iteration on values.
+                         // value has a different type at each position!
+{
+    bar(t[index]); // use t[iindex], not 'value' to get a ref access
+}
+
+assert(t[0] == "");
+assert(t[1] == 0);
+assert(std.math.isnan(t[2]));
+\end{verbatim}
+
+As values of this type can be created and named, they are \emph{almost} first-class. They have two limitations, however: 
+
+\begin{itemize}
+\item There is no built-in syntax for declaring a tuple. In the previous example, calling \DD{T.stringof} returns the string \DD{"(}\D{string}\DD{,}\D{int}\DD{,}\D{double}\DD{)"}. But you cannot write \DD{(}\D{string}\DD{,}\D{int}\DD{,}\D{double}\DD{) myTuple;} directly. Paradoxically, if you have a (\D{string},\D{int},\D{double}) type tuple called \DD{T}, you \emph{can} do \DD{T myTuple;}.
+\item These tuples cannot be returned from a function. You have to wrap them in a struct. That's what \href{www.d-programming-language.org/phobos/std_typecons.html#Tuple}{std.typecons.Tuple}\index{std!typecons}\index{Phobos} offers.
+\end{itemize}
+
+\index{tuples!the many kinds of}
+\aparte{tuple, Tuple, T... and .tupleof}{A common question from newcomers to D is the difference and definition between the different tuples found in the language and the standard library. I will try to explain:
+
+\emph{Template tuple parameters} are internal to templates. They are declared with \DD{T...} at the last position in the parameter list. They group together a list of template parameters, be they types, values or alias. Two `subtypes' are commonly used:
+
+\emph{Type tuples} are template tuple parameters that hold only types.
+
+\emph{Expression tuples} are tuples that hold only expressions. They are what you get when you declare a variable of type `type tuple'.
+
+\emph{Function parameter tuples.} You can get a function parameter type tuple from \DD{std.traits.ParameterTypeTuple}. It's exactly a type tuple as seen before. A value of this type can be declared and can be passed to a function with the same parameters.
+
+\emph{The }\DD{.tupleof}\emph{ property} is a property of aggregate types: classes and structs. It returns an expression tuple containing the members's values.
+
+\emph{Member names tuple} is a tuple of strings you get by using \DD{\_\_traits(members, SomeType)}. It contains all \DD{SomeType} members' names, as strings (including the methods, constructors, aliases and such).
+
+\DD{std.traits.TypeTuple} is a pre-defined template in Phobos\index{Phobos}\index{std!typetuple} that's the simplest possible template holding a tuple. It's the common D way to deal with type tuples. The name is bit of a misnomer, because it's a standard template parameter tuple: it can hold types, but also values.
+
+\DD{std.typecons.Tuple} and \DD{tuple} are pre-defined struct/function templates in Phobos\index{Phobos}\index{std!typecons} that gives a simple syntax to manipulate tuples and return them from functions.
+}
+
+\subsection{The Type of Tuples}\label{typeoftuples}
+
+You can get a tuple's type by using \D{typeof}\DD{(tuple)}, like any other D type. There are two limit cases:
+
+\begin{description}
+\item[One-element tuples:] There is a difference between a tuple of one element and a lone type. You cannot initialize a standard value with a 1-element tuple. You have to extract the first (and only) element before. In the same idea, the 1-element tuple has a length and can be sliced: actions that do not make sense for a standard type.
+\item[Zero-element tuples:] It's possible to have an empty tuple\index{tuples!empty}, holding zero type, not to be confused with a uninitialized n-elements tuple or the tuple holding \D{void} as a type. In fact, the zero-element tuple can only have one value: its initialization value. For this reason, it's sometimes called the Unit type.\footnote{ Look: \D{bool} is a type with \emph{two} values (\D{true} and \D{false}). (), the empty tuple, is the type that has only \emph{one} value. And \D{void} is the type that has \emph{no} value.}
+\end{description}
+
+\paragraph{\D{void}-containing tuples\index{void@\D{void}!in tuples}\index{tuples!containing void@containing \D{void}} and empty tuples: } A type tuple may hold the \D{void} type, like any other D type. It `takes a slot' in the tuple and a tuple holding only a \D{void} is \emph{not} the empty tuple.
+
+\begin{verbatim}
+alias TypeTuple!(void) Void;
+alias TypeTuple!() Empty;
+static assert( !is(Void == Empty) );
+
+static assert(!is( TypeTuple!(int, void, string) == TypeTuple!(int, string)));
+\end{verbatim}
+
+\subsection{Example: Variadic Functions}\label{variadicfunctions}
+
+Tuples are very useful to make function templates variadic (that is, accept a different number of parameters). Without restriction on the passe-in types, you will need most of the time another function template to process the arguments. A standard example for this is transforming all parameters into a \D{string}:
+
+\index{example!variadic functions}
+\index{example!compile-time iteration}
+\index{compile-time!iteration}
+\begin{verbatim}
+string toStrings(string sep = ", ", Args...)(Args args)
+{
+    import std.conv:to;
+    string result;
+    foreach(index, argument; args)
+    {
+        result ~= to!string(argument);
+        if (index != args.length - 1) result ~= sep; // not for the last one
+    }
+    return result;
+}
+
+assert( toStrings(1, "abc", 3.14, 'a', [1,2,3]) == "1, abc, 3.14, a, [1,2,3]"); 
+\end{verbatim}
+
+If you want to restrict the number of parameters or their types, use template constraints:
+
+\begin{verbatim}
+int howMany(Args...)(Args args) if (Args.length > 1 && Args.length < 10)
+{
+    return args.length; // == Args.length
+}
+\end{verbatim}
+
+Imagine you a have a bunch of ranges. Since they all have different types, you cannot put them in an array. And since most of them are structs, you cannot cast them to a base type, as you would for classes. So you hold them in a tuple. Then, you need to call the basic range methods on them: calling \DD{popFront} on all of them, etc. Here is a possible way to do that:
+
+\index{example!tuples!and ranges}
+\begin{verbatim}
+import std.range, std.algorithm;
+
+void popAllFronts(Ranges...)(ref Ranges ranges) 
+    if(areAllRanges!Ranges)
+{
+    foreach(index, range; ranges) 
+        ranges[i].popFront; // to get a ref access
+}
+
+auto arr1 = [0,1,2];
+auto arr2 = "Hello, World!";
+auto arr3 = map!"a*a"(arr1);
+
+popAllFronts(arr1, arr2, arr3);
+
+assert(arr1 == [1,2]);
+assert(arr2 == "ello, World!");
+assert(equal( arr3, [1,4])); 
+\end{verbatim}
+
+It works for any number of ranges, that's cool. And it's checked at compile-time, you cannot pass it an \D{int} discretly, hoping no one will see: it's the job of \DD{areAllRanges}\index{predicate templates!areAllRanges@\DD{areAllRanges}} to verify that. Its code is a classical example of recursion\index{recursion} on type tuples:
+
+\index{example!predicate template!on type tuples}
+\index{predicate templates}
+\index{type tuple!recursion}
+\index{static if@\D{static if}!nested}
+\begin{verbatim}
+template areAllRanges(Ranges...)
+{
+    static if (Ranges.length == 0) // Base case: stop.
+        enum areAllRanges = true;
+    else static if (!isInputRange!(Ranges[0])) // Found a not-range:stop.
+        enum areAllRanges = false; 
+    else // Continue the recursion
+        enum areAllRanges = areAllRanges!(Ranges[1..$]); 
+}     
+\end{verbatim}
+
+People used to languages like lisp/Scheme\index{lisp}\index{Scheme} or Haskell\index{Haskell} will be right at home there. For the others, a little explanation might be in order: 
+
+\begin{itemize}
+\item when you get a typetuple, either it's empty or it's not. 
+	\item If it's empty, then all the elements it holds are ranges and we return \D{true}.\footnote{ You might not like it, but it's cleaner mathematically this way.} 
+	\item If it's not empty, it has at least one element, which can be accessed by indexing. Let's test it: either it's a range or it's not. 
+		\item If it isn't a range, the iteration stops: not all elements are ranges, we return \D{false}. 
+		\item If it's a range\ldots we have not proved anything, and need to continue.
+\end{itemize}
+
+The recursion\index{recursion!areAllRanges@\DD{areAllRanges}} is interesting: by defining an \DD{areAllRanges} manifest constant, we will activate the eponymous template trick\index{eponymous trick} (\ref{eponymous}), which gets initialized to the value obtained by calling the template on a shortened tuple. With slicing, we drop the first type (it was already tested) and continue on the next one. In the end, either we exhausted the tuple (the length == 0 case) or we find a non-range.
+
+
+\subsection{One-Element Tuples: Accepting Types and Alias}
+
+Sometimes it makes sense for a template to accept either a type parameter\index{template!parameters!type} or an alias\index{template!parameters!alias}. For example, a template that returns a string representing its argument. In that case, since type parameter do not accept symbols as arguments and the same way round for alias, you're doomed to repeat yourself:
+
+\begin{verbatim}
+template nameOf(T)
+{
+    enum string nameOf = T.stringof;
+}
+
+template nameOf(alias a)
+{
+    Enum string nameOf = to!string(a);
+}
+
+static assert(nameOf!(double[]) == "double[]");
+static assert(nameOf!(nameOf) == "nameOf");
+\end{verbatim}
+
+Since tuples can accept both types and alias, you can use them to simplify your code a bit:
+
+\begin{verbatim}
+template nameOf(T...) if (T.length == 1) // restricted to one argument
+{
+    enum string nameOf = T[0].stringof;
+}
+\end{verbatim}
+
+\TODO{A better explanation is in order. I'm not that convinced myself.}
+
+\subsection{Example: Inheritance Lists}\label{inheritancelist}
+
+\TODO{All this section should be rewritten. The compiler is more accepting than I thought.}
+
+Using class templates\index{class templates} (\ref{classsyntax}), we might want to adjust the inheritance list at compile-time. Type tuples are a nice way to it: first define a template that alias itself to a type tuple, then have the class inherit from the template:
+
+\index{example!class templates and type tuples}
+\begin{verbatim}
+interface I { ... }
+interface J { ... }
+interface K { ... }
+interface L { ... }
+
+class BaseA { ... }
+class BaseB { ... }
+
+template Inheritance(Base) if (is(Base == class))
+{
+    static if (is(Base : BaseA))
+        alias TypeTuple!(Base, I, J, K) Inheritance;
+    else static if (is(Base : BaseB))
+        alias TypeTuple!(Base, L)       Inheritance;
+    else
+        alias Base                      Inheritance;
+}
+
+// Inherits from Base
+class MyClass : Inheritance!BaseA { ... }
+class MyOtherClass : Inheritance!MyOtherClass { ... }
+\end{verbatim}
+
+Here I templated \DD{Inheritance} on the base class, but you could easily template it on a global \D{enum}, for example. In any case, the selection is abstracted away and the choice-making code is in one place, for you to change it easily.
+
+There is a catch if you use it again on a derived class:
+
+\begin{verbatim}
+// Error! I,J and K are already listed through MyClass
+Class ErrorClass : Inheritance!(MyClass) { ... }
+\end{verbatim}
+
+The interfaces are already listed in \DD{MyClass} while \DD{Inheritance} injects them again. That gets us a compilation error, because in D you cannot put an interface twice in an inheritance list. We have to do something a little more complicated: given an inheritance type list, we must eliminate all double interfaces.
+
+Let's begin with something more simple: given a type and a type tuple, eliminate all occurrences of the type in the type tuple.
+
+\index{type tuple!eliminating occurence of a type}
+\index{recursion}
+\index{is expression@\D{is} expression}
+\begin{verbatim}
+template Eliminate(Type, TargetTuple...)
+{
+    static if (TargetTuple.length == 0) // Tuple exhausted,
+        alias TargetTuple Eliminate;    // job done.
+    else static if (is(TargetTuple[0] : Type))
+        alias Eliminate!(Type, TargetTuple[1..$]) Eliminate;
+    else
+        alias 
+TypeTuple!(TargetTuple[0], Eliminate!(Type, TargetTuple[1..$])) Eliminate;
+}
+
+alias TypeTuple!(int,double,int,string) Target;
+alias Eliminate!(int, Target) NoInts;
+static assert(is( NoInts == TypeTuple!(double, string) ));
+\end{verbatim}
+
+The only difficulty is on line 9: if the first type is not a \DD{Type}, we have to keep it and continue the recursion:
+
+\begin{verbatim}
+Eliminate!(Type,  Type0, Type1, Type2, ...)
+->
+Type0, Eliminate!(Type,  Type1, Type2, ...)
+\end{verbatim}
+
+We cannot juxtapose types like I just did, we have to wrap them in a template. Phobos defines \DD{TypeTuple} in \href{www.d-programming-language.org/phobos/std_typetuple.html}{std.typetuple}\index{std!typetuple} for that use.
+
+Now that we know how to get rid of all occurrences of a type in a type tuple, we have to write a template to eliminate all duplicates. The algorithm is simple: take the first type, eliminate all occurrences of this type in the remaining type tuple. Then call the duplicate elimination anew from the resulting type tuple, while at the same time collecting the first type.
+
+\begin{verbatim}
+template NoDuplicates(Types...)
+{
+    static if (Types.length == 0)
+        alias Types NoDuplicates; // No type, nothing to do.
+    else
+        alias TypeTuple!( 
+                Types[0]
+              , NoDuplicates!(Eliminate!(Types[0], Types[1..$]));
+                         ) NoDuplicates;
+}
+
+assert(is( NoDuplicates!(int,double,int,string,double)
+           == TypeTuple!(int,double,string)));
+\end{verbatim}
+
+By the way, code to do that, also called \DD{NoDuplicates}, is already in Phobos. It can be found in \href{www.d-programming-language.org/phobos/std_typetuple.html}{std.typetuple}\index{std!typetuple}. I found coding it again a good exercise in type tuple manipulation\index{type tuple!manipulation}.
+
+The last piece of the puzzle is to get a given class inheritance list. The \D{is} expression\index{is expression@\D{is} expression!types specializations} give us that by way of types specializations (\ref{typespecializations}):
+
+\index{example!is expression@\D{is} expression!types specializations}
+\begin{verbatim}
+template SuperList(Class) if (is(Class = class))
+{
+    static if (is(Class list == super))
+        alias TypeTuple!(list) SuperList;
+    else // Object
+        alias TypeTuple!() SuperList;
+}
+\end{verbatim}
+
+Now we are good to go: given a base class, get its inheritance list with \DD{SuperList}. Drop the base class to keep the interfaces. Stitch with the interfaces provided by \DD{Inheritance} and call \DD{NoDuplicates} on it. To make things clearer, I will define many aliases in the template. To keep the use of the eponymous trick\index{eponymous trick}, I will defer the aliasing in another template, as seen in section \ref{eponymous}\index{idiom!two templates}.
+
+\begin{verbatim}
+template CheckedInheritance(Base)
+{
+    alias CheckedImpl!(Base).Result CheckedInheritance;
+}
+
+template CheckedImpl(Base)
+{
+    // Get the inheritance list, getting rid of the base class
+    static if (SuperList!(Base).length > 0)
+        alias SuperList!(Base)[1..$] InList;
+    else // Object is the only class with a zero-length inh. list
+        alias SuperList!(Base)       InList;
+
+    alias TypeTuple!( InList
+                    , Inheritance!(Base)[1..$]) AllInterfaces;
+
+    alias TypeTuple!( Inheritance!(Base)[0] // base class
+                    , NoDuplicates!(AllInterfaces)) Result;
+} 
+
+// It works!
+class NoError : CheckedInheritance!(MyClass) { ... }
+\end{verbatim}
+
+
+\section{Operator Overloading} \label{operatoroverloading}
+
+\index{operator!overloading}
+D allows users to redefine some operators to enhance readability in code. And guess what? Operator overloading is based on templates. They are described \href{www.d-programming-language.org/operators.html}{here} in the docs. 
+
+\subsection{Syntax}
+
+\index{syntax!operator overloading}
+Table \ref{table:operatoroverloading} gives you the operator that you can overload and which function template you must define:
+
+\begin{table}
+\begin{tabular}[htb]{|c|c|c|}
+\hline
+Category & Operators & Template to define\\ 
+\hline \hline
+
+%Unary & \DD{+}, \DD{-}, \DD{++}, \DD{--} &\\
+%      & \DD{times}, \DD{tilde} &\hline
+%\emph{op}\DD{a} & & \DD{opUnary(}\D{string}\DD{ s)() if (s == }\emph{op}\DD{)} \hline
+%\emph{op}\DD{a[i0, i1, in]} & &\DD{opIndexUnary(}\D{string}\DD{ s)(size_t i0, ...) if (s == }\emph{op}\DD{)} \hline
+%\emph{op}\DD{a[i..j]} & &\DD{opSliceUnary(}\D{string}\DD{ s)(size_t i, size_t j) if (s == }\emph{op}\DD{)} \hline
+%\emph{op}\DD{a[]} & &\DD{opSliceUnary(}\D{string}\DD{ s)() if (s == }\emph{op}\DD{)} \hline \hline
+%
+%Binary & \DD{+}, \DD{-}, \DD{times}, \DD{/} & \\
+%       & \DD{\%}, \DD{^^}, \DD{tilde}, \DD{in} & \\
+%       & \DD{\&}, \DD{|}, \DD{^} & \\
+%       & \DD{<<}, \DD{>>}, \DD{>>>} &\hline
+%\DD{a }\emph{op}\DD{ b} & &\DD{opBinary(}\D{string}\DD{ s, B)(B b) if (s == }\emph{op}\DD{)} \hline 
+%\DD{b }\emph{op}\DD{ a} & &\DD{opBinaryRight(}\D{string}\DD{ s, B)(B b) if (s == }\emph{op}\DD{)} \hline
+%\hline \hline
+%
+%Op Assignment Operators: & \DD{+}, \DD{-}, \DD{*}, \DD{/} & \\
+%                  & \DD{\%}, \DD{^^}, \DD{~} & \\
+%                  & \DD{\&}, \DD{|}, \DD{^} & \\
+%                  & \DD{<<}, \DD{>>}, \DD{>>>} &\hline
+%\DD{a }\emph{op}\DD{= b} & &\DD{opOpAssign(}\D{string}\DD{ s, B)(B b) if (s == }\emph{op}\DD{)} \hline 
+%
+%Op Index Assignment Operators: & \DD{+}, \DD{-}, \DD{*}, \DD{/} & \\
+%                         & \DD{\%}, \DD{^^}, \DD{~} & \\
+%                         & \DD{\&}, \DD{|}, \DD{^} & \\
+%                         & \DD{<<}, \DD{>>}, \DD{>>>} &\hline
+%\DD{a[i0,i1,in] }\emph{op}\DD{= b} & &\DD{opIndexOpAssign(}\D{string}\DD{ s, B)(B b, size_t i0, ...) if (s == }\emph{op}\DD{)} \hline 
+%
+%Slice Op Assignment Operators: & \DD{+}, \DD{-}, \DD{*}, \DD{/} & \\
+%                         & \DD{\%}, \DD{^^}, \DD{~} & \\
+%                         & \DD{\&}, \DD{|}, \DD{^} & \\
+%                         & \DD{<<}, \DD{>>}, \DD{>>>} &\hline
+%\DD{a[i..j] }\emph{op}\DD{ = b} & &\DD{opSliceOpAssign(}\D{string}\DD{ s, B)(B b, size_t i, size_t j) if (s == }\emph{op}\DD{)} \hline 
+%\DD{a[] }\emph{op}\DD{ = b} & &\DD{opSliceOpAssign(}\D{string}\DD{ s), B)(B b) if (s == }\emph{op}\DD{)} \hline 
+
+%
+%Cast operator & \D{cast()} &\hline
+%\D{cast}\DD{(T)a} & & T opCast(T)() & \hline
+
+\end{tabular}
+\caption{Operator Overloading}
+\label{table:operatoroverloading}
+\end{table}
+
+Many other operators can be overloaded in D, but do not demand templates.
+
+\subsection{Example: Arithmetic Operators}
+
+\TODO{Tell somewhere that this is possible:}
+
+\begin{verbatim}
+Foo opBinary(string op:"+")(...) { ... }
+\end{verbatim}
+
+The idea behind this strange way to overload operators is to allow you to redefine many operators at once with only one method. For example, take this struct wrapping a number:
+
+\begin{verbatim}
+struct Number(T) if (isNumeric!T)
+{
+    T num;
+}
+\end{verbatim}
+
+To give it the four basic arithmetic operators with another \DD{Number} and another \DD{T}, you define \DD{opBinary} for \DD{+}, \DD{-}, \DD{*} and \DD{/}. This will activate operations were \DD{Number} is on the left. In case it's on the right, you have to define \DD{opBinaryRight}. Since this these overloading tend to use string mixins, I'll use them even though they are introduced only on section \ref{stringmixins}. The basic idea is: string mixins paste code (given as a compile-time string) where they are put.
+
+\index{example!arithmetic operators}
+\index{operator!arithmetic}
+\begin{verbatim}
+struct Number(T) if (isNumeric!T)
+{
+    T num;
+
+    auto opBinary(string op, U) 
+         if ((op == "+" || op == "-" || op == "*" || op == "/") 
+         && ((isNumeric!U) || is(U u == Number!V, V))
+    {
+ mixin("alias typeof(a"~op~"b) Result;     
+        static if (isNumeric!U)
+            return Number!Result(a"~op~"b);
+        else
+            return Number!Result(a"~op~"b.num);");
+    }    
+}
+\end{verbatim}
+
+\DD{op} being a template parameter, it's usable to do compile-time constant folding\index{compile-time!constant folding}: in this case the concatenation of strings to generate D code. The way the code is written, \DD{Number}s respect the global D promotion rules. A \DD{Number!}\D{int} plus a \DD{Number!}\D{double} returns a \DD{Number!}\D{double}.
+
+\subsection{Special Case: \D{in}}
+
+\subsection{Special Case: \D{cast}}
+
+\section{Mixin Templates}\label{mixintemplates}
+
+\index{template!mixin templates}
+Up to now, \emph{all} the templates we have seen are instantiated in the same scope than their declaration. Mixin templates have a different behaviour: the code they hold is placed upon instantiation \emph{right at the call site}\index{scope!mixin templates}. They are thus used in a completely different way than other templates.
+
+\subsection{Syntax}\label{mixintemplatessyntax}
+
+To distinguish standard templates from mixin templates, the latter have slightly different syntax. Here is how they are declared and called:
+
+\index{syntax!mixin templates}
+\begin{verbatim}
+/* Declaration */
+mixin template NewFunctionality(T,U) { ... }
+
+
+/* Instantiation */
+class MyClass(T,U,V)
+{
+    mixin NewFunctionality!(U,V);
+
+    ...
+}
+\end{verbatim}
+
+As you can see, you put \D{mixin} before the declaration and \D{mixin} before the instantiation call. All other templates niceties (constraints, default values, \ldots) are still there for your perusal. Symbols lookup is done in the local scope\index{scope!mixin templates!symbols lookup} and the resulting code is included where the call was made, therefore injecting new functionality\index{scope!mixin templates!injecting functionality}.
+
+As far as I know, there is no special syntax for function, class and struct templates to be mixin templates. You will have to wrap them in a standard \D{template} declaration. In the same idea, there is no notion of eponymous trick with mixin templates: there is no question of how to give access to the template's content, since the template is cracked open for you and its very content put in your code.
+
+\TODO{Test for mixin T foo(T)(T t) { return t;}}
+
+By the way, you \emph{cannot} mix a standard template in. It used to be the case, but it's not possible anymore. Now mixin templates and non-mixin ones are strictly separated cousins.
+
+\subsection{Mixing Code In}\label{mixincodein}
+
+What good are these cousins of the templates we've seen so far? They give you a nice way to place parameterized implementation inside a class or a struct. Once more, templates are a way to reduce boilerplate code. If some piece of code appears in different places in your code (for example, in structs, where there is no inheritance to avoid code duplication), you should look for a way to put it in a mixin template.
+
+Also, you can put small functionalities in mixin templates, giving client code access to them to chose how they want to build their.
+
+Note that the code you place inside a mixin template doesn't have to make sense by itself (it can refer to \D{this} or any not-yet-defined symbols). It just has to be syntactically correct D code.
+
+For example, remember the operator overloading code we saw in section \ref{operatoroverloading}? Here is a mixin containing concatenating functionality:
+
+\index{example!mixin templates}
+\index{operator!concatenation, (~)@concatenation, (\DD{\~})}
+\begin{verbatim}
+mixin template Concatenate()
+{
+    Tuple!(This, U) opBinary(string op, this This)(This u) 
+    if (op == "~")
+    {
+        return tuple(this, u);
+    }
+
+    Tuple!(U, This) opBinaryRight(string op, this This)(This u) 
+    if (op == "~")
+    {
+        return tuple(u, this);
+    }
+}
+\end{verbatim}
+
+As you can see, it uses \D{this}, even though there is no struct or class in sight. It's used like this, to give concatenation (as tuples) ability to a struct:
+
+\begin{verbatim}
+struct S
+{
+    /* some code */
+
+    mixin Concatenate;
+}
+
+S s,t,u;
+
+auto result = s ~ t ~ u;
+assert(result == tuple(s, tuple(t,u)));
+\end{verbatim}
+
+In this particular case, we should test for tuples already containing the current type and flatten them, so as get \DD{tuple(s,t,u)}.
+
+The idea to take back home is: the concatenation code is written once. It is then an offered functionality for any client scope\index{scope!client} (type) that want it. It could easily have been arithmetic operations, \D{cast} operations or new methods like \DD{log}, \DD{register}, new members or whatever else. Build you own set of mixins and use them freely. And remember they are not limited to classes and structs: you can also use them in functions, module scopes, other templates\ldots
+
+\aparte{Limitations\index{mixin templates!limitations}}{ Mixin templates inject code at the local scope\index{scope!local scope}. They cannot add an \D{invariant} clause in a class, or \D{in}/\D{out} clauses in a function. They can be injected into an \D{invariant}/\D{in}/\D{out} clause.}
+
+\section{\DD{opDispatch}} \label{opdispatch}
+
+\subsection{Syntax}\label{opdispatchsyntax}
+
+\DD{opDispatch} is a sort of operator overloading (it's in the same place in the \href{www.d-programming-language.org/operator.html}{online documentation}) that deals with members calls (methods or value members). Its definition is the same than an operator:
+
+\index{syntax!opDispatch@\DD{opDispatch}}
+\begin{verbatim}
+... opDispatch(string name, Args)(Arg arg)
+... opDispatch(string name, Args...)(Args args)
+\end{verbatim}
+
+The usual template constraints\index{templates constraints!and \DD{opDispatch}} can be used: constraints on \DD{name}, constraints on the arguments.
+
+When a type has an \DD{opDispatch} method and a member call is done without finding a defined member, the call is dispatched to \DD{opDispatch} with the invoked name as a string.
+
+\index{example!opDispatch@\DD{opDispatch}}
+\begin{verbatim}
+struct Dispatcher
+{
+    int foo(int i) { return i*i;}
+    string opDispatch(string name, T...)(T t)
+    {
+        return "Dispatch activated: " ~ name ~ ":" ~ T.stringof;
+    }
+}
+
+Dispatcher d;
+
+auto i = d.foo(1); // compiler finds foo, calls foo.
+auto s1 = d.register("abc"); // no register member -> opDispatch activated;
+assert(s1 == "Dispatch activated: register:string");
+
+auto s2 = d.empty; // no empty member, no argument.
+assert(s2 == "Dispatch activated: empty:()");
+\end{verbatim}
+
+Once \DD{opDispatch} has the name called and the arguments, it's up to you to decide what to do: calling free functions, calling other methods or using the compile-time string to generate new code (see section \ref{stringmixins} on string mixins).
+
+Since string mixins\index{string mixins} really go hand in hand with \DD{opDispatch} I'll use them even though I haven't introduced them right now. The executive summary is: they paste D code (given as a compile-time string) where they are called. There.
+
+\subsection{Getters and Setters}\label{opdispatchgetterssetters}
+
+For example, suppose you have a bunch of members, all private and want client code to access them through good ol' \DD{setXXX/getXXX} methods. Only, you do not want
+
+\index{example!string mixins}
+\index{string mixins}
+\index{example!opDispatch@\DD{opDispatch}}
+\begin{verbatim}
+class GetSet
+{
+    private int i;
+    private int j;
+    private double d;
+    private string theString;
+
+    auto opDispatch(string name)() // no arg version -> getter
+    if (name.length > 3 && name[0..3] == "get")
+    {
+        enum string member = name[3..$]; // "getXXX" -> "XXX"
+        // We test if "XXX" exists here: ie if is(typeof(this.XXX)) is true
+        static if (mixin("is(typeof(this." ~ name ~ "))"))
+            mixin("return " ~ name ~ ";");
+        else
+            static assert(0, "GetSet Error: no member called " ~ name);
+    }
+
+    auto opDispatch(string name, Arg)(Arg arg) // setter
+    if (name.length > 3 && name[0..3] == "set")
+    {
+        enum string member = name[3..$]; // "setXXX" -> "XXX"
+        // We test if "name" can be assigned to. this.name = Arg.init
+        static if (__traits(compiles, 
+                            mixin("this." ~ name ~ " = Arg.init;")))
+            mixin("return " ~ name ~ ";");
+        else
+            static assert(0, "GetSet Error: no member called " ~ name);
+    }
+}
+
+auto gs = new GetSet();
+gs.seti(3);
+auto i = gs.geti;
+assert(i == 3);
+
+gs.settheString("abc");
+writeln(gs.gettheString); // "abc"
+\end{verbatim}
+
+Nifty, eh? This could be a bit better by dealing with the capitalization of the first letter: \DD{getTheString}, but this is good enough for now. Even better, you could put this code in a mixin template to give this get/set capacity to any struct or class (see section \ref{mixintemplates}).
+
+\subsection{Wrapper Templates}\label{wrappertemplates}
+
+\index{template!wrapper templates}
+We've seen how to inject code with mixin templates (\ref{mixintemplates}) or use template class inheritance to modify you classes' code (\ref{inheritancelist}). We've also seen how you can define a wrapper struct around a range to expose a new iteration scheme for its element (\ref{structflatten}). All these idioms\index{idiom!wrapper template} are way to modify pre-existing code. 
+
+But what you want to put a logging functionality around a predefined struct, so that any method call is logged? For class, you can inherit from the class and defined a subclass with new, modified, methods. But you have to do that `by hand', so to speak. And for a struct, you're out of luck.
+
+But, templates can come to the rescue, with a bit of \DD{opDispatch} magic.
+
+\TODO{Finish this.}
+
+- put Type wrapped into a Logger struct.
+- get Type.tupleof
+- call typeof() on this.
+- opDispatch? Test if wrapped.foo() is legal. If yes, call
+
+X X X X X X X X
+
+\section{Templates All the Way Up}\label{templatesintemplates}
+
+\TODO{Write this section.}
+
+Double-decker templates.
+
+Curried templates.
+
+To separate two type tuples.
+
+\section{\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}}\label{fileandline}
+
+In section \ref{default}, we've seen that template parameters can have default values. There are also two special, reserved, symbols that are defined in D: \D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}. They are used in standard (non-\D{mixin}) templates, but their behaviour will remind you of mixins: when instantiated, they get replaced by strings containing the file name and the line in the file of the \emph{instantiation call site}. Yes, it's a sort of two-way dialogue: module \DD{a.d} defines template \DD{T}. Module \DD{b.d} asks for a \DD{T} instantiation. This instantiation is done in module \DD{a.d}, but will line and filename taken from \DD{b.d}!
+
+They are mostly declared like this:
+
+\index{example!\_\_FILE\_\_ and \_\_LINE\_\_@\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}!unique types}
+\begin{verbatim}
+struct Unique(T, string file, size_t line)
+{
+    enum size_t l = line;
+    enum string f = file;
+    T t;
+}
+
+auto unique(T, string file = __FILE__, size_t line = __LINE__)(T t)
+{
+    return Unique!(T, file, line)(t);
+}
+\end{verbatim}
+
+As \DD{Unique}'s name suggests, this is a way to obtain unique instantiations. Except if you call the very same template twice in the same line of your file, this pretty much guarantee your instantiation will be the only one. Remember that template arguments become part of the template scope\index{scope!template scope} name when instantiation is done (\ref{instantiating}).
+
+\begin{verbatim}
+// file thefile.d
+module thefile;
+
+auto u = unique(1); // Unique!(int, "thefile.d", 4)
+
+auto v = unique(1); // Unique!(int, "thefile.d", 6)
+
+static assert(!is( typeof(v) == typeof(u) ))
+\end{verbatim}
+
+Even though \DD{u} and \DD{v} are declared the same way, they have different types.
+
+Apart from \emph{one-of-a-kind} types, this is also useful for debugging: you can use the strings in error messages:
+
+\index{example!\_\_FILE\_\_ and \_\_LINE\_\_@\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}!debugging}
+\begin{verbatim}
+auto flatten(Range, file == __FILE__, line == __LINE__)(Range range)
+{ 
+    static if (rank!Range == 0)
+        static assert(0, "File: " ~ file ~ " at line: " ~ line 
+                       ~ ", flatten called with a rank-0 type: " 
+                       ~ Range.stringof);
+    else static if (rank!Range == 1)
+        return range;
+    else
+        return Flatten!(Range)(range);
+}
+\end{verbatim}
+
+And here is a little gift:
+
+\begin{verbatim}
+template Debug(alias toTest, file == __FILE__, line == __LINE__)
+{
+    template With(Args...)
+    {
+        static if (is( toTest!Args ))
+            alias toTest!Args With;
+        else
+            static assert(0, "Error: " ~ to!string(toTest)
+                           ~ " called withs arguments: "
+                           ~ Args.stringof);
+}
+
+/* Usage */
+Debug!(templateToBeTested).With!(Arguments);
+\end{verbatim}
+
+That way, no need to modify your beautiful templates.
+
+\TODO{Test that.}
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\part{Around Templates: Other Compile-Time Tools}\label{around}
+
+There is more to compile-time metaprogramming in D than \emph{just} templates. This part will describe the most common tools: string mixins (\ref{stringmixins}), compile-time function evaluation (\ref{ctfe}) and \D{\_\_traits} (\ref{traits}), as seen in relation with templates. For the good news is: they are all interoperable. String mixins are wonderful to inject code in your templates, compile-time-evaluable functions can act as template parameters and can be templated. And, best of best, templated compile-time functions can return strings which can in turn be mixed-in\ldots in your templates. Come and see, it's fun!
+
+\section{String Mixins} \label{stringmixins}
+
+String mixins\index{string mixins} put D code were they are called, just before compilation. Once injected, the code is \emph{bona fide} D code, like any other. Code is manipulated as strings, hence the name.
+
+\subsection{Syntax}\label{stringmixinssyntax}
+
+The syntax is slightly different from mixin templates (\ref{mixintemplates}):
+
+\index{syntax!string mixins}
+\begin{verbatim}
+mixin("some code as a string");
+\end{verbatim}
+
+You must take care not to forget the parenthesis. String mixins are a purely compile-time tool, so the string must also be determined at compile-time.
+
+\subsection{Mixing Code In, With Templates}\label{stringmixinsandtemplates}
+
+Of course, just injecting predefined code is a bit boring:
+
+\index{example!string mixins}
+\begin{verbatim}
+mixin("int i = 3;"); // Do not forget the two semicolons
+                     // one for the mixed-in code,
+                     // one for the mixin() call.
+i++;
+assert(i == 4);
+\end{verbatim}
+
+There is no interest in that compared to directly writing standard D code. The fun begins with D powerful constant folding ability: in D, strings can be concatenated at compile-time.\index{compile-time!string concatenation} That's where string mixins meet templates: templates can produce strings at compile-time and can get strings as parameters. You alreday saw that in section \ref{operatoroverloading} on operator overloading and section \ref{opdispatch} on \DD{opDispatch}, since I couldn't help doing a bit of foreshadowing.
+
+Now, imagine for example wanting a template that generates structs for you. You want to be able to name the structs as you wish. Say we would like the usage to look like that:
+
+\begin{verbatim}
+module mine;
+import named;
+
+mixin(Named!"First");  // creates struct First { ... }
+mixin(Named!"Second"); // and struct Second { ... }
+
+First f1, f2;
+Second s1;
+
+assert(is( typeof(s1) == mine.First));
+\end{verbatim}
+
+Here comes the generating code:
+
+\index{example!string mixins}
+\begin{verbatim}
+module named;
+
+template Named(string name)
+{
+    enum string Named = "struct " ~ name ~ " { "
+                      ~ "/+ some code +/"
+                      ~ " }";
+}
+
+/* For example, name == "First" ->
+   struct First { /+ some code +/ }
+*/
+\end{verbatim}
+
+In this case, the string is assembled inside the template during instantiation,  exposed through the eponymous trick\index{eponymous trick!string mixins} and then mixed in where you want it. Note that the string is generated in the module containing \DD{Named}, but that \DD{First} and \DD{Second} are defined exactly where the \D{mixin}\DD{()} call is. If you use the mixin in different modules, this will define as many different structs, all named the same way. This might be exactly what you want, or not.
+
+To get the same struct in different modules, the code must be organized a bit differently: the structs must be generated in the template module (for example):
+
+\index{example!string mixins}
+\begin{verbatim}
+module named;
+
+template Named(string name)
+{
+    alias NamedImpl!(name).result Named;
+}
+
+template NamedImpl(string name)
+{    
+    enum string Named = "struct " ~ name ~ " { "
+                      ~ "/+ some code +/"
+                      ~ " }";
+    mixin(Named);
+    mixin("alias " ~ name ~ " result;");
+}
+\end{verbatim}
+
+\begin{verbatim}
+module mine;
+import named;
+
+named!"First" f1, f2;
+named!"Second" s1;
+\end{verbatim}
+
+Usage is a different, as you can see. In this case, \DD{First} is generated inside \DD{NamedImpl} and exposed through an alias (this particular alias statement is itself generated by a string mixin). In fact, the entire code could be put in the mixin:
+
+\begin{verbatim}
+module named;
+
+template Named(string name)
+{
+    alias NamedImpl!(name).result Named;
+}
+
+template NamedImpl(string name)
+{
+mixin("struct " ~ name ~ " {"
+                ~ "/* some code */"
+                ~ " }\n"
+   ~ "alias " ~ name ~ " result;");
+}
+\end{verbatim}
+
+Here is an example using the ternary \DD{?:} operator to do some compile-time selection of code, similar to what can be done with \D{static if} (\ref{staticif}):
+
+\index{example!string mixins}
+\begin{verbatim}
+enum GetSet { no, yes}
+
+struct S(GetSet getset = GetSet.no, T)
+{
+    enum priv = "private T value;\n"
+               ~ "T get() @property { return value;}\n"
+               ~ "void set(T _value) { value = _value;}";
+
+    enum pub = "T value;";
+
+    mixin( (getset == GetSet.yes) ? priv : pub);
+}
+
+S!(GetSet.yes, int) gs;
+
+/* Generates:
+
+struct S!(GetSet.yes, int)
+{
+    private int value;
+    int get() @property { return value;}
+    void set(int _value) { value = _value;}
+}
+*/
+
+gs.set(1);
+assert( gs.get == 1);
+\end{verbatim}
+
+\subsection{Limitations}\label{stringmixinslimitations}
+
+Code crafting is still a bit awkward\index{string mixins!limitations}, because I haven't introduced CTFE yet (see \ref{ctfe}). So we are limited to simple concatenation for now: looping for example is possible with templates, but far easier with CTFE. Even then, it's already wonderfully powerful: you can craft D code with some `holes' (types, names, whatever) that will be completed by a template instantiation and then mixed in elsewhere. You can create other any kind of D code with that.
+
+You can put \D{mixin}\DD{()} expressions almost were you want to, but\ldots
+
+\TODO{Test the limits:inside static if expressions, for example}
+
+
+\aparte{Escaping strings}{One usual problem with manipulating D code as string is how to deal with strings in code? You must escape them. Either use \DD{\textbackslash"} to create string quotes, a bit like was done in section \ref{functiontemplatessyntax} to generate the error message for \DD{select}. Or you can put strings between \DD{q\{} and \DD{\}}. }
+
+\section{Compile-Time Function Evaluation} \label{ctfe}
+
+\subsection{Evaluation at Compile-Time} \label{compiletimeevaluation}
+
+Compile-Time Function Evaluation\index{CTFE}\index{Compile-Time Function Evaluation} (from now on, CTFE) is an extension of the constant-folding that's done during compilation\index{compile-time!constant folding} in D code: if you can calculate \DD{1 + 2 + 3*4} at compile-time, why not extend it to whole functions evaluation? I'll call evaluable at compile-time functions CTE functions from now on.
+
+It's a very hot topic in D right now and the reference compiler has advanced by leaps and bounds in 2011. The limits to what can be done with CTE functions are pushed farther away at each new release. At the time of this writing, the limitations\index{CTFE!limitations} are mostly: no classes and no exceptions (and so, no \DD{enforce}).\footnote{No doubt this sentence will become obsolete rapidly.} All the \D{foreach}, \D{while}, \D{if}/\D{then}/\D{else} statements, arrays manipulation, struct manipulation, function manipulation\ldots are there. You can even do pointer arithmetics!
+
+In fact danger lies the other way round: it's easy to forget that CTE functions must also be standard, runtime, functions. Remember that some actions only make sense at compile-time or with compile-time initialized constants: indexing on tuples for example:
+
+\subsection{\D{\_\_ctfe}}
+
+
+
+\subsection{Templates and CTFE} \label{templatesandctfe}
+
+\index{CTFE!and templates}
+\index{template!and CTFE}
+That means: you can feed compile-time constants to your classical D function and its code will be evaluated at compile-time. As far as templates are concerned, this means that function return values can be used as template parameters and as \D{enum} initializers:
+
+\index{example!CTFE}
+\begin{verbatim}
+
+\end{verbatim}
+
+Template functions can very well give rise to functions evaluated at compile-time:
+
+\begin{verbatim}
+\end{verbatim}
+
+\subsection{Templates and CTFE and String Mixins, oh my!}
+\label{templatesandctfeandstringmixins}
+
+And the fireworks is when you mix (!) that with string mixins: code can be generated by functions, giving access to almost the entire D language to craft it. This code can be mixed in templates to produce what you want. And, to close the loop: the function returning the code-as-string can itself be a template, using another template parameters as its own parameters.
+
+Concretly, here is the getting-setting code from section \ref{stringmixinsandtemplates}, reloaded:
+
+\begin{verbatim}
+enum GetSet { no, yes}
+
+string priv(string type, string index)
+{
+    return 
+    "private "~type~"value"~index~";\n"
+  ~ type~" get"~index~"() @property { return value"~index~";}\n"
+  ~ "void set"~index~"("~type~" _value) { value"~index~" = _value;}";
+}   
+
+string pub(string type, string index)
+{
+    return type ~ "value" ~ index ~ ";";
+}
+
+string GenerateS(GetSet getset = GetSet.no, T...)()
+{
+    string result;    
+    foreach(index, Type; T)
+        static if (getset = GetSet.yes)
+		     result ~= priv(Type.stringof, to!string(index));
+        else
+            result ~= pub(Type.stringof, to!string(index));
+    return result;
+}
+
+struct S(GetSet getset = GetSet.no, T...)
+{
+    mixin(GenerateS!(getset,T));
+}
+
+S!(GetSet.yes, int, string, int) gs;
+/* Generates:
+
+struct S!(GetSet.yes, int, string, int)
+{
+    private int value0;
+    int get0() @property { return value0;}
+    void set0(int _value) { value0 = _value;}
+
+    private string value1;
+    string get1() @property { return value1;}
+    void set1(string _value) { value1 = _value;}
+
+    private int value2;
+    int get2() @property { return value2;}
+    void set2(int _value) { value2 = _value;}
+}
+*/
+
+gs.set1("abc");
+assert(gs.get1 == "abc");
+\end{verbatim}
+
+This code is much more powerful than the one we saw in section \ref{stringmixinsandtemplates}: the number of types is flexible, and an entire set of getters/setters is generated when asked to. All this is done by simply plugging \D{string}-returning functions together, and a bit of looping by way of a compile-time \D{foreach}.
+
+\subsection{Simple String Interpolation}
+
+All this play with the concatenating operator (\DD{\~}) is becoming a drag. We should write a string interpolation function, evaluable at compile-time of course, to help us in our task. Here is how I want to use it:
+
+\begin{verbatim}
+alias interpolate!"struct #0 { #1 value; #0[#2] children;}" makeTree;
+
+enum string intTree = makeTree("IntTree", "int", 2);
+enum string doubleTree = makeTree("DoubleTree", "double", "");
+
+assert(intTree 
+       == "struct IntTree { int value; IntTree[2] children;}");
+assert(doubleTree 
+       == "struct DoubleTree { double value; IntTree[] children;}");
+\end{verbatim}
+
+As you can see, the string to be interpolated is passed as a template parameter. Placeholders use a character normally not found in D code: \DD{\#}. The $n^{th}$ parameter is \DD{\#n}, starting from 0. As a concession to practicality, a lone \DD{\#} is considered equivalent to \DD{\#0}. Args to be put into the string are passed as standard (non-template) parameters and can be of any type.
+
+\begin{verbatim}
+template interpolate(string code)
+{
+    string interpolate(Args...)(Args args) {
+        string[] stringified;
+        foreach(index, arg; args) stringified ~= to!string(arg);
+
+        string result;
+        int i;
+
+        while (i < code.length) {
+            if (code[i] == '#') {
+                int j = 1;
+                int index;
+                auto zero = to!int('0');
+                while (i+j < code.length
+                    && to!int(code[i+j])-zero >= 0
+                    && to!int(code[i+j])-zero <= 9)
+                {
+                    index = index*10 + to!int(code[i+j])-zero;
+                    ++j;
+                }
+
+                result ~= stringified[index];
+                i += j;
+            }
+            else {
+                result ~= code[i];
+                ++i;
+            }
+        }
+
+        return result;
+    }
+}
+\end{verbatim}
+
+\TODO{The syntax could be extended somewhat: inserting multiple strings, inserting a range of strings, all arguments to the end.}
+
+\subsection{Example: extending \DD{std.functional.binaryFun}}\label{naryfun}
+
+\href{www.d-programming-language.org/phobos/std_functional.html}{std.functional}\index{std!functional}\index{Phobos} has two really interesting templates: \DD{unaryFun} and \DD{binaryFun}.
+
+
+\begin{verbatim}
+bool isaz(char c) {
+    return c >= 'a' && c <= 'z';
+}
+
+bool isAZ(char c) {
+    return c >= 'A' && c <= 'Z';
+}
+
+bool isNotLetter(char c) {
+    return !isaz(c) && !isAZ(c);
+}
+
+int letternum(char c) {
+    return to!int(c) - to!int('a') + 1;
+}
+
+int arity(string s) {
+    if (s.length == 0) return 0;
+
+    int arity;
+    string padded = " " ~ s ~ " ";
+    foreach(i, c; padded[0..$-2])
+        if (isaz(padded[i+1]) 
+         && isNotLetter(padded[i]) 
+         && isNotLetter(padded[i+2]))
+            arity = letternum(padded[i+1]) > arity ? 
+                    letternum(padded[i+1]) 
+                  : arity;
+    return arity;
+}
+
+string templateTypes(int arit) {
+    if (arit == 0) return "";
+    if (arit == 1) return "A";
+
+    string result;
+    foreach(i; 0..arit)
+        result ~= "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i] ~ ", ";
+
+    return result[0..$-2];
+}
+
+string params(int arit) {
+    if (arit == 0) return "";
+    if (arit == 1) return "A a";
+
+    string result;
+    foreach(i; 0..arit)
+        result ~= "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i]
+               ~ " " ~ "abcdefghijklmnopqrstuvwxyz"[i]
+               ~ ", ";
+
+    return result[0..$-2];
+}
+
+string naryFunBody(string code, int arit) {
+    return interpolate!"auto ref naryFun(#0)(#1) { return #2;}"
+                      (templateTypes(arit), params(arit), code);
+}
+
+template naryFun(string code, int arit = arity(code))
+{
+    mixin(naryFunBody(code, arit));
+}
+\end{verbatim}
+
+\section{\D{\_\_traits}}\label{traits}
+
+The general \D{\_\_traits} syntax can be found online \href{www.d-programming.org/traits.html}{here}. Traits are basically another compile-time introspection\index{compile-time!introspection!with \_\_traits@with \D{\_\_traits}}\index{introspection!with \_\_traits@with \D{\_\_traits}} tool, complementary to the \D{is} expression (see appendix \ref{isexpression}). Most of time, \D{\_\_traits} will return \D{true} or \D{false} for simple type-introspection questions (is this type or symbol an abstract class, or a final function?). As D is wont to do, these questions are sometimes ones you could ask using \D{is} or template constraints, but sometimes not. What's interesting is that you can do some introspection on types, but also on symbols or expressions.
+
+Seeing how this is a document on templates and that we have already seen many introspection tools, here is a quick list of what yes/no questions you can ask which can or \emph{cannot} be tested with \D{is}:\footnote{As with any other affirmation in this document, readers should feel free to prove me wrong. That shouldn't be too difficult.}
+
+\begin{table}[htb]
+\centering
+\begin{tabular}[c]{|c|c|}
+\hline
+Question & Doable with other tools? \\
+\hline
+\hline
+isArithmetic & Yes \\
+isAssociativeArray & Yes \\
+isFloating & Yes \\
+isIntegral & Yes \\
+isScalar & Yes \\
+isStaticArray & Yes \\
+isUnsigned & Yes \\
+\hline
+\hline
+isAbstractClass & No \\
+isFinalClass & No \\
+isVirtualFunction & No \\
+isAbstractFunction & No \\
+isFinalFunction & No \\
+isStaticFunction & No \\
+\hline
+\hline
+isRef & No \\
+isOut & No \\
+isLazy & No \\
+\hline
+\hline
+hasMember & No (Yes?) \\
+isSame & No \\
+compiles & Yes (in a way) \\
+\hline
+\end{tabular}
+\caption{Comparison between \D{\_\_traits} and other introspection tools}
+\label{table:traits}
+\end{table}
+
+
+More interesting in my opinion is using \D{\_\_traits} to get new information from the type. These are really different from other introspection tools and I will deal with them in more detail right now.
+
+\begin{itemize}
+\item identifier (example with foo)
+\item getMember (returns an expression)
+\item getOverloads (returns an array of overloads)
+\item getVirtualFunctions (returns an arrays of the virtual overloads)
+\item parent (get the parent directly). Example: recurse upwards.
+\item allMembers (tuple of string literals, names of members of a type. If it's a class, it will include inherited members. No repetition -> getOverloads). Example: store all members in a hashtable or a polymorphic association list. As a mixin, to be put inside types to enable runtime reflection? (a.send("someMethod", args), a.setInstanceVariable("a",5))
+\item derivedMembers (tuple of string literals, names of members of type. If it's a class it will \emph{not} include inherited members. No repetition -> getOverloads)
+\end{itemize}
+
+Example: iterating on members, extracting types from an aggregate.
+
+\section{Wrapping it all Together}\label{wrappingitup}
+
+Using traits to crack a type open.
+
+templated CT functions to generate strings to be mixed-in.
+
+Example: cloning a type
+Example: naryFun?
+

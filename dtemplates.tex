@@ -1,0 +1,94 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{lmodern}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{datetime}
+\usepackage{verbatim}
+
+\usepackage{makeidx} % for the index
+\usepackage{framed}  % for the \aparte command
+\usepackage{minted}  % for code highlighting
+
+\makeindex
+
+\yyyymmdddate
+
+%%%% Redefinitions for minted / verbatim %%%%%%%%%%%%%%
+
+% line numbering style
+\renewcommand{\theFancyVerbLine}{
+\sffamily
+\textcolor[rgb]{0.4,0.4,0.9}{\scriptsize \arabic{FancyVerbLine}}}
+
+% syntax highlighting style
+\usemintedstyle{emacs}
+
+% creates the 'dcode' environment
+
+\newminted{d}{linenos, 
+              numbersep = 2pt, 
+              frame=single,
+              xleftmargin=-25pt,
+              xrightmargin=-35pt
+             }
+
+%\newenvironment{dcode}
+%{
+%\begin{verbatim}
+%}
+%{
+%\end{verbatim}
+%}
+
+%%%% Formatting commands %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\definecolor{shadecolor}{rgb}{0.8,0.8,0.85}
+\definecolor{darkblue}{rgb}{0.1,0.1,0.8}
+
+\newcommand{\D}[1]{{\color{darkblue}\texttt{#1}}}
+
+\newcommand{\DD}[1]{\texttt{#1}}
+
+\newcommand{\TODO}[1]{{\color{red}\textsc{Todo:\ }#1}}
+
+\newcommand{\std}[1]{\href{www.d-programming-language.org/phobos/std_#1.html}{std.#1}}
+
+\newcommand{\aparte}[2]
+{
+\begin{shaded}
+{\large\textbf{#1}}\newline
+#2
+\end{shaded}
+}
+
+%%%%%%%% Hyperlinks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[pdftex, colorlinks=true, linkcolor=blue, urlcolor=blue]{hyperref}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\frenchspacing
+
+\title{D Templates: Some Notes}
+\author{Philippe Sigaud}
+\date{\today}
+\maketitle
+
+\tableofcontents
+
+\input{templates_intro}
+\input{templates_basics}
+\input{templates_advanced}
+\input{templates_examples}
+\input{templates_appendix}
+
+\newpage
+\phantomsection
+\addcontentsline{toc}{part}{Index}
+\printindex
+
+\end{document}
