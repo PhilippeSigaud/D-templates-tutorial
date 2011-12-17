@@ -949,14 +949,19 @@ int res2 = vlcMemo(2, 2.718, "def");// minutes again!
 int res3 = vlcMemo(1, 3.14, "abc"); // a few ms to get res3
 \end{verbatim}
 
-The above code is trivial and could be optimized in many ways. Mostly, a real memoizing template should also modify its behavior with storing policies. 
+The above code is trivial and could be optimized in many ways. Mostly, a real memoizing template should also modify its behavior with storing policies. For example:
 
 \begin{itemize}
-\item Should I store all results or only the last X results or only results/arguments that verify some condition? 
-\item What should I do if \DD{memo} reaches a certain size?
+\item No-limit or limited size store? 
+\item In case of limited-size store: how to define the limit and what should be the eviction policy?
 \begin{itemize}
-\item discard the oldest result?
-\item stop memoizing?
+\item First-in/First-out memo?
+\item Least recenly used memo?
+\item Least used?
+\item Time-to-live?
+\item Discard all and flush the store?
+\item Discard only a fraction?
+\item Stop memoizing?
 \end{itemize}
 \end{itemize}
 
