@@ -4,7 +4,7 @@ D Template Tutorial
 What's it's about
 -----------------
 
-This project is about a wonderful part of the  [D progamming language](www.dlang.org "D Website"): templates. It contains a (not-so) small LaTeX document on templates aiming to be a kind of tutorial.
+This project is about a wonderful part of the [D programming language](www.dlang.org "D Website"): templates. It contains a (not-so) small LaTeX document on templates aiming to be a kind of tutorial.
 
 * The master document is `dtemplates.tex` and calls the other subfiles:
 * `dtemplates_basics.tex` is about templates syntax, basic building blocks (`static if`, eponymous trick) and function, struct and class templates.
