@@ -168,8 +168,8 @@ ArrayOf!(int).ArrayType array;
 ArrayOf!(int).ElementType element; // the same, element is an int.
 
 // the transform function is accessible. Instantiated like this, 
-// it's a function from string to int. 
-auto i = Transformer!(string,double).transform("abc"); // i is an int
+// it's a function from string to double. 
+auto d = Transformer!(string,double).transform("abc"); // d is a double
 \end{verbatim}
 
 Obviously, using templates like this, with their full name, is a pain. The nifty D \D{alias} declaration is your friend:
@@ -177,7 +177,7 @@ Obviously, using templates like this, with their full name, is a pain. The nifty
 \begin{verbatim}
 alias Transformer!(string,double) StoD;
 
-auto i = StoD.transform("abc");
+auto d = StoD.transform("abc");
 auto m = new StoD.Modificator("abc"); // StoD.Modificator is a class
                                       // storing a string and a double.
 \end{verbatim}
