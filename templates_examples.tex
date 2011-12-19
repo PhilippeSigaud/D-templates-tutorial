@@ -1,25 +1,70 @@
 \newpage
 \part{Examples}\label{examples}
 
+This part will present various examples showing what can be done with D templates, be it type manipulation, code generation or language extension \ldots Most examples are code snippets that were useful to me at one time or another. I hope they will be useful to you too.
+
+\aparte{Contributors welcome!}{Even more than for other parts, I welcome any short and synthetic example of what can be done with templates. Do not hesitate to chime in and push some code in this doc!}
+
 \section{Type Sorcery}
+
+One of the most fundamental use of templates is type sorcery: type creation, type manipulation, etc. D being a statically type language, all of your creations will have a defined type. Sometimes, these can be cumbersome to write or manipulate. Templates can help you in this.
 
 \subsection{Mapping, Filtering and Folding Types}
 
-\TODO{Say something about mapping with a typetuple-returning template}
+As we saw in section \ref{tuples}, template tuple parameters can hold type tuples (that's even their original role). Since these can be iterated, indexed or sliced, they are ideal candidates to some standard iteration algorithms. As for ranges, you can map another template on type tuples, filter the types you want to extract or fold (reduce) them into another type.
+
+\aparte{And non-types?}{What about acting on expression tuples? You can do that too. Even though this section is called \emph{Type} Sorcery, all templates here can work on expression tuples too. Do not feel limited.}
+
+\subsubsection{Mapping on Type Tuples}
+
+Mapping a type tuple is simply applying another (unary) template on all types of a type tuple. Phobos already defines \DD{staticMap} in \href{www.d-programming-language.org/phobos/std_typetuple.html#staticMap}{std.typetuple}\index{std!typetuple}\index{Phobos}, but it's a nice exercise to code it again. We want a template that takes another template name (as an \D{alias} parameter), say \DD{Wrapper}, and a typetuple (\DD{T0, T1, T2, ..., Tn}) and returns \DD{Wrapper!T0, Wrapper!T1, Wrapper!T2, ..., Wrapper!Tn}.
+
+\begin{dcode}
+template staticMap(alias M, T...)
+{
+    static if (T.length == 0) // End of sequence
+        alias TypeTuple!() staticMap; // stop there
+    else
+        alias TypeTuple!(M!(T[0]), staticMap!(M, T[1..$])) staticMap;
+}
+\end{dcode}
+
+We use the auto-flattening of type tuples to aggregate the results into a unique tuple. Notice how indexing and slicing make for a not-so-complicated piece of code.
+
+Even a simple template such as this one can have great uses:
+
+\begin{itemize}
+\item Getting rid of all qualifiers in a type list, by mapping \DD{std.traits.Unqual} on the types.
+\item Generating a huge quantity of types by using a typetuple-returning mapper.
+\item Given a bunch of function types, getting their return types or parameter typetuples.
+\end{itemize}
+
+You'll see numerous examples of \DD{staticMap} in this document.
+
 \begin{dcode}
 template Qual(T)
 {
-    alias TypeTuple!(T,T[],const(T)[],immutable(T)[], shared(T)[], 
-const T, immutable T, shared T, const T[], immutable T[], shared T[]) Qual;
+    alias TypeTuple!(
+                     T, const(T), immutable(T), shared(T),
+                     T[],const(T)[],immutable(T)[], shared(T)[], 
+                     const(T[]), immutable(T[]), shared(T[])
+                    ) Qualified;
 }
 
-alias TypeTuple!(bool,ubyte,byte,ushort,short,uint,int,ulong,long,float,double,real,char,wchar,dchar) 
-ValueTypes;
+alias TypeTuple!(
+                 bool,
+                 ubyte,byte,
+                 ushort,short,
+                 uint,int,
+                 ulong,long,
+                 float,double,real,
+                 char,wchar,dchar
+                ) ValueTypes;
 
-alias staticMap!(Qual,ValueTypes) QualifiedTypes;
+alias staticMap!(Qualidief,ValueTypes) QualifiedTypes;
 \end{dcode}
 
-\subsection{Interspersing Types, Crossing Types}
+\subsection{Zipping Types, Interspersing Types, Crossing Types}
 
 \begin{dcode}
 /**
