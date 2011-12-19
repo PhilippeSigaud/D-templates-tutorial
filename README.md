@@ -17,7 +17,7 @@ I'll push the resulting pdf file on this repo, but it'd be best to generate it a
 LaTeX notes
 -----------
 
-The document uses the [minted](http://code.google.com/p/minted/) package. `minted' uses Python's [Pygment](pygment.org) highlighter.
+The document uses the [minted](http://code.google.com/p/minted/) package. `minted` uses Python's [Pygment](pygment.org) highlighter.
 D code blocks are between `\begin{dcode}` and `\end{dcode}` commands. Transform them into `verbatim` commands if you do not want to use `minted`.
 
 TODO
