@@ -5,7 +5,6 @@
 \usepackage[T1]{fontenc}
 \usepackage{textcomp}
 \usepackage{datetime}
-\usepackage{verbatim}
 
 \usepackage{makeidx} % for the index
 \usepackage{framed}  % for the \aparte command
@@ -13,9 +12,9 @@
 
 \makeindex
 
-\yyyymmdddate
+%\yyyymmdddate
 
-%%%% Redefinitions for minted / verbatim %%%%%%%%%%%%%%
+%%%% Redefinitions for minted / dcode %%%%%%%%%%%%%%
 
 % line numbering style
 \renewcommand{\theFancyVerbLine}{
@@ -23,7 +22,7 @@
 \textcolor[rgb]{0.4,0.4,0.9}{\scriptsize \arabic{FancyVerbLine}}}
 
 % syntax highlighting style
-\usemintedstyle{emacs}
+\usemintedstyle{borland}
 
 % creates the 'dcode' environment
 

@@ -6,7 +6,7 @@
 \subsection{Mapping, Filtering and Folding Types}
 
 \TODO{Say something about mapping with a typetuple-returning template}
-\begin{verbatim}
+\begin{dcode}
 template Qual(T)
 {
     alias TypeTuple!(T,T[],const(T)[],immutable(T)[], shared(T)[], 
@@ -17,11 +17,11 @@ alias TypeTuple!(bool,ubyte,byte,ushort,short,uint,int,ulong,long,float,double,r
 ValueTypes;
 
 alias staticMap!(Qual,ValueTypes) QualifiedTypes;
-\end{verbatim}
+\end{dcode}
 
 \subsection{Interspersing Types, Crossing Types}
 
-\begin{verbatim}
+\begin{dcode}
 /**
 Helper template. Given T0, T1, T2, ..., Tn, Tn+1, ... T2n, will returns
 the interleaving of the first part with the second part: T0, Tn+1, T1, Tn+2, ... Tn, T2n
@@ -34,7 +34,7 @@ template Interleave(T...)
     else
         alias T Interleave;
 }
-\end{verbatim}
+\end{dcode}
 
 \section{Relational Algebra}
 
@@ -50,7 +50,7 @@ Inspiration for this example comes from \href{http://david.rothlis.net/d/templat
 
 From Andrej Mitrovic.
 
-\begin{verbatim}
+\begin{dcode}
 import std.stdio;
 import std.traits;
 
@@ -119,7 +119,7 @@ void main()
     writeln(shape[0]);
     writeln(shape[]);
 }
-\end{verbatim}
+\end{dcode}
 
 
 
@@ -129,7 +129,7 @@ From Jacob's Carlborg Orange.
 
 \TODO{Test typeof(s.tupleof)}
 
-\begin{verbatim}
+\begin{dcode}
 /**
  * Evaluates to an array of strings containing the names of the fields in the given type
  */
@@ -154,11 +154,11 @@ template fieldsOfImpl (T, size_t i)
 	else
 		const fieldsOfImpl = T.tupleof[i].stringof[1 + T.stringof.length + 2 .. $] ~ fieldsOfImpl!(T, i + 1);
 }
-\end{verbatim}
+\end{dcode}
 
 \section{Extending an enum}
 
-\begin{verbatim}
+\begin{dcode}
 string EnumDefAsString(T)() if (is(T == enum)) {
   string result = "";
   foreach (e; __traits(allMembers, T)) {
@@ -201,14 +201,14 @@ unittest {
 }
 
 //(Simen Kjaeraas)
-\end{verbatim}
+\end{dcode}
 
 \section{Static Switching} \label{examples:staticswitch}
 
 \TODO{What, no compile-time switch? Let's create one}.
 Example of: tuples, type filtering (in constraints), recursion, etc.
 
-\begin{verbatim}
+\begin{dcode}
 template staticSwitch(List...) // List[0] is the value commanding the switching
                                // It can be a type or a symbol.
 {
@@ -225,11 +225,11 @@ template staticSwitch(List...) // List[0] is the value commanding the switching
     else
         enum staticSwitch = staticSwitch!(List[0], List[3..$]);
 }
-\end{verbatim}
+\end{dcode}
 
 \section{Gobble}\label{gobble}
 
-\begin{verbatim}
+\begin{dcode}
 
 struct Gobbler(T...)
 {
@@ -241,7 +241,7 @@ struct Gobbler(T...)
 }
 
 Gobbler!() gobble() { return Gobbler!()();}
-\end{verbatim}
+\end{dcode}
 
 \section{A Polymorphic Tree}\label{polymorphictree}
 
@@ -250,7 +250,7 @@ Gobbler!() gobble() { return Gobbler!()();}
 Usage: a bit like Lua tables: structs, classes (you can put anonymous functions in them?),  namespaces.
 Also, maybe to add metadata to a type?
 
-\begin{verbatim}
+\begin{dcode}
 template Half(T...)
 {
     static if (T.length <= 1)
@@ -296,7 +296,7 @@ writeln("at!1: ", al.at!(1));
 writeln("at!2: ", al.at!(2));
 writeln("at!\"foo\": ", al.at!("foo"));
 writeln("Default: ", al.at!4);
-\end{verbatim}
+\end{dcode}
 
 \section{Expression Templates}\label{expressiontemplates}
 
@@ -304,7 +304,7 @@ writeln("Default: ", al.at!4);
 
 Making it accept a tuple, for example.
 
-\begin{verbatim}
+\begin{dcode}
 template tuplify(alias fun)
 {
     auto tuplify(T...)(Tuple!T tup)
@@ -312,41 +312,41 @@ template tuplify(alias fun)
         return fun(tup.expand);
     }
 }
-\end{verbatim}
+\end{dcode}
 
 Another interesting (and much more complicated) example is \DD{juxtapose}.
 
 \section{Mapping n ranges in parallel}\label{parallelmapping}
 
-\begin{verbatim}
+\begin{dcode}
 // Very easy to do, now:
 auto nmap(alias fun, R...)(R ranges) if (allSatisfy!(isInputRange,R))
 {
     return map!(tuplify!fun)(zip(ranges));
 }
-\end{verbatim}
+\end{dcode}
 
 More complicated: \DD{std.algorithm.map} accepts to take more than one function as template argument. In that case, the functions are all mapped in parallel on the range, internally using \DD{std.functional.adjoin}.
 Here we can extend \DD{nmap} to accept $n$ functions in parallel too. There is a first difficulty:
 
-\begin{verbatim}
+\begin{dcode}
 auto nmap(fun..., R...)(R ranges) if (allSatisfy!(isInputRange, R))
 { ... 
-\end{verbatim}
+\end{dcode}
 
 See the problem? Tuples must be the last parameter of a template: there can be only one. Double-stage templates come to the rescue:
 
-\begin{verbatim}
+\begin{dcode}
 template nmap(fun...) if (fun.length >= 1)
 {
     auto nmap(R...)(R ranges) if (allSatisfy!(isInputRange, R))
     {...}
 }
-\end{verbatim}
+\end{dcode}
 
 Final code:
 
-\begin{verbatim}
+\begin{dcode}
 template nmap(fun...) if (fun.length >= 1)
 {
     auto nmap(R...)(R ranges) if (allSatisfy!(isInputRange, R))
@@ -355,18 +355,18 @@ template nmap(fun...) if (fun.length >= 1)
         return map!(_fun)(zip(ranges));
     }
 }
-\end{verbatim}
+\end{dcode}
 
 Give an example with \DD{max}, it works!
 
 And here is the $n$-ranges version of \DD{std.algorithm.filter}:
 
-\begin{verbatim}
+\begin{dcode}
 auto nfilter(alias fun, R...)(R ranges) if (allSatisfy!(isInputRange, R))
 {
     return filter!(tuplify!fun)(zip(ranges));
 }
-\end{verbatim}
+\end{dcode}
 
 \section{Statically-Checked Writeln}
 
@@ -378,7 +378,7 @@ There is no way to get that in D for built-in types except by hacking the compil
 
 \DD{opDispatch} can be used to forward to an external free function. A call \D{this}\DD{.method(a,b)} becomes \DD{method(}\D{this}\DD{,a,b)}.
 
-\begin{verbatim}
+\begin{dcode}
 mixin template Forwarder
 {
     auto opDispatch(string name, Args...)(Args args)
@@ -386,15 +386,15 @@ mixin template Forwarder
         mixin("return " ~ name ~ "(args);");
     }
 }
-\end{verbatim}
+\end{dcode}
 
 In D, a void \D{return} clause is legal: 
 
-\begin{verbatim}
+\begin{dcode}
 return;
 // or
 return void;
-\end{verbatim}
+\end{dcode}
 
 So if \DD{name(}\D{this}\DD{,a,b)} is a \D{void}-returning function, all is OK.
 
@@ -410,9 +410,9 @@ Case 0:, etc.
 
 \subsection{Filtering Tuples}
 
-\begin{verbatim}
+\begin{dcode}
 (1, "abc", 2, "def", 3.14)
 ->
 ((1,2),("abc","def"),(3,14))
-\end{verbatim}
+\end{dcode}
 

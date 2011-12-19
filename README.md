@@ -17,9 +17,8 @@ I'll push the resulting pdf file on this repo, but it'd be best to generate it a
 LaTeX notes
 -----------
 
-Right now, the document uses basic `verbatim` commands to present code. So, right now, you can compile the .tex files using your standard LaTeX installation. 
-
-When I want a nice rendering, I just convert the `verbatim` commands into `\begin{dcode} - \end{dcode}` pairs, and then use the [minted](http://code.google.com/p/minted/) package. `minted' uses Python's [Pygment](pygment.org) highlighter.
+The document uses the [minted](http://code.google.com/p/minted/) package. `minted' uses Python's [Pygment](pygment.org) highlighter.
+D code blocks are between `\begin{dcode}` and `\end{dcode}` commands. Transform them into `verbatim` commands if you do not want to use `minted`.
 
 TODO
 ----

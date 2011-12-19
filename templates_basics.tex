@@ -8,13 +8,13 @@ A template is a recipe, a blueprint that will generate code at your command and 
 Here is the syntax for a template declaration:
 
 \index{template!declaration}
-\index{syntax!template declaration}\begin{verbatim}
+\index{syntax!template declaration}\begin{dcode}
 template templateName(list, of, parameters)
 {
   // Some syntactically correct declarations here
   // The arguments are accessible inside the template scope.
 }
-\end{verbatim}
+\end{dcode}
 
 
 \DD{templateName} is your usual D identifier and the list of parameters is a comma-separated list of zero or more template parameters. These can be:
@@ -51,7 +51,7 @@ Inside the template body, the parameters are all accessible as placeholders for 
 
 Here are some template declaration examples:\index{example!template definition}
 
-\begin{verbatim}
+\begin{dcode}
 template ArrayOf(T) // T is a type
 {
     alias T[] ArrayType;
@@ -92,7 +92,7 @@ template ZeroOrMore(Types...) // Types is a tuple.
 template Multiple(T)     { ... } // One arg version.
 template Multiple(T,U)   { ... } // Two args,
 template Multiple(T,U,V) { ... } // and three.
-\end{verbatim}
+\end{dcode}
 
 The real syntax for template declarations is slightly more complex, I'll introduce more of it in the next sections (You'll see for example type restrictions in section \ref{specializations}, default values in section \ref{default}, instantiation constraints in \ref{constraints} and more on tuples in section \ref{tuples}).
 
@@ -105,17 +105,17 @@ There is a limitation that's interesting to keep in mind: templates can be decla
 To instantiate a template, use the following syntax:
 
 \index{syntax!template instantiation}
-\begin{verbatim}
+\begin{dcode}
 templateName!(list, of, arguments)
-\end{verbatim}
+\end{dcode}
 
 
 Note the `\DD{!}' before the comma-separated argument list. If the argument list contains only one argument (one token), you can drop the parenthesis:
 
 \index{syntax!template instantiation}
-\begin{verbatim}
+\begin{dcode}
 templateName!argument
-\end{verbatim}
+\end{dcode}
 
 
 
@@ -126,7 +126,7 @@ The compiler will have a look at the declarations (if more than one template wer
 
 When you instantiate a template, the global effect is that a new named scope\index{scope!named} is created in the template declaration scope\index{scope!template declaration}. The name of this new scope is the template name with its argument list: \DD{templateName!(args)}. Inside the scope, the parameters are now 'replaced' with the corresponding arguments (storage classes get applied, variables are initialized, \ldots). Here's what possible instantiations of the templates declared in section \ref{declarations} might look like:
 \index{example!template instantiation}
-\begin{verbatim}
+\begin{dcode}
 ArrayOf!int
 
 Transformer!(double,int) // From is an alias for the type double
@@ -157,11 +157,11 @@ ZeroOrMore!()                  // Types is the empty tuple: ()
 Multiple!(int)               // Selects the one-arg version
 Multiple!(int,double,string) // The three args version.
 Multiple!()                  // Error! No 0-arg version
-\end{verbatim}
+\end{dcode}
 
 Outside the scope\index{scope!template instantiation} (that is, where you put the template instantiation in your own code), the internal declarations are accessible by fully qualifying them:
 
-\begin{verbatim}
+\begin{dcode}
 // ArrayType is accessible (it's int[])
 // array is a completly standard dynamic array of ints.
 ArrayOf!(int).ArrayType array; 
@@ -170,26 +170,26 @@ ArrayOf!(int).ElementType element; // the same, element is an int.
 // the transform function is accessible. Instantiated like this, 
 // it's a function from string to double. 
 auto d = Transformer!(string,double).transform("abc"); // d is a double
-\end{verbatim}
+\end{dcode}
 
 Obviously, using templates like this, with their full name, is a pain. The nifty D \D{alias} declaration is your friend:
 
-\begin{verbatim}
+\begin{dcode}
 alias Transformer!(string,double) StoD;
 
 auto d = StoD.transform("abc");
 auto m = new StoD.Modificator("abc"); // StoD.Modificator is a class
                                       // storing a string and a double.
-\end{verbatim}
+\end{dcode}
 
 You must keep in mind that instantiating a template means generating code. Using different arguments at different places in your code will instantiate \emph{as many differently named scopes}\index{scope!multiple templates instantiations}. This is a major difference with \emph{generics}\index{generics} in languages like Java\index{Java} or C\#\index{C\#}, where generic code is created only once and type erasure is used to link all this together. On the other hand, trying to instantiate many times the `same' template (ie: with the same arguments) will only create one piece of code.
 
-\begin{verbatim}
+\begin{dcode}
 alias Transformer!(string,double) StoD;
 alias Transformer!(double,string) DtoS;
 alias Transformer!(string,int)    StoI;
 // Now we can use three different functions and three different classes.
-\end{verbatim}
+\end{dcode}
 
 \aparte{\D{void}}{Note that \D{void}\index{void@\D{void}!as a template parameter}\index{template!parameters!void@\D{void}} is a D type and, as such, a possible template argument for a type parameter. Just be careful because many templates make no sense when \D{void} is used as a type. In the following sections and in the appendix, you'll see ways to restrict arguments to some types.}
 
@@ -202,16 +202,16 @@ Up to now, templates must seem not that interesting to you, even with a simple d
 
 If a template declares only one symbol with the same name (greek: \emph{epo-nymous}) as the enclosing template, that symbol is assumed to be refered to when the template is instantiated. This one is pretty good to clean your code:
 \index{example!eponymous trick}
-\begin{verbatim}
+\begin{dcode}
 template pair(T)
 {
     T[] pair(T t) { return [t,t];} // declares only pair
 }
 
 auto array = pair!(int)(1);  // no need to do pair!(int).pair(1)
-\end{verbatim}
+\end{dcode}
 
-\begin{verbatim}
+\begin{dcode}
 template NameOf(alias name)
 {
     enum string NameOf = name.stringof;
@@ -220,11 +220,11 @@ template NameOf(alias name)
 int foo(int i) { return i+1;}
 auto s1 = NameOf!(foo); // s1 is "foo"
 auto s2 = NameOf!(NameOf)
-\end{verbatim}
+\end{dcode}
 
 A limitation is that the eponymous trick works \emph{only} if you define one (and only one) symbol. Even if the other symbols are private and such, they will break the eponymous substitution. This may change at a latter time, as the D developers have shown interest for changing this, but for the time being, you cannot do:
 
-\begin{verbatim}
+\begin{dcode}
 template ManyAlias(T, U)
     T[] firstArray;
     U[] secondArray;
@@ -235,11 +235,11 @@ template ManyAlias(T, U)
 ManyAlias!(int, string) = ["abc":0, "def":1]; 
 
 ManyAlias!(int, string).firstArray = [0,1,2,3];
-\end{verbatim}
+\end{dcode}
 
 But, will you ask, what if I want client code to be clean and readable by using the eponymous trick, when at the same time I need to internally create many symbols in my template? In that case, create a secondary template with as many symbols as you need, and expose its final result through a (for example) \DD{result} symbol. The first template can instantiate the second one, and refer only to the \DD{.result} name:
 \index{example!secondary template}
-\begin{verbatim}
+\begin{dcode}
 /* your code */
 
 // primary template
@@ -258,13 +258,13 @@ template MyTemplateImpl(T, U, V)
     enum otherName = ...
     enum result = ...
 }
-\end{verbatim}
+\end{dcode}
 
-\begin{verbatim}
+\begin{dcode}
 /* client code */
 MyTemplate!(int,string,double[]) someValue;
 (...)
-\end{verbatim}
+\end{dcode}
 
 You can find an example of this two-templates idiom\index{idiom!two templates} in Phobos, for example in \DD{std.functional.unaryFun}\index{std!functional}\index{Phobos} or \DD{std.functional.binaryFun}.\index{std!functional}\index{Phobos}
 
@@ -272,7 +272,7 @@ You can find an example of this two-templates idiom\index{idiom!two templates} i
 
 A common use for templates is to do some type magics: deducing types, assembling them in new way, etc. Types are not first-class entities in D (there is no `\D{type}' type), but they can easily be manipulated as any other symbol, by aliasing them. So, when a template has to expose a type, it's done by aliasing it to a new name.
 \index{example!exposing through an alias}
-\begin{verbatim}
+\begin{dcode}
 template AllArraysOf(T)
 {
     alias T    Element;
@@ -281,7 +281,7 @@ template AllArraysOf(T)
     alias T[1] StaticArray;
     alias T[T] AssociativeArray;
 }
-\end{verbatim}
+\end{dcode}
 
 \aparte{Exposing Template Parameters}{Though they are part of a template's name, its parameters are \emph{not} directly accessible externally. Keep in mind that a template name is just a scope name\index{scope}. Once it's instantiated, all the \DD{T}s and \DD{U}s and such do not exist anymore. If you need them externally, expose them through a template member, as is done with \DD{AllArraysOf.Element}. You will find other examples of this in section \ref{structtemplates} on structs templates and section \ref{classtemplates} on class templates.}
 
@@ -294,7 +294,7 @@ let you decide between two code paths at compile time. It's not specific to temp
 
 The syntax is:
 \index{syntax!static if}
-\begin{verbatim}
+\begin{dcode}
 static if (compileTimeExpression)
 {
      /* Code created if compileTimeExpression is evaluated to true */
@@ -303,13 +303,13 @@ else /* optional */
 {
      /* Code created if it's false */
 }
-\end{verbatim}
+\end{dcode}
 
 Something really important here is a bit of compiler magic: once the code path is selected, the resulting code is instantiated in the template body, but without the curly braces. Otherwise that would create a local scope\index{scope!static if@\D{static if}}, hiding what's happening inside to affect the outside and would drastically limit the interest of \D{static if}. So the curly braces are only there to group the statements together. 
 
 If there is only one statement, you can get rid of the braces entirely, something you'll see frequently in D code. For example, suppose you need a template that `returns' \D{true} if the passed type is a dynamic array and \D{false} otherwise (this kind of predicate template\index{template!predicate templates} is developed a bit more in section \ref{predicates}).
 
-\begin{verbatim}
+\begin{dcode}
 template isDynamicArray(T)
 {
     static if (is(T t == U[], U))
@@ -317,7 +317,7 @@ template isDynamicArray(T)
     else
         enum isDynamicArray = false;
 }
-\end{verbatim}
+\end{dcode}
 
 As you can see, no curly braces after \D{static if} and we are also using the eponymous trick\index{eponymous trick} (\DD{isDynamicArray} is the only symbol defined by the template and its type is automatically deduced by the compiler), resulting in a very clean syntax. The \D{is}\DD{()}\index{is expression@\D{is} expression} part is a way to get compile-time introspection\index{compile-time!introspection} which goes hand in hand with \D{static if}. There is a crash course on it at the end of this document (see Appendix \ref{isexpression}).
 
@@ -326,7 +326,7 @@ As you can see, no curly braces after \D{static if} and we are also using the ep
 A common use of \D{static if} is to enable or disable code: a single \D{static if} without an \D{else} clause will generate code only when the condition is true. You can find many examples of this idiom\index{idiom!enabling/disabling code} in \DD{std.range}\index{std!range}\index{Phobos}\index{range!higher-level ranges} where higher-level ranges (ranges wrapping other ranges) will activate some functionality only if the wrapped range can support it, like this:\index{example!enabling/disabling code}
 
 
-\begin{verbatim}
+\begin{dcode}
 /* We are inside a MyRange templated struct, wrapping an R. */
 
     R innerRange;
@@ -344,7 +344,7 @@ static if (hasLength!R) // does innerRange has a .length() method?
 static if (isInfinite!R)     // Is innerRange an infinite range?
     enum bool empty = false; // Then MyRange is also infinite.
 // And so on...
-\end{verbatim}
+\end{dcode}
 
 \subsubsection{Nested \D{static if}s}
 
@@ -353,7 +353,7 @@ static if (isInfinite!R)     // Is innerRange an infinite range?
 \index{syntax!nested \D{static if}s}
 \index{example!nested \D{static if}s}
 \index{static if@\D{static if}!nested}
-\begin{verbatim}
+\begin{dcode}
 import std.traits: isIntegral, isFloatingPoint;
 
 template selector(T, alias intFoo, alias floatFoo, alias defaultFoo)
@@ -365,7 +365,7 @@ template selector(T, alias intFoo, alias floatFoo, alias defaultFoo)
     else // default case
         alias defaultFoo selector;
 }
-\end{verbatim}
+\end{dcode}
 
 If you need a sort of \D{static switch} construct, see section \ref{examples:staticswitch}.
 
@@ -377,7 +377,7 @@ Now, let's use \D{static if} for something a bit more complicated than just disp
 \index{rank!definition}
 \index{example!template recursion}
 \index{template!recursion}
-\begin{verbatim}
+\begin{dcode}
 template rank(T)
 {
     static if (is(T t = U[], U))  // is T an array of U, for some type U?
@@ -385,11 +385,11 @@ template rank(T)
     else                          // Base case, ending the recursion.
         enum rank = 0; 
 }
-\end{verbatim}
+\end{dcode}
 
 Line 4 is the most interesting: with some \D{is} magic, \DD{U} has been determined by the compiler and is accessible inside the \D{static if} branch. We use it to peel one level of `\DD{[]}' off the type and recurse\index{recursion} downward, using \DD{U} as a new type for instantiating \DD{rank}. Either \DD{U} is itself an array (in which case the recursion will continue) or it will hit the base case and stop there.
 
-\begin{verbatim}
+\begin{dcode}
 static assert(rank!(int)       == 0);
 static assert(rank!(int[])     == 1);
 static assert(rank!(int[][])   == 2);
@@ -401,7 +401,7 @@ struct S {}
 static assert(rank!(S)  == 0);
 static assert(rank!(S[])== 1);
 static assert(rank!(S*) == 0);
-\end{verbatim}
+\end{dcode}
 
 \aparte{\D{static assert}}{Putting \D{static} before an \D{assert}\index{static assert@\D{static assert}} forces the \D{assert} execution at compile-time. Using an \D{is} expression as the test clause gives assertion on types. 
 One common use of \D{static assert} is to stop the compilation, for example if we ever get in a bad code path, by using \D{static assert}\DD{(0, someString)}. The string is then emitted as a compiler error message.}
@@ -411,7 +411,7 @@ One common use of \D{static assert} is to stop the compilation, for example if w
 D has an interesting sequence concept that's called \emph{range}\index{range} and comes with predefined testing templates in \href{www.d-programming-language.org/phobos/std_range.html}{std.range}\index{std!range}. Why not extend \DD{rank}\index{rank} to have it deal with ranges and see if something is a range of ranges\index{range!of ranges} or more? A type can be tested to be a range with \DD{isInputRange} and its element type (the `\DD{U}') is obtained by applying \DD{ElementType} to the range type. Both templates are found in \DD{std.range}. Also, since arrays are included in the range concept, we can entirely ditch the array part and use only ranges. Here is a slightly modified version of \DD{rank}:
 
 \index{rank!for ranges}
-\begin{verbatim}
+\begin{dcode}
 import std.range;
 
 template rank(T)
@@ -425,13 +425,13 @@ template rank(T)
 
 auto c = cycle([[0,1],[2,3]]); // == [[0,1],[2,3],[0,1],[2,3],[0,1]...
 assert(rank!(typeof(c)) == 2); // range of ranges 
-\end{verbatim}
+\end{dcode}
 
 \paragraph{Base Element Type:}\index{array!base element type}\index{range!base element type}
 
 With \DD{rank}, we now have a way to get the number of \DD{[]}'s in an array type (\DD{T[][][]}) or the level of nesting in a range of ranges. The complementary query would be to get the base element type, \DD{T}, from any array of arrays \ldots of \DD{T} or the equivalent for a range. Here it is:
 
-\begin{verbatim}
+\begin{dcode}
 template BaseElementType(T)
 {
     static if (rank!T == 0)      // not a range
@@ -441,7 +441,7 @@ template BaseElementType(T)
     else                         // at least range of ranges
         alias BaseElementType!(ElementType!(Range)) BaseElementType;
 }        
-\end{verbatim}
+\end{dcode}
 
 Line 4 is an example of \D{static assert} stopping compilation if we ever get into a bad code path. Line 8 is an example of a Matrioshka-call: a template using another template's call as its parameter.
 
@@ -449,7 +449,7 @@ Line 4 is an example of \D{static assert} stopping compilation if we ever get in
 
 Now, what about becoming more generative by inversing the process? Given a type \DD{T} and a rank \DD{r} (an \D{int}), we want to obtain \DD{T[][]...[]}, with \DD{r} levels of \DD{[]}'s. A rank of 0 means producing \DD{T} as the result type.
 
-\begin{verbatim}
+\begin{dcode}
 template NDimArray(T, int r)
 {
     static if (r < 0)
@@ -459,21 +459,21 @@ template NDimArray(T, int r)
     else // r > 0
         alias NDimArray!(T, r-1)[] NDimArray;
 }
-\end{verbatim}
+\end{dcode}
 
 Here, recursion\index{recursion} is done on line 8: we instantiate \DD{NDimArray!(T,r-1)}, which is a type, then create an array\index{arrays} of them by putting \DD{[]} at the end and expose it through an alias. This is also a nice example of using an integral value\index{template!parameters!integral value} as a template parameter.
 
-\begin{verbatim}
+\begin{dcode}
 alias NDimArray!(double, 8) Level8;
 static assert(is(Level8 == double[][][][][][][][]));
 static assert(is(NDimArray!(double, 0) == double));
-\end{verbatim}
+\end{dcode}
 
 \paragraph{Repeated composition:} 
 
 As a last example, we will use an alias template parameter\index{template!parameters!alias} in conjunction with some \D{static if} recursion\index{recursion}\index{static if@\D{static if}} to define a template that creates the `exponentiation' of a function, its repeated composition. Here is what I mean by this:
 
-\begin{verbatim}
+\begin{dcode}
 string foo(string s) { return s ~ s;}
 
 // power!(foo, n) is a function.
@@ -489,12 +489,12 @@ assert(power!(makeArray, 0)(1) == 1);
 assert(power!(makeArray, 1)(1) == [1,1]);
 assert(power!(makeArray, 2)(1) == [[1,1],[1,1]]);
 assert(power!(makeArray, 3)(1) == [[[1,1],[1,1]],[[1,1],[1,1]]]);
-\end{verbatim}
+\end{dcode}
 
 First, this is a template that `returns' (becomes, rather) a function. It's easy to do with the eponymous trick:\index{eponymous trick} just define inside the template a function with the same name. Secondly, it's clearly recursive in its definition, with two base cases: if the exponent is zero, then we shall produce the identity function and if the exponent is one, we shall just return the input function itself. That being said, \DD{power} writes itself:
 
 \index{example!function composition}
-\begin{verbatim}
+\begin{dcode}
 template power(alias fun, uint exponent)
 {
     static if (exponent == 0) // degenerate case -> id function
@@ -507,7 +507,7 @@ template power(alias fun, uint exponent)
             return .power!(fun, exponent-1)(fun(args));
         }
 }
-\end{verbatim}
+\end{dcode}
 
 \aparte{.power}{If you are wondering what's with the \DD{.power} syntax on line 10, it's just that inside a template, the template's own name refers to the local (current) instantiation. So inside \DD{power(Args...)} it refers to \DD{power(Args...)} and not \DD{power(}\D{alias}\DD{ fun, }\D{uint}\DD{ exponent)}. Here we want a new \DD{power} to be generated so we call on the global \DD{power} template with the `global scope'\index{scope!global scope operator}\index{operator!global scope operator (\DD{.})} operator (\DD{.}).}
 
@@ -528,7 +528,7 @@ Up to now, when we write a \DD{T} in a template parameter list, there is no cons
 The specializations are added in the template parameter list, the \DD{(T, U, V)} part of the template definition. \index{syntax!templates specialization}\DD{Type : OtherType} restricts \DD{Type} to be implicitly convertible into \DD{OtherType} and \DD{Type == OtherType} restricts \DD{Type} to be exactly \DD{OtherType}. 
 
 \index{example!templates specialization}
-\begin{verbatim}
+\begin{dcode}
 template ElementType(T == U[], U) // can only be instantiated with arrays
 {
     alias U ElementType;
@@ -544,12 +544,12 @@ template ElementType(T : Array)
 {
     alias Array.ElementType ElementType;
 }
-\end{verbatim}
+\end{dcode}
 
 Now, the \DD{Type == AnotherType} syntax may seem strange to you: if you know you want to restrict \DD{Type} to be \emph{exactly} \DD{AnotherType}, why make it a template parameter? It's because of templates specializations' main use: you can write different implementations of a template (with the same name, obviously) and when asked to instantiate one of them, the compiler will automatically decide which one to use based the `most adapted' to the provided arguments. `Most adapted' obeys some complicated rules you can find on the D Programming Language web site, but they act in a natural way most of the time. The neat thing is that you can define the most general template \emph{and} some specialization. The specialized ones will be chosen when it's possible. For 
 
 \index{example!templates specialization}
-\begin{verbatim}
+\begin{dcode}
 template InnerType(T : U*, U) // Specialization for pointers
 {
     alias U InnerType;
@@ -565,7 +565,7 @@ int* p;
 int i; 
 alias InnerType!(typeof(p)) Pointer; // pointer spec. selected
 alias InnerType!(typeof(i)) Default; // standard template selected
-\end{verbatim}
+\end{dcode}
 
 This idiom\index{idiom!template specialization} is used frequently in C++\index{C++}, where there is no (built-in) \D{static if} construct or template constraints. Oldish D templates used it a lot, too, but since other ways have been around for some years, recent D code seems to be more constraint-oriented: have a look at heavily templated Phobos modules, for example \href{http://www.d-programming-language.org/phobos/std_algorithm.html}{std.algorithm} or \href{http://www.d-programming-language.org/phobos/std_range.html}{std.range}.
 
@@ -575,25 +575,25 @@ This idiom\index{idiom!template specialization} is used frequently in C++\index{
 
 Like functions paramters, templates parameters can have default values. The syntax is the same: \DD{Param = defaultValue}. The default can be anything that makes sense with respect to the parameter kind: a type, a literal value, a symbol or another template parameter.
 
-\begin{verbatim}
+\begin{dcode}
 template Default(T = int, bool flag = false)
 { ... }
 
 Default!(double);       // Instantiate Default!(double, false)
 Default!(double, true); // Instantiate Default!(double, true) (Doh!)
 Default!();             // Instantiate Default!(int, false)
-\end{verbatim}
+\end{dcode}
 
 A difference with function parameters default values is that, due to specializations (\ref{specializations}) or IFTI (\ref{ifti}), some parameters can be automatically deduced by the compiler. So, default templates parameters are not forced to be the last parameters:
 
-\begin{verbatim}
+\begin{dcode}
 template Deduced(T : U[], V = U, U)
 { ... }
 
 Deduced!(int[], double); // U deduced to be int. Force V to be a double.
 Deduced!(int[]); // U deduced to be int. V is int, too.
 Deduced!(); // Error, T is not some array.
-\end{verbatim}
+\end{dcode}
 
 
 \aparte{Specialization and Default Value?}{Yes you can. Put the specialization first, then the default value. Like this: \DD{(T : U[] = int[], U)}. It's not commonly used, though.}
@@ -613,7 +613,7 @@ If you come from languages with generics\index{generics}, maybe you thought D te
 As we have seen in section \ref{eponymous}, if you define a function inside a template and use the template's own name, you can call it easily:
 
 \index{syntax!function templates}
-\begin{verbatim}
+\begin{dcode}
 // declaration:
 template myFunc(T, int n)
 {
@@ -624,13 +624,13 @@ template myFunc(T, int n)
 auto result = myFunc!(double,3)(3.1415);
 
 assert(result = to!int(3.1415)*3);
-\end{verbatim}
+\end{dcode}
 
 Well, the true story is even better. First, D has a simple way to declare a function template: just put a template parameter list before the argument list:
 
 \index{syntax!function templates}
 \index{example!function template}
-\begin{verbatim}
+\begin{dcode}
 string concatenate(A,B)(A a, B b)
 {
     return to!string(a) ~ to!string(b);
@@ -646,7 +646,7 @@ Arg select(string how = "max", Arg)(Arg arg0, Arg arg1)
         static assert(0, 
         "select: string 'how' must be either \"max\" or \"min\".");
 }      
-\end{verbatim}
+\end{dcode}
 
 Nice and clean, uh? Notice how the return type can be templated too, using \DD{Arg} as a return type in \DD{select}. 
 
@@ -655,7 +655,7 @@ Nice and clean, uh? Notice how the return type can be templated too, using \DD{A
 Since you can select among code paths, the function return type can vary widely, depending on the template parameters you passed it. Use \D{auto} to simplify your code:\footnote{ \D{auto} return functions used to have some limitations, like for example not appearing in docs. I remember having to code type-manipulating templates to get correct the return type.}
 
 \index{example!auto return@\D{auto} return}
-\begin{verbatim}
+\begin{dcode}
 auto morph(T, U, alias f)(U arg)
 {
     static if (is(U == int) && is(T == class))
@@ -667,7 +667,7 @@ auto morph(T, U, alias f)(U arg)
     else static if (...)
     (...)
 }
-\end{verbatim}
+\end{dcode}
 
 \aparte{\D{auto ref}}{ A function template can have an \D{auto ref} return type. That means that for templates where the returned values are rvalues, the template will get the \D{ref}ed version. And the non-\D{ref} version if not.}
 
@@ -675,7 +675,7 @@ auto morph(T, U, alias f)(U arg)
 
 Even better is Implicit Function Template Instantiation (IFTI)\index{IFTI}\index{Implicit Function Template Instantiation}, which means that the compiler will most of the time be able to automatically determine a template parameters\index{template!parameters!IFTI} by studying the function arguments. If some template arguments are pure compile-time parameters, just provide them directly:
 
-\begin{verbatim}
+\begin{dcode}
 /* suppose the previous concatenate(A,B) function */
 string res1 = concatenate(1, 3.14); // A is int and B is double
 
@@ -685,7 +685,7 @@ string res2 = concatenate("abc", Foo()); // A is string, B is Foo
 /* suppose the previous select(string how = "max", Arg) function */
 auto res3 = select(3,4); // how is "max", Arg is int.
 auto res4 = select!"min"(3.1416, 2.718); // how is "min", Arg is double.
-\end{verbatim}
+\end{dcode}
 
 As you can see, this results in very simple calling code. So we can both declare function templates and call them with a very clean syntax. The same can be done with structs or classes and such, as you will see in the next sections. In fact, the syntax is so clean that, if you are like me, you may forget from time to time that you are \emph{not} manipulating a function (or a struct, etc.): you are manipulating a template, a parameterized piece of code. 
 
@@ -697,7 +697,7 @@ We may encounter The Mantra again in this tutorial.
 
 Let's use what we have just seen in a concrete way. In D, you can manipulate 2D, 3D arrays\index{arrays}, but sometimes need to process them linearly. As of this writing, neither \DD{std.algorithm} nor \DD{std.range}\index{std!range}\index{Phobos} provide a \DD{flatten} function. Beginning with simple arrays, here is what we want:
 
-\begin{verbatim}
+\begin{dcode}
 assert( flatten([[0,1],[2,3],[4]]) == [0,1,2,3,4] );
 assert( flatten([[0,1]]) == [0,1] );
 assert( flatten([0,1]) == [0,1] );
@@ -707,11 +707,11 @@ assert( flatten([[[0,1],[]], [[2]], [[3], [4,5]], [[]], [[6,7,8]]])
              == [0,1,2,3,4,5,6,7,8] );
 
 assert( flatten([[[[[]]]]]) == [] ); // void[][][][][] -> void[]
-\end{verbatim}
+\end{dcode}
 
 So, studying the examples, we want a non-array or a simple array to be unaffected by \DD{flatten}: it just returns them. For arrays of rank\index{rank} 2 or higher, it collapses the elements down to a rank-1 array. It's classically recursive:\index{recursion} we will concatenate the elements (with  \href{www.d-programming-language.org/phobos/std_algorithm.html#reduce}{std.algorithm.reduce}),\index{std!algorithm} thus losing one rank and call \DD{flatten} again on the result;
 
-\begin{verbatim}
+\begin{dcode}
 import std.algorithm: reduce;
 
 auto flatten(Arr)(Arr array)
@@ -724,7 +724,7 @@ auto flatten(Arr)(Arr array)
         return flatten(r);
     }
 }
-\end{verbatim}
+\end{dcode}
 
 We make good use of D \D{auto} return parameter for functions there. In fact, a single call to \DD{flatten} will create one instance per level, all with a different return type. 
 
@@ -732,7 +732,7 @@ Note that \DD{flatten} works perfectly on ranges\index{range} too, but is not la
 
 From our current \DD{flatten}, it's an interesting exercise to add another parameter: the number of levels you want to flatten. Only the first three levels or last two innermost, for example. Just add an integral template parameter that gets incremented (or decremented) when you recurse and is another stopping case for the recursion. Positive levels could mean the outermost levels, while a negative argument would act on the innermost ones. A possible use would look like this:
 
-\begin{verbatim}
+\begin{dcode}
 flatten!1([[[0,1],[]], [[2]], [[3], [4,5]], [[]], [[6,7,8]]]);
      // == [[[0,1],[],[2],[3], [4,5],[],[6,7,8]]
 flatten!2([[[0,1],[]], [[2]], [[3], [4,5]], [[]], [[6,7,8]]]);
@@ -741,13 +741,13 @@ flatten!0([[[0,1],[]], [[2]], [[3], [4,5]], [[]], [[6,7,8]]]);
      // ==[[[0,1],[]], [[2]], [[3], [4,5]], [[]], [[6,7,8]]]
 flatten!(-1)([[[0,1],[]], [[2]], [[3], [4,5]], [[]], [[6,7,8]]]);
      // ==[[[0,1]], [[2]], [[3,4,5]], [[]], [[6,7,8]]]
-\end{verbatim}
+\end{dcode}
 
 \subsection{Anonymous Function Templates}\label{anonymousfunctions}
 
 In D, you can define anonymous functions\index{anonymous!functions} (delegates even, that is: closures):
 
-\begin{verbatim}
+\begin{dcode}
 auto adder(int a)
 {
     return (int b) { return a+b;};
@@ -755,12 +755,12 @@ auto adder(int a)
 
 auto add1 = adder(1); // add1 is an int delegate(int)
 assert(add1(2) == 3);
-\end{verbatim}
+\end{dcode}
 
 In the previous code, \DD{adder} returns an anonymous delegate. Could \DD{Adder} be templated? Ha! Remember The Mantra (page \pageref{mantra}):\index{mantra} function templates are templates and cannot be returned. For this particular problem, there are two possible solutions. Either you do not need any new type and just use \DD{T}:
 
 \index{example!returning a function}
-\begin{verbatim}
+\begin{dcode}
 auto adder(T)(T a)
 {
     return (T b) { return a+b;};
@@ -777,27 +777,27 @@ assert(addBigOne(BigInt("1") == BigInt("1000000000000001");
 
 // But:
 auto error = add1(3.14); // Error! Waiting for an int, getting a double.
-\end{verbatim}
+\end{dcode}
 
 In the previous example, the returned anonymous delegate\index{anonymous!delegates} is \emph{not} templated. It just happens to use \DD{T}, which is perfectly defined once instantiation is done. If you really need to return something that can be called with any type, use an inner struct (see section \ref{innerstructs}).
 
 Now, it may come as a surprise to you that D \emph{does} have anonymous function templates\index{function templates!anonymous function templates}\index{template!function templates!anonymous function templates}\index{anonymous!function templates}. The syntax is a purified version of anonymous functions:
 
 \index{syntax!anonymous function templates}
-\begin{verbatim}
+\begin{dcode}
 (a,b) { return a+b;} 
-\end{verbatim} 
+\end{dcode} 
 
 Yes, the previous skeleton of a function is an anonymous template. But, remember The Mantra:\index{mantra} you cannot return them. And due to (to my eyes) a bug in \D{alias}, you cannot alias them to a symbol:
 
-\begin{verbatim}
+\begin{dcode}
 alias (a){ return a;} Id; // Error
-\end{verbatim}
+\end{dcode}
 
 So what good are they? You can use them with template alias parameters, when these stand for functions and function templates:
 
 \index{example!anonymous function template}
-\begin{verbatim}
+\begin{dcode}
 template callTwice(alias fun)
 {
     auto callTwice(T)(T t)
@@ -809,17 +809,17 @@ template callTwice(alias fun)
 alias callTwice!( (a){ return a+1;}) addTwo;
 
 assert(addTwo(2) == 4);
-\end{verbatim}
+\end{dcode}
 
 Since they are delegates, they can capture local symbols, as long as these are defined at compile-time:
 
-\begin{verbatim}
+\begin{dcode}
 enum b = 3; // Manifest constant, initialized to 3
 
 alias callTwice!( (a){ return a+b;}) addTwoB;
 
 assert(addTwoB(2) == 2 + 3 + 3);
-\end{verbatim}
+\end{dcode}
 
 \subsection{Functions Overloading}\label{functionsoverloading}
 
@@ -830,7 +830,7 @@ assert(addTwoB(2) == 2 + 3 + 3);
 As seen in section \ref{instantiating}, storage classes get applied to types during instantiation.\index{template!parameters!storage class} It also works for function templates arguments:
 
 \index{example!storage class!function parameters}
-\begin{verbatim}
+\begin{dcode}
 void init(T)(ref T t)
 { 
     t = T.init;
@@ -839,14 +839,14 @@ void init(T)(ref T t)
 int i = 10;
 init(i);
 assert(i == 0);
-\end{verbatim}
+\end{dcode}
 
 Should the need arises, that also means you can customize your storage classes according to templates arguments. There is no built-in syntax for that, so you'll have to resort to our good friend \D{static if}\index{static if@\D{static if}!functions storage classes} and the eponymous trick:\index{eponymous trick!functions storage classes}
 
 \index{example!storage class}
 \index{is expression@\D{is} expression!type specialization}
 \index{static if@\D{static if}!nested}
-\begin{verbatim}
+\begin{dcode}
 // Has anyone a better example?
 template init(T)
 {
@@ -863,7 +863,7 @@ template init(T)
             t = T.init;
         }
 }
-\end{verbatim}
+\end{dcode}
 
 \subsection{Properties are Automatically Deduced}\label{autodeduce}
 
@@ -883,7 +883,7 @@ The \D{in} and \D{out} clauses for a function are given full access to templates
 
 \index{example!in and out clauses@\D{in} and \D{out} clauses}
 \index{example!static if@\D{static if}!enabling/disabling code}
-\begin{verbatim}
+\begin{dcode}
 import std.complex, std.math, std.traits;
 
 auto squareRoot(N n) if (isNumeric!N || isComplex!N)
@@ -897,7 +897,7 @@ body
 {
     return sqrt(n);
 }
-\end{verbatim}
+\end{dcode}
 
 \subsection{Modifying Functions: Memoizing a Function} \label{memoizing}
 
@@ -910,7 +910,7 @@ We have not seen struct templates yet (they are presented in section \ref{struct
 \index{struct templates!memoize@\DD{memoize}}
 \index{function templates!wrapping a function!memoize@\DD{memoize}}
 \index{template!parameters!alias}
-\begin{verbatim}
+\begin{dcode}
 struct Memoize(alias fun)
 {
     alias ReturnType!fun RT;
@@ -933,11 +933,11 @@ Memoize!fun memoize(alias fun)()
 {
     return Memoize!fun();
 }
-\end{verbatim}
+\end{dcode}
 
 Usage is very simple:
 
-\begin{verbatim}
+\begin{dcode}
 int veryLongCalc(int i double d, string s) { ... }
 
 auto vlcMemo = memoize!(veryLongCalc);
@@ -947,7 +947,7 @@ auto vlcMemo = memoize!(veryLongCalc);
 int res1 = vlcMemo(1, 3.14, "abc"); 
 int res2 = vlcMemo(2, 2.718, "def");// minutes again!
 int res3 = vlcMemo(1, 3.14, "abc"); // a few ms to get res3
-\end{verbatim}
+\end{dcode}
 
 The above code is trivial and could be optimized in many ways. Mostly, a real memoizing template should also modify its behavior with storing policies. For example:
 
@@ -976,7 +976,7 @@ Here is a possible small implementation. It makes for a nice example of enabling
 \index{example!enum-based policy@\D{enum}-based policy}
 \index{idiom!enabling/disabling code}
 \index{idiom!policy}
-\begin{verbatim}
+\begin{dcode}
 enum MemoStoringPolicy { 
     always,  // there is no tomorrow
     maximum  // sustainable growth
@@ -1017,11 +1017,11 @@ struct Memoize(alias fun,
         }
     }
 }
-\end{verbatim}
+\end{dcode}
 
 And a few factory function to help creating those \DD{Memoize} structs:
 
-\begin{verbatim}
+\begin{dcode}
 // No runtime arg -> always store
 Memoize!(fun, MemoStoringPolicy.always, MemoDiscardingPolicy.all)
 memoize(alias fun)()
@@ -1058,11 +1058,11 @@ memoize(alias fun, MemoDiscardingPolicy discarding == MemoDiscardingPolicy.oldes
                     MemoStoringPolicy.maximum, 
                     discarding)(max);
 }
-\end{verbatim}
+\end{dcode}
 
 Most of the time, the type of runtime arguments is enough to determine what you want as a memoizing/storing behavior. Only for the (rarer?) policy of discarding only the oldest stored result does the user need to indicate it with a template argument:
 
-\begin{verbatim}
+\begin{dcode}
 int veryLongCalc(int i double d, string s) { ... }
 
 // Store the first million results, flush the memo on max
@@ -1073,14 +1073,14 @@ auto vlcMemo2 = memoize!(veryLongCalc)(1_000_000, 0.5f);
 
 // Store first twenty results, discard only the oldest
 auto vlcMemo3 = memoize!(veryLongCalc, MemoDiscardingPolicy.oldest)(20);
-\end{verbatim}
+\end{dcode}
 
 \subsection{Modifying Functions: Currying a Function} \label{currying}
 
 \index{static if@\D{static if}!recursion}
 \index{static if@\D{static if}!nested}
 \index{template!double-decker template!CheckCompatibility.With@\DD{CheckCompatibility.With}}
-\begin{verbatim}
+\begin{dcode}
 template CheckCompatibility(T...)
 {
     template With(U...)
@@ -1095,13 +1095,13 @@ template CheckCompatibility(T...)
             enum With = CheckCompatibility!(T[1..$]).With!(U[1..$]);
     }
 }
-\end{verbatim}
+\end{dcode}
 
 \index{operator!opCall, ()@\DD{opCall}, \DD{()}}
 \index{template!parameters!integral value}
 \index{template!parameters!alias}
 \index{static assert@\D{static assert}}
-\begin{verbatim}
+\begin{dcode}
 struct Curry(alias fun, int index = 0)
 {
     alias ReturnType!fun RT;
@@ -1136,7 +1136,7 @@ auto curry(alias fun)()
     Curry!(fun,0) c;
     return c;
 }
-\end{verbatim}
+\end{dcode}
 
 \section{Struct Templates}\label{structtemplates}
 \subsection{Syntax}\label{structsyntax}
@@ -1145,7 +1145,7 @@ As you might have guessed, declaring a struct template is done like this:
 
 \index{syntax!struct templates}
 \index{example!struct template}
-\begin{verbatim}
+\begin{dcode}
 struct Tree(T)
 {
     T value;
@@ -1154,22 +1154,22 @@ struct Tree(T)
     bool isLeaf() @property { return children.empty;}
     /* More tree functions: adding children, removing some,... */
 }     
-\end{verbatim}
+\end{dcode}
 
 \aparte{\DD{Tree[]} or \DD{Tree!(T)[]}?}{Remember that inside a template declaration, the template's name refers to the current instantiation. So inside \DD{Tree(T)}, the name \DD{Tree} refers to a \DD{Tree!T}.}
 
 This gives us a run-of-the-mill generic tree, which is created like any other template:
 
-\begin{verbatim}
+\begin{dcode}
 auto t0 = Tree!int(0);
 auto t1 = Tree!int(1, [t0,t0]);
 Tree!int[] children = t1.children;
-\end{verbatim}
+\end{dcode}
 
 As with all previous templates, you can parameterize your structs using much more than simple types:
 
 \index{example!struct template}
-\begin{verbatim}
+\begin{dcode}
 bool lessThan(T)(T a, T b) { return a<b;}
 
 struct Heap(Type, alias predicate = lessThan, float reshuffle = 0.5f)
@@ -1179,7 +1179,7 @@ struct Heap(Type, alias predicate = lessThan, float reshuffle = 0.5f)
     Type[] values;
 (...)
 }
-\end{verbatim}
+\end{dcode}
 
 Struct templates are heavily used in \href{www.d-programming-language.org/phobos/std_algorithm.html}{std.algorithm}\index{std!algorithm}\index{Phobos} and \href{www.d-programming-language.org/phobos/std_range.html}{std.range}\index{std!range}\index{Phobos} for lazy iteration, have a look there.
 
@@ -1187,16 +1187,16 @@ Struct templates are heavily used in \href{www.d-programming-language.org/phobos
 
 Now, there is one limitation: structs constructors do not do activate IFTI (\ref{ifti}) like template functions do. In the previous subsection to instantiate \DD{Tree(T)} I had to explicitly indicate \DD{T}:
 
-\begin{verbatim}
+\begin{dcode}
 auto t0 = Tree!int(0); // Yes.
 
 auto t1 = Tree(0); // Error, no automatic deduction that T is int.
-\end{verbatim}
+\end{dcode}
 
 This is because templated constructors are possible (see \ref{constructortemplates}) and may have template parameters differing from that of the global struct template. But honestly that's a pain, even more so for struct templates with many template arguments. There is a solution, of course: use a template function to create the correct struct and return it. Here is an example of such a factory function for \DD{Tree}:
 
 \index{example!factory function}
-\begin{verbatim}
+\begin{dcode}
 auto tree(T)(T value, T[] children = null) 
 {
     return Tree!(T)(value, children);
@@ -1208,7 +1208,7 @@ auto t1 = tree(1, [t0,t0]); // Yes!
 static assert(is( typeof(t1) == Tree!int ));
 
 auto t2 = tree(t0); // Yes! typeof(t2) == Tree!(Tree!(int)) 
-\end{verbatim}
+\end{dcode}
 
 Once more, have a look at \href{www.d-programming-language.org/phobos/std_algorithm.html}{std.algorithm}\index{std!algorithm}\index{Phobos} and \href{www.d-programming-language.org/phobos/std_range.html}{std.range}\index{std!range}\index{Phobos}, they show numerous examples of this idiom.\index{idiom!factory function}
 
@@ -1217,7 +1217,7 @@ Once more, have a look at \href{www.d-programming-language.org/phobos/std_algori
 As was said in section \ref{inneralias}, template arguments are not accessible externally once the template is instantiated. For the \DD{Tree} example, you might want to get an easy access to \DD{T}. As for any other templates, you can expose the parameters by aliasing them. Let's complete our \DD{Tree} definition:
 
 \index{example!struct template!inner alias parameters}
-\begin{verbatim}
+\begin{dcode}
 struct Tree(T)
 {
     alias T Type;
@@ -1231,7 +1231,7 @@ auto t0 = tree("abc");
 alias typeof(t0) T0;
 
 static assert(is( T0.Type == string ));
-\end{verbatim}
+\end{dcode}
 
 \subsection{Templated Member Functions}\label{membertemplates}
 
@@ -1246,7 +1246,7 @@ What about the children? We will map \DD{fun} on them too and collect the result
 Since this is a recursive template,\index{recursion} we have to help the compiler a bit with the return type. Here we go:\footnote{ The difference with Phobos\index{Phobos} \DD{map} is that it's not lazy.}
 
 \index{example!templated method}
-\begin{verbatim}
+\begin{dcode}
 /* rest of Tree code */
     Tree!(typeof(fun(T.init))) map(alias fun)()
     {
@@ -1256,11 +1256,11 @@ Since this is a recursive template,\index{recursion} we have to help the compile
         foreach(child; children) mappedChildren ~= child.map!(fun);
         return tree(mappedValue, mappedChildren);
     }
-\end{verbatim}
+\end{dcode}
 
 Let's use it:
 
-\begin{verbatim}
+\begin{dcode}
 auto t0 = tree(0);
 auto t1 = tree(1, [t0,t0]);
 auto t2 = tree(2, [t1, t0, tree(3)]);
@@ -1301,7 +1301,7 @@ auto ts = t2.map!(to!string); // we convert every value into a string;
 
 assert(is( ts.Type == string ));
 assert(ts.value == "2");
-\end{verbatim}
+\end{dcode}
 
 \paragraph{Folding a Tree} You may feel \DD{map} is not really a member function: it does not take any argument. Let's make another transformation on \DD{Tree}s: folding them, that is: collapsing all values into a new one. The range equivalent is \DD{std.algorithm.reduce}\index{std!algorithm}\index{Phobos} which collapses an entire (linear) range\index{range} into one value, be it a numerical value, another range or what have you
 
@@ -1310,7 +1310,7 @@ For a tree, folding can for example generate all values in pre-order or post-ord
 Taking inspiration from \DD{reduce}, we need an seed value and \emph{two} folding functions. The first one, \DD{ifLeaf}, will be called on childless nodes, for \DD{fold} to return \DD{ifLeaf(value, seed)}. The second one, \DD{ifBranch}, will be called nodes with children. In this case, we first apply \DD{fold} on all children and then return \DD{ifBranch(value, foldedChildren)}. In some simple cases, we can use the same function, hence a default case for \DD{ifBranch}. Here is the code:\footnote{ Technically, \DD{std.algorithm.reduce}\index{std!algorithm}\index{Phobos} is a \emph{left fold}, while what is shown here is a \emph{right fold}. The difference is not essential to this document.} 
 
 \index{example!templated method}
-\begin{verbatim}
+\begin{dcode}
 /* rest of Tree code */
 auto fold(alias ifLeaf, alias ifBranch = ifLeaf, S)(S seed)
 {
@@ -1326,11 +1326,11 @@ auto fold(alias ifLeaf, alias ifBranch = ifLeaf, S)(S seed)
         return ifBranch(value, foldedChildren);
     }
 }
-\end{verbatim}
+\end{dcode}
 
 Let's play a bit with it. First, we want to sum all values of a tree. For leaves, we just return the node's \DD{value} plus \DD{seed}. For branches, we are given \DD{value} and an array containing the sums of values for all children. We need to sum the values of this array, add it to the node's \DD{value} and return that. In that case, we do not care for the seed.
 
-\begin{verbatim}
+\begin{dcode}
 auto sumLeaf(T, S)(T value, S seed)
 {
     return value + seed;
@@ -1343,11 +1343,11 @@ auto sumBranch(T)(T value, T[] summedChildren)
 
 auto sum = t2.fold!(sumLeaf, sumBranch)(0);
 assert(sum == 2 + (1 + 0 + 0) + 0 + 3);
-\end{verbatim}
+\end{dcode}
 
 In the same family, but a bit more interesting is getting all values for in-order iteration: given a tree node, return an array containing the local value and then the values for all nodes, recursively.
 
-\begin{verbatim}
+\begin{dcode}
 T[] inOrderL(T, S)(T value, S seed)
 {
     return [value] ~ seed;
@@ -1361,7 +1361,7 @@ T[] inOrderB(T)(T value, T[][] inOrderChildren)
 int[] seed; // empty array
 auto inOrder = t2.fold!(inOrderL, inOrderB)(seed);
 assert(inOrder == [2, 1, 0, 0, 0, 1, 3]);
-\end{verbatim}
+\end{dcode}
 
 And as a last use, why not build a tree? 
 
@@ -1372,21 +1372,21 @@ And as a last use, why not build a tree?
 Struct constructors are member function, so they can be templated too. They need not have the same template parameters than their mother struct:
 
 \index{syntax!templated constructors}
-\begin{verbatim}
+\begin{dcode}
 struct S(T)
 {
     this(U)(U u) { ... }
 }
 
 auto s = S!string(1); // T is string, U is int.
-\end{verbatim}
+\end{dcode}
 
 As you can see, IFTI (\ref{ifti})\index{IFTI!for constructors} works for constructors. \DD{U} is automatically deduced, though you have to indicate \DD{T} in this case. The previous example is drastically limited: you cannot have any value of type \DD{U} in the struct, because \DD{U} does not exist outside the constructor. A bit more useful would be to collect an alias (a function, for example) and use it to initialize the struct. If it's used only for initialization, it can be discarded afterwards. But then, IFTI is not activated by an alias\ldots
 
 The most interesting use I've seen is to make conversions during the struct's construction:
 
 \index{example!templated constructor}
-\begin{verbatim}
+\begin{dcode}
 struct Holder(Type)
 {
     Type value;
@@ -1399,7 +1399,7 @@ struct Holder(Type)
 
 Holder!int h = Holder!int(3.14);
 assert(h.value == 3);
-\end{verbatim}
+\end{dcode}
 
 That way, a \DD{Holder!int} can be constructed with any value, but if the conversion is possible, it will always hold an \D{int}.
 
@@ -1409,7 +1409,7 @@ You can create and return inner structs and use the local template parameters in
 
 \index{example!inner struct}
 \index{template!parameters!alias}
-\begin{verbatim}
+\begin{dcode}
 auto heap(alias predicate, Type)(Type[] values)
 {
     struct Heap
@@ -1424,19 +1424,19 @@ auto heap(alias predicate, Type)(Type[] values)
 
     return Heap(values); // alias predicate is implicit there
 }
-\end{verbatim}
+\end{dcode}
 
 In that case, the \DD{Heap} struct is encapsulated inside \DD{heap} and uses the \DD{predicate} alias inside its own engine, but it's not a templated struct itself. I did not use \DD{Tree} as an example, because with recursive types it becomes tricky.
 
 By the way, strangely enough, though you cannot declare `pure' templates inside functions, you can declare struct templates. Remember the \DD{adder} function in section \ref{anonymousfunctions}? It didn't need to be templated with one type for each argument, as most of the time when you add numbers, they have more or less the same type. But what about a function that converts its arguments to \D{string}s before concatenating them?
 
-\begin{verbatim}
+\begin{dcode}
 auto concatenate(A)(A a)
 {
     /* !! Not legal D code !!
     return (B)(B b) { return to!string(a) ~ to!string(b);}
 }
-\end{verbatim}
+\end{dcode}
 
 The previous example is not legal D code.\index{mantra} Of course, there is a solution: just return a struct with a template member function (\ref{membertemplates}), in that case the \DD{opCall} operator:
 
@@ -1444,7 +1444,7 @@ The previous example is not legal D code.\index{mantra} Of course, there is a so
 \index{example!templated methods}
 \index{example!opCall, ()@\DD{opCall}, \DD{()}}
 \index{operator!opCall, ()@\DD{opCall}, \DD{()}}
-\begin{verbatim}
+\begin{dcode}
 auto concatenate(A)(A a)
 {
     struct Concatenator 
@@ -1466,14 +1466,14 @@ auto concatenate(A)(A a)
 auto c = concatenate(3.14);
 auto cc = c("abc");
 assert(cc == "3.14abc");
-\end{verbatim}
+\end{dcode}
 
 See section \ref{operatoroverloading} for more on operators overloading.
 
 What about templated inner structs inside struct templates? It's perfectly legal:
 
 \index{example!inner struct!templated}
-\begin{verbatim}
+\begin{dcode}
 struct Outer(O)
 {
     O o;
@@ -1492,7 +1492,7 @@ auto outer(O)(O o) { return Outer!(O)(o);}
 auto o = outer(1); // o is an Outer!int;
 auto i = o.inner("abc"); // Outer.Outer!(int).Inner.Inner!(string)
 }
-\end{verbatim}
+\end{dcode}
 
 \subsection{Template This Parameters}\label{this}
 
@@ -1519,7 +1519,7 @@ Here we will begin by creating a simple input range\index{range} that takes a ra
 \index{example!range}
 \index{example!struct template}
 \index{example!factory function}
-\begin{verbatim}
+\begin{dcode}
 import std.range;
 
 struct Flatten(Range)
@@ -1537,17 +1537,17 @@ auto flatten(Range)(Range range)
     else
         return Flatten!(Range)(range);
 }
-\end{verbatim}
+\end{dcode}
 
 So we have a struct template and its associated factory function. It doesn't make sense to instantiate \DD{Flatten} with any old type, so \DD{Range} is checked to be a range, using the \DD{rank}\index{range} template we saw on page \pageref{rankforranges}. We haven't seen template constraints yet (they are described in section \ref{constraints}), but they would be a good fit there too.
 
 A range of ranges\index{range!of ranges} can be represented like this:
 
-\begin{verbatim}
+\begin{dcode}
 [ subRange1[elem11, elem12,...]
 , subRange2[elem21, elem22,...] 
 , ... ]
-\end{verbatim}
+\end{dcode}
 
 We want \DD{Flatten} to return elements in this order: \DD{elem11, elem12, \ldots  elem21, elem22, \ldots}. Note that for ranges of rank higher than 2, the \DD{elemxy}s are themselves ranges. At any given time, \DD{Flatten} is working on a sub-range, iterating on its elements and discarding it when it's empty. The iteration will stop when the last subrange has been consumed, that is when \DD{range} itself is empty.
 
@@ -1555,7 +1555,7 @@ We want \DD{Flatten} to return elements in this order: \DD{elem11, elem12, \ldot
 \index{example!range}
 \index{example!inner member alias}
 \index{range}
-\begin{verbatim}
+\begin{dcode}
 struct Flatten(Range)
 {
     alias ElementType!Range    SubRange;
@@ -1585,7 +1585,7 @@ struct Flatten(Range)
         }
     }
 }
-\end{verbatim}
+\end{dcode}
 
 \begin{itemize}
 \item I cheat a little bit with D standard bracing style, because it eats vertical space like there is no tomorrow.
@@ -1597,7 +1597,7 @@ struct Flatten(Range)
 
 Let see if this template works, by creating an infinite range and giving it to \D{flatten}:
 
-\begin{verbatim}
+\begin{dcode}
 import std.range;
 
 auto cy = cycle(["Hello", "World"); // "Hello","World","Hello","World",...
@@ -1606,14 +1606,14 @@ assert(flattened.front == 'H');
 
 auto takeTwelve = take(flattened, 12);
 assert(array(takeTwelve) == "HelloWorldHe");
-\end{verbatim}
+\end{dcode}
 
 But then, this only works for ranges of ranges\index{rank!of ranges} (of rank $\leq$ 2). We want something that flattens ranges of any rank down to a linear range. This is easily done, we just add recursion\index{recursion} in the factory function:\index{factory function}
 
 \index{example!factory function}
 \index{example!recursion}
 \index{example!static if@\D{static if}}
-\begin{verbatim}
+\begin{dcode}
 auto flatten(Range)(Range range)
 { 
     static if      (rank!Range == 0)
@@ -1625,13 +1625,13 @@ auto flatten(Range)(Range range)
     else         // rank 3 or higher
         return flatten(Flatten!(Range)(range));
 }
-\end{verbatim}
+\end{dcode}
 
 And, testing:
 
 \index{IFTI}
 \index{example!IFTI}
-\begin{verbatim}
+\begin{dcode}
 auto rank3 = [[[0,1,2],[3,4,5],[6]]
              ,[[7],[],[8,9],[10,11]]
              ,[[],[]]
@@ -1663,7 +1663,7 @@ auto flat = flatten(words);
 
 assert(equal(take(flat, 50), 
              "Sing,Ogoddess,theangerofAchillessonofPeleus,thatbr"));
-\end{verbatim}
+\end{dcode}
 
 Here it is. It works and we used a struct template (this section, \ref{structtemplates}), \D{static if} (\ref{staticif}), inner member alias (\ref{inneralias}), factory functions (\ref{factory}) and IFTI (\ref{ifti}).
 
@@ -1676,26 +1676,26 @@ Here it is. It works and we used a struct template (this section, \ref{structtem
 No surprise there, just put the template parameters list between \D{class} and the optional inheritance indication.
 
 \index{syntax!class templates}
-\begin{verbatim}
+\begin{dcode}
 class MyClass(Type, alias fun, bool b = false)
     : Base, Interface1, Interface2
 { ... }
-\end{verbatim}
+\end{dcode}
 
 What's more fun is that you can have parameterized inheritance: the various template parameters are defined before the base class list, you can use them here:
 
 \index{syntax!class templates!parameterized inheritance}
-\begin{verbatim}
+\begin{dcode}
 class MyClass(Type, alias fun, bool b = false)
     : Base!(Type), Interface1, Interface2!(fun,b)
 { ... }
-\end{verbatim}
+\end{dcode}
 
 \aparte{Interface Templates?}{Yes you can. See section \ref{othertemplates}}
 
 This opens interesting vistas, where what a class inherits is determined by its template arguments (since \DD{Base} may be many different classes or even interfaces depending on \DD{Type}). In fact, look at this:
 
-\begin{verbatim}
+\begin{dcode}
 enum WhatBase { Object, Interface, BaseClass }
 
 template Base(WhatBase whatBase = WhatBase.Object)
@@ -1707,7 +1707,7 @@ template Base(WhatBase whatBase = WhatBase.Object)
     else
         alias TheBase Base;
 }
-\end{verbatim}
+\end{dcode}
 
 With this, \DD{MyClass} can inherit either from \DD{Object}, D root to the class hierarchy, or from an interface or from another class. Obviously, the dispatching template could be much more refined. With a second template parameter, the base class could itself be parameterized, and so on.
 
@@ -1726,7 +1726,7 @@ In the same family than \D{in}/\D{out} clauses for functions (section \ref{inand
 
 \index{example!class template!invariant}
 \index{static if@\D{static if}!enabling/disabling code!invariant clause@\D{invariant} clause}
-\begin{verbatim}
+\begin{dcode}
 class MyClass(T, U, V)
 {
     (...)
@@ -1741,7 +1741,7 @@ class MyClass(T, U, V)
         { /* empty invariant */ }
     }
 }
-\end{verbatim}
+\end{dcode}
 
 \subsection{Inner Classes}\label{innerclasses}
 
@@ -1753,7 +1753,7 @@ In D, you can return anonymous classes\index{anonymous!classes} directly from a 
 
 \index{example!anonymous class templates}
 \index{anonymous!class templates}
-\begin{verbatim}
+\begin{dcode}
 // stores a function and a default return value.
 auto acceptor(alias fun, D)(D default)
 {
@@ -1776,7 +1776,7 @@ assert(test1 == 2);
 
 auto test2 = accept("abc");
 assert(test2 == 0); // default value
-\end{verbatim}
+\end{dcode}
 
 \TODO{Test this!}
 
@@ -1788,7 +1788,7 @@ You can use a template parameter directly as a base class:
 
 \index{example!parameterized base class}
 \index{template!parameters!as a base class}
-\begin{verbatim}
+\begin{dcode}
 interface ISerializable
 {
     size_t serialize() @property;
@@ -1798,20 +1798,20 @@ class Serializable(T) : T, ISerializable
 {
     size_t serialize() @property { ... }
 } 
-\end{verbatim}
+\end{dcode}
 
 In this example, a \DD{Serializable!SomeClass} can act as a \DD{SomeClass}. It's not different from what you would do with normal classes except the idiom\index{idiom!parameterized base class} is now abstracted on the base class: you write the template once, it can then be used on any class.
 
 If you have different interfaces like this, you can nest these properties:
 
 \index{example!nested templates instantiations}
-\begin{verbatim}
+\begin{dcode}
 auto wrapped = new Serializable!(Iterable!(SomeClass))(...);
-\end{verbatim}
+\end{dcode}
 
 Of course, the base class and the interface may themselves be parameterized:
 
-\begin{verbatim}
+\begin{dcode}
 enum SerializationPolicy { policy1, policy2 }
 
 interface ISerializable
@@ -1827,13 +1827,13 @@ class Serializable(T, Policy) : T, ISerializable!Policy
 {
     ...
 } 
-\end{verbatim}
+\end{dcode}
 
 In D, you can also get this kind of effect with an \D{alias X this;} declaration in your class or struct. You should also have a look at mixin templates (\ref{mixintemplates}) and wrapper templates (\ref{wrappertemplates}) for other idioms built around the same need. 
 
 \subsection{Another Example}
 
-\begin{verbatim}
+\begin{dcode}
 /**
 Timon Gehr timon.gehr@gmx.ch via puremagic.com 
 This is an useful pattern. I don't have a very useful example at hand, but this one should do. It does similar things that can be achieved with traits in Scala for example.
@@ -1903,15 +1903,15 @@ void main(){
 
        // ...
 }
-\end{verbatim}
+\end{dcode}
 
 \subsection{The Curiously Recurring Template Pattern}
 
-\begin{verbatim}
+\begin{dcode}
 class Base(Child) { ... }
 
 class Derived : Base!Derived { ... }
-\end{verbatim}
+\end{dcode}
 
 Hold on, what does that mean? \DD{Base} is easy to understand. But what about \DD{Derived}? It says it inherits from another class that is templated on\ldots \DD{Derived} \emph{itself}? But \DD{Derived} is not defined at this stage! Or is it? 
 Yes, that works. It's called CRTP, which stands for Curiously Recurring Template Pattern\index{Curiously Recurring Template Pattern} (see \href{ http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern}{Wikipedia} on this). But what could be the interest of such a trick?
@@ -1933,13 +1933,13 @@ Two other aggregate types in D can be templated using the same syntax: interface
 The syntax is exactly what you might imagine: 
 
 \index{syntax!interface templates}
-\begin{verbatim}
+\begin{dcode}
 interface Interf(T)
 {
     T foo(T);
     T[] bar(T,int);
 }
-\end{verbatim}
+\end{dcode}
 
 Templated interfaces are sometimes useful but as they look very much like class templates, I won't describe them. As before, remember The Mantra (see page \pageref{mantra}\index{mantra}): interface templates are \emph{not} interfaces.
 
@@ -1948,9 +1948,9 @@ Templated interfaces are sometimes useful but as they look very much like class 
 Here is the syntax, no suprise there:
 
 \index{syntax!union templates}
-\begin{verbatim}
+\begin{dcode}
 union Union(A,B,C) { A a; B b; C c;}
-\end{verbatim}
+\end{dcode}
 
 Union templates seem like a good idea, but honestly I've never seen one. Any reader of this document, please give me an example if you know one. 
 
@@ -1958,9 +1958,9 @@ Strangely, enumerations do not have the previous simplified syntax. To declare a
 
 \index{syntax!enum template}
 \index{example!enum template}
-\begin{verbatim}
+\begin{dcode}
 template Enum(T)
 {
     enum Enum : T { A, B, C}
 }
-\end{verbatim}
+\end{dcode}
