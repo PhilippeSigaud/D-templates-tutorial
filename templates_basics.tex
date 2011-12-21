@@ -1496,7 +1496,12 @@ auto i = o.inner("abc"); // Outer.Outer!(int).Inner.Inner!(string)
 
 \subsection{Template This Parameters}\label{this}
 
-Inside a struct or class template, there is another kind of template parameter: the template this parameter,\index{template!parameters!template this parameter} declared with \D{this} \DD{identifier}. \DD{identifier} then gets the type of the \D {this} reference. If find this useful mainly for mixin templates (\ref{mixintemplates}), where you do not know the enclosing type beforehand. Please see this section for some examples.
+Inside a struct or class template, there is another kind of template parameter: the template this parameter,\index{template!parameters!template this parameter} declared with \D{this} \DD{identifier}. \DD{identifier} then gets the type of the \D {this} reference. It's useful mainly for two uses:
+
+\begin{itemize}
+\item mixin templates (\ref{mixintemplates}), where you do not know the enclosing type beforehand. Please see this section for some examples.
+\item to determine how the type of the \D{this} reference is qualified (\D{const}, \D{immutable}, \D{shared}, \D{inout} or unqualified).
+\end{itemize}
 
 \TODO{Some kind of example?}
 
