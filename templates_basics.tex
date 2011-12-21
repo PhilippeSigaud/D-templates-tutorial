@@ -788,7 +788,7 @@ Now, it may come as a surprise to you that D \emph{does} have anonymous function
 (a,b) { return a+b;} 
 \end{dcode} 
 
-Yes, the previous skeleton of a function is an anonymous template. But, remember The Mantra:\index{mantra} you cannot return them. And due to (to my eyes) a bug in \D{alias}, you cannot alias them to a symbol:
+Yes, the previous skeleton of a function is an anonymous template. But, remember The Mantra:\index{mantra} you cannot return them. And due to (to my eyes) a bug in \D{alias} grammar, you cannot alias them to a symbol:
 
 \begin{dcode}
 alias (a){ return a;} Id; // Error
@@ -811,7 +811,7 @@ alias callTwice!( (a){ return a+1;}) addTwo;
 assert(addTwo(2) == 4);
 \end{dcode}
 
-Since they are delegates, they can capture local symbols, as long as these are defined at compile-time:
+Since they are delegates, they can capture local symbols:
 
 \begin{dcode}
 enum b = 3; // Manifest constant, initialized to 3
