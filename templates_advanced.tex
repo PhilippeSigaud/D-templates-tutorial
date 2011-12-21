@@ -809,7 +809,7 @@ By the way, you \emph{cannot} mix a standard template in. It used to be the case
 
 What good are these cousins of the templates we've seen so far? They give you a nice way to place parameterized implementation inside a class or a struct. Once more, templates are a way to reduce boilerplate code. If some piece of code appears in different places in your code (for example, in structs, where there is no inheritance to avoid code duplication), you should look for a way to put it in a mixin template.
 
-Also, you can put small functionalities in mixin templates, giving client code access to them to chose how they want to build their.
+Also, you can put small functionalities in mixin templates, giving client code access to them to chose how they want to build their types.
 
 Note that the code you place inside a mixin template doesn't have to make sense by itself (it can refer to \D{this} or any not-yet-defined symbols). It just has to be syntactically correct D code.
 
@@ -820,13 +820,13 @@ For example, remember the operator overloading code we saw in section \ref{opera
 \begin{dcode}
 mixin template Concatenate()
 {
-    Tuple!(This, U) opBinary(string op, this This)(This u) 
+    Tuple!(This, U) opBinary(string op, this This, U)(U u) 
     if (op == "~")
     {
         return tuple(this, u);
     }
 
-    Tuple!(U, This) opBinaryRight(string op, this This)(This u) 
+    Tuple!(U, This) opBinaryRight(string op, this This, U)(U u) 
     if (op == "~")
     {
         return tuple(u, this);
