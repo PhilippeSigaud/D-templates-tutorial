@@ -437,12 +437,12 @@ In D, a void \D{return} clause is legal:
 
 \begin{dcode}
 return;
-// or
-return void;
+// or return void;
 \end{dcode}
 
 So if \DD{name(}\D{this}\DD{,a,b)} is a \D{void}-returning function, all is OK.
 
+The main limitation of this trick is that it doesn't work across modules boundaries. Too bad.
 
 \section{Pattern Matching With Functions}
 
