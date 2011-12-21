@@ -380,7 +380,7 @@ Now, let's use \D{static if} for something a bit more complicated than just disp
 \begin{dcode}
 template rank(T)
 {
-    static if (is(T t = U[], U))  // is T an array of U, for some type U?
+    static if (is(T t == U[], U)) // is T an array of U, for some type U?
         enum rank = 1 + rank!(U); // then let's recurse down.
     else                          // Base case, ending the recursion.
         enum rank = 0; 
