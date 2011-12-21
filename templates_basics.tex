@@ -437,13 +437,13 @@ template BaseElementType(T)
     static if (rank!T == 0)      // not a range
         static assert(0, T.stringof ~ " is not a range.");
     else static if (rank!T == 1) // simple range
-        alias ElementType!Range                     BaseElementType;
+        alias ElementType!T                     BaseElementType;
     else                         // at least range of ranges
-        alias BaseElementType!(ElementType!(Range)) BaseElementType;
+        alias BaseElementType!(ElementType!(T)) BaseElementType;
 }        
 \end{dcode}
 
-Line 4 is an example of \D{static assert} stopping compilation if we ever get into a bad code path. Line 8 is an example of a Matrioshka-call: a template using another template's call as its parameter.
+Line 4 is an example of \D{static assert} stopping compilation if we ever get into a bad code path. Line 8 is an example of a Matrioshka call: a template using another template's call as its parameter.
 
 \paragraph{Generating Arrays:}
 
@@ -716,12 +716,12 @@ import std.algorithm: reduce;
 
 auto flatten(Arr)(Arr array)
 {
-    static if (rank!Arr <= 1)
-        return array;
+    static if (rank!Arr == 0)
+        return [array];
     else
     {
-        auto r = reduce!"a~b"(array); // concatenates the elements
-        return flatten(r);
+        auto children = map!(.flatten)(array);
+        return reduce!"a~b"(children); // concatenate the children
     }
 }
 \end{dcode}
