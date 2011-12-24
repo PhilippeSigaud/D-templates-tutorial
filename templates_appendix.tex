@@ -140,7 +140,7 @@ static if (is(typeof(myVec) mv == Vector!(T, 1), T))
 
 \aparte{is A a supertype to B?}{ Hey, \D{is}\DD{(MyType : SuperType)} is good to know if \DD{MyType} is a subtype to \DD{SuperType}. How do I ask if \DD{MyType} is a supertype to \DD{SubType}? Easy, just use \D{is}\DD{(SubType : MyType)}.}
 
-For me, the main limitation\index{is expression@\D{is} expression!limitation} is that template tuple parameters are not accepted. Too bad. See, imagine you use \href{www.dlang.org/phobos/std_typecons.html#Tuple}{std.typecons.Tuple}s\index{std!typecons}\index{Phobos} a lot. At one point, you need a template to test if something is a \DD{Tuple!(T...)} for some \DD{T} which can be 0 or more types. Though luck, \D{is} is a bit of a letdown there, as you cannot do:
+For me, the main limitation\index{is expression@\D{is} expression!limitation} is that template tuple parameters are not accepted. Too bad. See, imagine you use \stdanchor{typecons}{Tuple} a lot. At one point, you need a template to test if something is a \DD{Tuple!(T...)} for some \DD{T} which can be 0 or more types. Though luck, \D{is} is a bit of a letdown there, as you cannot do:
 
 \begin{dcode}
 template isTuple(T)
@@ -168,7 +168,7 @@ template isTuple(T)
 
 Line 4 defines the function template \DD{tupleTester}, that only accepts \DD{Tuple}s as arguments (even though it does nothing with them). We create something of type \DD{T} on line 5, using the \DD{.init} property inherent in all D types, and try to call \DD{tupleTester} with it. If \DD{T} is indeed a \DD{Tuple} this entire block statement is valid, the resulting delegate call indeed has a type and \D{is} returns \D{true}.
 
-There are two things to note here: first, \DD{isTuple} works for any templated type called \DD{Tuple}, not only \DD{std.typecons.Tuple}\index{std!typecons}. If you want to restrict it, change \DD{tupleTester} definition. Secondly, we do not get access to the inner types this way. For \DD{std.typecons.Tuple} it's not really a problem, as they can be accessed with the \DD{someTuple.Types} alias, but still\ldots
+There are two things to note here: first, \DD{isTuple} works for any templated type called \DD{Tuple}, not only \stdanchor{typecons}{Tuple}. If you want to restrict it, change \DD{tupleTester} definition. Secondly, we do not get access to the inner types this way. For \stdanchor{typecons}{Tuple} it's not really a problem, as they can be accessed with the \DD{someTuple.Types} alias, but still\ldots
 
 By the way, the template parameter list elements can themselves use the \DD{A : B} or \DD{A == B} syntax:
 

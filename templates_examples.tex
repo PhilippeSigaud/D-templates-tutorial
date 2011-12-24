@@ -17,7 +17,7 @@ As we saw in section \ref{tuples}, template tuple parameters can hold type tuple
 
 \subsubsection{Mapping on Type Tuples}
 
-Mapping a type tuple is simply applying another (unary) template on all types of a type tuple. Phobos already defines \DD{staticMap} in \href{www.dlang.org/phobos/std_typetuple.html#staticMap}{std.typetuple}\index{std!typetuple}\index{Phobos}, but it's a nice exercise to code it again. We want a template that takes another template name (as an \D{alias} parameter), say \DD{Wrapper}, and a typetuple (\DD{T0, T1, T2, ..., Tn}) and returns \DD{Wrapper!T0, Wrapper!T1, Wrapper!T2, ..., Wrapper!Tn}.
+Mapping a type tuple is simply applying another (unary) template on all types of a type tuple. Phobos already defines \DD{staticMap} in \std{typetuple}, but it's a nice exercise to code it again. We want a template that takes another template name (as an \D{alias} parameter), say \DD{Wrapper}, and a typetuple (\DD{T0, T1, T2, ..., Tn}) and returns \DD{Wrapper!T0, Wrapper!T1, Wrapper!T2, ..., Wrapper!Tn}.
 
 \begin{dcode}
 template staticMap(alias M, T...)
@@ -34,7 +34,7 @@ We use the auto-flattening of type tuples to aggregate the results into a unique
 Even a simple template such as this one can have great uses:
 
 \begin{itemize}
-\item Getting rid of all qualifiers in a type list, by mapping \DD{std.traits.Unqual} on the types.
+\item Getting rid of all qualifiers in a type list, by mapping \stdanchor{traits}{Unqual} on the types.
 \item Generating a huge quantity of types by using a typetuple-returning mapper.
 \item Given a bunch of function types, getting their return types or parameter typetuples.
 \end{itemize}
@@ -371,7 +371,7 @@ auto nmap(alias fun, R...)(R ranges) if (allSatisfy!(isInputRange,R))
 }
 \end{dcode}
 
-More complicated: \DD{std.algorithm.map} accepts to take more than one function as template argument. In that case, the functions are all mapped in parallel on the range, internally using \DD{std.functional.adjoin}.
+More complicated: \stdanchor{algorithm}{map} accepts to take more than one function as template argument. In that case, the functions are all mapped in parallel on the range, internally using \stdanchor{functional}{adjoin}.
 Here we can extend \DD{nmap} to accept $n$ functions in parallel too. There is a first difficulty:
 
 \begin{dcode}
@@ -404,7 +404,7 @@ template nmap(fun...) if (fun.length >= 1)
 
 Give an example with \DD{max}, it works!
 
-And here is the $n$-ranges version of \DD{std.algorithm.filter}:
+And here is the $n$-ranges version of \stdanchor{algorithm}{filter}:
 
 \begin{dcode}
 auto nfilter(alias fun, R...)(R ranges) if (allSatisfy!(isInputRange, R))

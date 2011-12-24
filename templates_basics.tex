@@ -266,7 +266,7 @@ MyTemplate!(int,string,double[]) someValue;
 (...)
 \end{dcode}
 
-You can find an example of this two-templates idiom\index{idiom!two templates} in Phobos, for example in \DD{std.functional.unaryFun}\index{std!functional}\index{Phobos} or \DD{std.functional.binaryFun}.\index{std!functional}\index{Phobos}
+You can find an example of this two-templates idiom\index{idiom!two templates} in Phobos, for example in \stdanchor{functional}{unaryFun} or \stdanchor{functional}{binaryFun}.
 
 \subsection{Inner \D{alias}}\label{inneralias}
 
@@ -323,7 +323,7 @@ As you can see, no curly braces after \D{static if} and we are also using the ep
 
 \subsubsection{Optional Code}
 
-A common use of \D{static if} is to enable or disable code: a single \D{static if} without an \D{else} clause will generate code only when the condition is true. You can find many examples of this idiom\index{idiom!enabling/disabling code} in \DD{std.range}\index{std!range}\index{Phobos}\index{range!higher-level ranges} where higher-level ranges (ranges wrapping other ranges) will activate some functionality only if the wrapped range can support it, like this:\index{example!enabling/disabling code}
+A common use of \D{static if} is to enable or disable code: a single \D{static if} without an \D{else} clause will generate code only when the condition is true. You can find many examples of this idiom\index{idiom!enabling/disabling code} in \std{range}\index{range!higher-level ranges} where higher-level ranges (ranges wrapping other ranges) will activate some functionality only if the wrapped range can support it, like this:\index{example!enabling/disabling code}
 
 
 \begin{dcode}
@@ -408,7 +408,7 @@ One common use of \D{static assert} is to stop the compilation, for example if w
 
 \paragraph{Rank for Ranges:}\label{rankforranges}
 
-D has an interesting sequence concept that's called \emph{range}\index{range} and comes with predefined testing templates in \href{www.dlang.org/phobos/std_range.html}{std.range}\index{std!range}. Why not extend \DD{rank}\index{rank} to have it deal with ranges and see if something is a range of ranges\index{range!of ranges} or more? A type can be tested to be a range with \DD{isInputRange} and its element type (the `\DD{U}') is obtained by applying \DD{ElementType} to the range type. Both templates are found in \DD{std.range}. Also, since arrays are included in the range concept, we can entirely ditch the array part and use only ranges. Here is a slightly modified version of \DD{rank}:
+D has an interesting sequence concept that's called \emph{range}\index{range} and comes with predefined testing templates in \std{range}. Why not extend \DD{rank}\index{rank} to have it deal with ranges and see if something is a range of ranges\index{range!of ranges} or more? A type can be tested to be a range with \DD{isInputRange} and its element type (the `\DD{U}') is obtained by applying \DD{ElementType} to the range type. Both templates are found in \std{range}. Also, since arrays are included in the range concept, we can entirely ditch the array part and use only ranges. Here is a slightly modified version of \DD{rank}:
 
 \index{rank!for ranges}
 \begin{dcode}
@@ -567,7 +567,7 @@ alias InnerType!(typeof(p)) Pointer; // pointer spec. selected
 alias InnerType!(typeof(i)) Default; // standard template selected
 \end{dcode}
 
-This idiom\index{idiom!template specialization} is used frequently in C++\index{C++}, where there is no (built-in) \D{static if} construct or template constraints. Oldish D templates used it a lot, too, but since other ways have been around for some years, recent D code seems to be more constraint-oriented: have a look at heavily templated Phobos modules, for example \href{http://www.dlang.org/phobos/std_algorithm.html}{std.algorithm} or \href{http://www.dlang.org/phobos/std_range.html}{std.range}.
+This idiom\index{idiom!template specialization} is used frequently in C++\index{C++}, where there is no (built-in) \D{static if} construct or template constraints. Oldish D templates used it a lot, too, but since other ways have been around for some years, recent D code seems to be more constraint-oriented: have a look at heavily templated Phobos modules, for example \std{algorithm} or \std{range}.
 
 \aparte{Specializations or \D{static if} or Templates Constraints?}{Yes indeed. Let's defer this discussion for when we have seen all three subsystems.} 
 
@@ -598,10 +598,10 @@ Deduced!(); // Error, T is not some array.
 
 \aparte{Specialization and Default Value?}{Yes you can. Put the specialization first, then the default value. Like this: \DD{(T : U[] = int[], U)}. It's not commonly used, though.}
 
-As for functions, well-chosen defaults can greatly simplify standard calls. See for example the \href{http://dlang.org/phobos/std_algorithm.html#sort}{sort}\index{std!algorithm} function template found in \href{http://dlang.org/phobos/std_algorithm.html}{std.algorithm}\index{std!algorithm}. It's parameterized on a predicate and a swapping strategy, but both are adapted to what most people need when sorting. That way, most client uses of the template will be short and clean, but customization to their own need is still possible.
+As for functions, well-chosen defaults can greatly simplify standard calls. See for example the \stdanchor{algorithm}{sort}. It's parameterized on a predicate and a swapping strategy, but both are adapted to what most people need when sorting. That way, most client uses of the template will be short and clean, but customization to their own need is still possible.
 
 
-\TODO{Maybe something on template dummy parameters, like those used by \DD{std.traits.ReturnType}.\index{std!traits} Things like \DD{dummy == }\D{void}.}
+\TODO{Maybe something on template dummy parameters, like those used by \stdanchor{traits}{ReturnType}. Things like \DD{dummy == }\D{void}.}
 
 \section{Function Templates}\label{functiontemplates}
 
@@ -695,7 +695,7 @@ We may encounter The Mantra again in this tutorial.
 
 \subsection{Example: Flattening Arrays and Ranges}\label{functionflatten}
 
-Let's use what we have just seen in a concrete way. In D, you can manipulate 2D, 3D arrays\index{arrays}, but sometimes need to process them linearly. As of this writing, neither \DD{std.algorithm} nor \DD{std.range}\index{std!range}\index{Phobos} provide a \DD{flatten} function. Beginning with simple arrays, here is what we want:
+Let's use what we have just seen in a concrete way. In D, you can manipulate 2D, 3D arrays\index{arrays}, but sometimes need to process them linearly. As of this writing, neither \std{algorithm} nor \std{range} provide a \DD{flatten} function. Beginning with simple arrays, here is what we want:
 
 \begin{dcode}
 assert( flatten([[0,1],[2,3],[4]]) == [0,1,2,3,4] );
@@ -709,10 +709,10 @@ assert( flatten([[[0,1],[]], [[2]], [[3], [4,5]], [[]], [[6,7,8]]])
 assert( flatten([[[[[]]]]]) == [] ); // void[][][][][] -> void[]
 \end{dcode}
 
-So, studying the examples, we want a non-array or a simple array to be unaffected by \DD{flatten}: it just returns them. For arrays of rank\index{rank} 2 or higher, it collapses the elements down to a rank-1 array. It's classically recursive:\index{recursion} we will concatenate the elements (with  \href{www.dlang.org/phobos/std_algorithm.html#reduce}{std.algorithm.reduce}),\index{std!algorithm} thus losing one rank and call \DD{flatten} again on the result;
+So, studying the examples, we want a non-array or a simple array to be unaffected by \DD{flatten}: it just returns them. For arrays of rank\index{rank} 2 or higher, it collapses the elements down to a rank-1 array. It's classically recursive:\index{recursion} we will aply \DD{flatten} on all subarrays with \stdanchor{algorithm}{map} and concatenate the elements with \stdanchor{algorithm}{reduce}:
 
 \begin{dcode}
-import std.algorithm: reduce;
+import std.algorithm;
 
 auto flatten(Arr)(Arr array)
 {
@@ -905,7 +905,7 @@ body
 
 Let us use a template to wrap a function and provide some additional usefulness when calling the function. Memoizing is an interesting and useful example: if the function does long calculations, it might be efficient to store the computed results in an external structure and to query this structure for the result instead of calling the function again.
 
-We have not seen struct templates yet (they are presented in section \ref{structtemplates}), but the following example should be easy to understand: the previous result are stored in an associative array, indexed on tuples of arguments. To get a function return type or parameter type tuple, just use Phobos' \DD{std.traits.ReturnType} and \DD{std.traits.ParameterTypeTuple}, which are templates that accept function \emph{names} or types.
+We have not seen struct templates yet (they are presented in section \ref{structtemplates}), but the following example should be easy to understand: the previous result are stored in an associative array, indexed on tuples of arguments. To get a function return type or parameter type tuple, just use Phobos' \stdanchor{traits}{ReturnType} and \stdanchor{traits}{ParameterTypeTuple}, which are templates that accept function \emph{names} or types.
 
 \index{struct templates!memoize@\DD{memoize}}
 \index{function templates!wrapping a function!memoize@\DD{memoize}}
@@ -1181,7 +1181,7 @@ struct Heap(Type, alias predicate = lessThan, float reshuffle = 0.5f)
 }
 \end{dcode}
 
-Struct templates are heavily used in \href{www.dlang.org/phobos/std_algorithm.html}{std.algorithm}\index{std!algorithm}\index{Phobos} and \href{www.dlang.org/phobos/std_range.html}{std.range}\index{std!range}\index{Phobos} for lazy iteration, have a look there.
+Struct templates are heavily used in \std{algorithm} and \std{range} for lazy iteration, have a look there.
 
 \subsection{Factory Functions}\label{factory}
 
@@ -1210,7 +1210,7 @@ static assert(is( typeof(t1) == Tree!int ));
 auto t2 = tree(t0); // Yes! typeof(t2) == Tree!(Tree!(int)) 
 \end{dcode}
 
-Once more, have a look at \href{www.dlang.org/phobos/std_algorithm.html}{std.algorithm}\index{std!algorithm}\index{Phobos} and \href{www.dlang.org/phobos/std_range.html}{std.range}\index{std!range}\index{Phobos}, they show numerous examples of this idiom.\index{idiom!factory function}
+Once more, have a look at \std{algorithm} and \std{range}, they show numerous examples of this idiom.\index{idiom!factory function}
 
 \subsection{Giving Access to Inner Parameters}\label{givingaccess}
 
@@ -1237,9 +1237,9 @@ static assert(is( T0.Type == string ));
 
 A struct template is a template like any other: you can declare templates inside, even functions templates. Which means you can have templated member functions. 
 
-\paragraph{Mapping on a Tree} Let us use that to give our \D{Tree} a mapping ability. For a range,\index{range} you can use \href{www.dlang.org/phobos/std-algorithm.html#map}{std.algorithm.map}\index{std!algorithm}\index{Phobos} to apply a function in turn to each element, thus delivering a transformed range. The same process can be done for a tree, thereby keeping the overall \emph{shape} but modifying the elements.\footnote{ We could easily make that a free function, but this \emph{is} the member function section.}
+\paragraph{Mapping on a Tree} Let us use that to give our \D{Tree} a mapping ability. For a range,\index{range} you can use \stdanchor{algorithm}{map} to apply a function in turn to each element, thus delivering a transformed range. The same process can be done for a tree, thereby keeping the overall \emph{shape} but modifying the elements.\footnote{ We could easily make that a free function, but this \emph{is} the member function section.}
 
-Let's think a little bit about it before coding. \DD{map} should be a function template that accepts any function name as a template alias parameter\index{template!parameters!alias} (like \DD{std.algorithm.map}\index{std!algorithm}). Let's call this alias \DD{fun}. The \DD{value} member should be transformed by \DD{fun}, that's easy to do. We want to return a new \DD{Tree}, which will have for type parameter the result type of \DD{fun}. If \DD{fun} transforms \DD{A}s into \DD{B}s, then a \DD{Tree!A} will be mapped to a \DD{Tree!B}. However, since \DD{fun} can be a function template, it may not have a pre-defined return type that could be obtained by \DD{std.traits.ReturnType}.\index{std!traits}\index{Phobos} We will just apply it on a \DD{T} value (obtained by \DD{T.init} and take this type. So \DD{B} will be \DD{typeof(fun(T.init))}.
+Let's think a little bit about it before coding. \DD{map} should be a function template that accepts any function name as a template alias parameter\index{template!parameters!alias} (like \stdanchor{algorithm}{map}). Let's call this alias \DD{fun}. The \DD{value} member should be transformed by \DD{fun}, that's easy to do. We want to return a new \DD{Tree}, which will have for type parameter the result type of \DD{fun}. If \DD{fun} transforms \DD{A}s into \DD{B}s, then a \DD{Tree!A} will be mapped to a \DD{Tree!B}. However, since \DD{fun} can be a function template, it may not have a pre-defined return type that could be obtained by \stdanchor{traits}{ReturnType}. We will just apply it on a \DD{T} value (obtained by \DD{T.init} and take this type. So \DD{B} will be \DD{typeof(fun(T.init))}.
 
 What about the children? We will map \DD{fun} on them too and collect the result into a new children array. They will have the same type: \DD{Tree!(B)}. If the mapped \DD{Tree} is a leaf (ie: if it has no children), the process will stop.
 
@@ -1303,11 +1303,11 @@ assert(is( ts.Type == string ));
 assert(ts.value == "2");
 \end{dcode}
 
-\paragraph{Folding a Tree} You may feel \DD{map} is not really a member function: it does not take any argument. Let's make another transformation on \DD{Tree}s: folding them, that is: collapsing all values into a new one. The range equivalent is \DD{std.algorithm.reduce}\index{std!algorithm}\index{Phobos} which collapses an entire (linear) range\index{range} into one value, be it a numerical value, another range or what have you
+\paragraph{Folding a Tree} You may feel \DD{map} is not really a member function: it does not take any argument. Let's make another transformation on \DD{Tree}s: folding them, that is: collapsing all values into a new one. The range equivalent is \stdanchor{algorithm}{reduce} which collapses an entire (linear) range\index{range} into one value, be it a numerical value, another range or what have you
 
 For a tree, folding can for example generate all values in pre-order or post-order, calculate the height of the tree, the number of leaves\ldots As for ranges, folding is an extremely versatile function. It can in fact be used to convert a \DD{Tree} into an array or another \DD{Tree}. We will do just that.
 
-Taking inspiration from \DD{reduce}, we need an seed value and \emph{two} folding functions. The first one, \DD{ifLeaf}, will be called on childless nodes, for \DD{fold} to return \DD{ifLeaf(value, seed)}. The second one, \DD{ifBranch}, will be called nodes with children. In this case, we first apply \DD{fold} on all children and then return \DD{ifBranch(value, foldedChildren)}. In some simple cases, we can use the same function, hence a default case for \DD{ifBranch}. Here is the code:\footnote{ Technically, \DD{std.algorithm.reduce}\index{std!algorithm}\index{Phobos} is a \emph{left fold}, while what is shown here is a \emph{right fold}. The difference is not essential to this document.} 
+Taking inspiration from \DD{reduce}, we need an seed value and \emph{two} folding functions. The first one, \DD{ifLeaf}, will be called on childless nodes, for \DD{fold} to return \DD{ifLeaf(value, seed)}. The second one, \DD{ifBranch}, will be called nodes with children. In this case, we first apply \DD{fold} on all children and then return \DD{ifBranch(value, foldedChildren)}. In some simple cases, we can use the same function, hence a default case for \DD{ifBranch}. Here is the code:\footnote{ Technically, \stdanchor{algorithm}{reduce} is a \emph{left fold}, while what is shown here is a \emph{right fold}. The difference is not essential to this document.} 
 
 \index{example!templated method}
 \begin{dcode}
@@ -1509,7 +1509,7 @@ Inside a struct or class template, there is another kind of template parameter: 
 
 We will use what we've seen for a struct template  a lazy range\index{range} that flattens ranges of ranges\index{range!of ranges} into linear ranges. Remember the \DD{flatten} function from section \ref{functionflatten}? It worked quite well but was \emph{eager}, not \emph{lazy}: given an infinite range (a cycle, for example) it would choke on it. We will here make a lazy flattener.
 
-If you look at the ranges defined in \href{www.programming-language.org/phobos/std_range.html}{std.range}\index{std!range}\index{Phobos}, you will see that most (if not all) of them are structs. That's the basic way to get laziness in D: the struct holds the iteration state and exposes the basic range primitives. At the very least to be an \emph{input range} --- the simplest kind of range ---, a type must have the following members\index{range!members} (be they properties, member functions or manifest constants):
+If you look at the ranges defined in \std{range}, you will see that most (if not all) of them are structs. That's the basic way to get laziness in D: the struct holds the iteration state and exposes the basic range primitives. At the very least to be an \emph{input range} --- the simplest kind of range ---, a type must have the following members\index{range!members} (be they properties, member functions or manifest constants):
 
 \begin{description}
 \item[front:] Which returns the range's first element.
