@@ -5,7 +5,7 @@ This part will present various examples showing what can be done with D template
 
 \aparte{Contributors welcome!}{Even more than for other parts, I welcome any short and synthetic example of what can be done with templates. Do not hesitate to chime in and push some code in this doc!}
 
-\section{Type Sorcery}
+\section{Type Sorcery}\label{typesorcery}
 
 One of the most fundamental use of templates is type sorcery: type creation, type manipulation, etc. D being a statically type language, all of your creations will have a defined type. Sometimes, these can be cumbersome to write or manipulate. Templates can help you in this.
 
@@ -15,7 +15,7 @@ As we saw in section \ref{tuples}, template tuple parameters can hold type tuple
 
 \aparte{And non-types?}{What about acting on expression tuples? You can do that too. Even though this section is called \emph{Type} Sorcery, all templates here can work on expression tuples too. Do not feel limited.}
 
-\subsubsection{Mapping on Type Tuples}
+\subsubsection{Mapping on Type Tuples}\label{staticmap}
 
 Mapping a type tuple is simply applying another (unary) template on all types of a type tuple. Phobos already defines \DD{staticMap} in \std{typetuple}, but it's a nice exercise to code it again. We want a template that takes another template name (as an \D{alias} parameter), say \DD{Wrapper}, and a typetuple (\DD{T0, T1, T2, ..., Tn}) and returns \DD{Wrapper!T0, Wrapper!T1, Wrapper!T2, ..., Wrapper!Tn}.
 
@@ -35,14 +35,18 @@ Even a simple template such as this one can have great uses:
 
 \begin{itemize}
 \item Getting rid of all qualifiers in a type list, by mapping \stdanchor{traits}{Unqual} on the types.
-\item Generating a huge quantity of types by using a typetuple-returning mapper.
+\item Generating a huge quantity of types by using a typetuple-returning mapper (see below).
 \item Given a bunch of function types, getting their return types or parameter typetuples.
 \end{itemize}
 
-You'll see numerous examples of \DD{staticMap} in this document.
+The seconde use can be useful to unit-test a part of your code. Suppose you have a templated function that is supposed to work on any built-in type. You do not need to generate all possible combinations of types. Just use \DD{staticMap} to generate them for you:
 
 \begin{dcode}
-template Qual(T)
+/** 
+* Given a type T, generates all qualified versions of T
+* that you find interesting (eleven versions all in all).
+*/
+template Qualified(T)
 {
     alias TypeTuple!(
                      T, const(T), immutable(T), shared(T),
@@ -51,6 +55,7 @@ template Qual(T)
                     ) Qualified;
 }
 
+// All 16 built-in types you're interested in.
 alias TypeTuple!(
                  bool,
                  ubyte,byte,
@@ -61,8 +66,41 @@ alias TypeTuple!(
                  char,wchar,dchar
                 ) ValueTypes;
 
+// Bang, 11*16 types generated.
 alias staticMap!(Qualified,ValueTypes) QualifiedTypes;
+
+// If you're really a pervert (note that there will be duplicates)
+alias staticMap!(Qualified, QualifiedTypes) DoublyQualifiedTypes;
 \end{dcode}
+
+Now, if your function is supposed to work on all the generated qualified types, just test it:
+
+\begin{dcode}
+void myFun(T)(T t) { ... }
+
+unittest {
+    /* Here we generate the qualified types, see above */
+    (...)
+    
+    template test(alias fun)
+    {
+        void on(T...)()
+        {
+            foreach(Type; T)
+                static if (!__traits(compiles, fun(Type.init)))
+                    pragma(msg, "Bad testing combination: " 
+                               ~ fun.stringof ~ " and " ~ Type.stringof);
+        }
+    }
+    
+    test!(myFun).on!(QualifiedTypes);
+}
+\end{dcode}
+
+\subsubsection{Filtering Type Tuples}\label{staticfilter}
+
+
+\subsubsection{Folding Type Tuples}\label{staticreduce}
 
 \subsection{Zipping Types, Interspersing Types, Crossing Types}
 
