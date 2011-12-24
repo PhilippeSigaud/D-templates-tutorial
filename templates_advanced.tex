@@ -73,7 +73,7 @@ Constraints come from the same idea than C++0x\index{C++!C++0x} \DD{concept}, er
 
 Have a look at constraints poster-child: \emph{ranges}\index{range}.\footnote{ Ranges are overdue a tutorial.} They were rapidly described in section \ref{functionflatten}.
 
-\href{www.d-programming-org/phobos/std_range.html}{std.range}\index{std!range}\index{Phobos} defines a set of templates\index{predicate templates!for ranges} that check the different ranges concepts, called \DD{isInputRange}, \DD{isForwardRange}\ldots I call these \D{bool}-becoming templates \emph{predicate templates} and talk about them in section \ref{predicates}. Usage is quite simple:
+\href{www.dlang.org/phobos/std_range.html}{std.range}\index{std!range}\index{Phobos} defines a set of templates\index{predicate templates!for ranges} that check the different ranges concepts, called \DD{isInputRange}, \DD{isForwardRange}\ldots I call these \D{bool}-becoming templates \emph{predicate templates} and talk about them in section \ref{predicates}. Usage is quite simple:
 
 \index{example!predicate templates}
 \index{example!range templates}
@@ -373,7 +373,7 @@ As values of this type can be created and named, they are \emph{almost} first-cl
 
 \begin{itemize}
 \item There is no built-in syntax for declaring a tuple. In the previous example, calling \DD{T.stringof} returns the string \DD{"(}\D{string}\DD{,}\D{int}\DD{,}\D{double}\DD{)"}. But you cannot write \DD{(}\D{string}\DD{,}\D{int}\DD{,}\D{double}\DD{) myTuple;} directly. Paradoxically, if you have a (\D{string},\D{int},\D{double}) type tuple called \DD{T}, you \emph{can} do \DD{T myTuple;}.
-\item These tuples cannot be returned from a function. You have to wrap them in a struct. That's what \href{www.d-programming-language.org/phobos/std_typecons.html#Tuple}{std.typecons.Tuple}\index{std!typecons}\index{Phobos} offers.
+\item These tuples cannot be returned from a function. You have to wrap them in a struct. That's what \href{www.dlang.org/phobos/std_typecons.html#Tuple}{std.typecons.Tuple}\index{std!typecons}\index{Phobos} offers.
 \end{itemize}
 
 \index{tuples!the many kinds of}
@@ -604,7 +604,7 @@ Eliminate!(Type,  Type0, Type1, Type2, ...)
 Type0, Eliminate!(Type,  Type1, Type2, ...)
 \end{dcode}
 
-We cannot juxtapose types like I just did, we have to wrap them in a template. Phobos defines \DD{TypeTuple} in \href{www.d-programming-language.org/phobos/std_typetuple.html}{std.typetuple}\index{std!typetuple} for that use.
+We cannot juxtapose types like I just did, we have to wrap them in a template. Phobos defines \DD{TypeTuple} in \href{www.dlang.org/phobos/std_typetuple.html}{std.typetuple}\index{std!typetuple} for that use.
 
 Now that we know how to get rid of all occurrences of a type in a type tuple, we have to write a template to eliminate all duplicates. The algorithm is simple: take the first type, eliminate all occurrences of this type in the remaining type tuple. Then call the duplicate elimination anew from the resulting type tuple, while at the same time collecting the first type.
 
@@ -624,7 +624,7 @@ assert(is( NoDuplicates!(int,double,int,string,double)
            == TypeTuple!(int,double,string)));
 \end{dcode}
 
-By the way, code to do that, also called \DD{NoDuplicates}, is already in Phobos. It can be found in \href{www.d-programming-language.org/phobos/std_typetuple.html}{std.typetuple}\index{std!typetuple}. I found coding it again a good exercise in type tuple manipulation\index{type tuple!manipulation}.
+By the way, code to do that, also called \DD{NoDuplicates}, is already in Phobos. It can be found in \href{www.dlang.org/phobos/std_typetuple.html}{std.typetuple}\index{std!typetuple}. I found coding it again a good exercise in type tuple manipulation\index{type tuple!manipulation}.
 
 The last piece of the puzzle is to get a given class inheritance list. The \D{is} expression\index{is expression@\D{is} expression!types specializations} give us that by way of types specializations (\ref{typespecializations}):
 
@@ -670,7 +670,7 @@ class NoError : CheckedInheritance!(MyClass) { ... }
 \section{Operator Overloading} \label{operatoroverloading}
 
 \index{operator!overloading}
-D allows users to redefine some operators to enhance readability in code. And guess what? Operator overloading is based on templates. They are described \href{www.d-programming-language.org/operators.html}{here} in the docs. 
+D allows users to redefine some operators to enhance readability in code. And guess what? Operator overloading is based on templates. They are described \href{www.dlang.org/operators.html}{here} in the docs. 
 
 \subsection{Syntax}
 
@@ -860,7 +860,7 @@ The idea to take back home is: the concatenation code is written once. It is the
 
 \subsection{Syntax}\label{opdispatchsyntax}
 
-\DD{opDispatch} is a sort of operator overloading (it's in the same place in the \href{www.d-programming-language.org/operator.html}{online documentation}) that deals with members calls (methods or value members). Its definition is the same than an operator:
+\DD{opDispatch} is a sort of operator overloading (it's in the same place in the \href{www.dlang.org/operator.html}{online documentation}) that deals with members calls (methods or value members). Its definition is the same than an operator:
 
 \index{syntax!opDispatch@\DD{opDispatch}}
 \begin{dcode}
@@ -1367,7 +1367,7 @@ template interpolate(string code)
 
 \subsection{Example: extending \DD{std.functional.binaryFun}}\label{naryfun}
 
-\href{www.d-programming-language.org/phobos/std_functional.html}{std.functional}\index{std!functional}\index{Phobos} has two really interesting templates: \DD{unaryFun} and \DD{binaryFun}.
+\href{www.dlang.org/phobos/std_functional.html}{std.functional}\index{std!functional}\index{Phobos} has two really interesting templates: \DD{unaryFun} and \DD{binaryFun}.
 
 
 \begin{dcode}
@@ -1439,7 +1439,7 @@ template naryFun(string code, int arit = arity(code))
 
 \section{\D{\_\_traits}}\label{traits}
 
-The general \D{\_\_traits} syntax can be found online \href{www.d-programming.org/traits.html}{here}. Traits are basically another compile-time introspection\index{compile-time!introspection!with \_\_traits@with \D{\_\_traits}}\index{introspection!with \_\_traits@with \D{\_\_traits}} tool, complementary to the \D{is} expression (see appendix \ref{isexpression}). Most of time, \D{\_\_traits} will return \D{true} or \D{false} for simple type-introspection questions (is this type or symbol an abstract class, or a final function?). As D is wont to do, these questions are sometimes ones you could ask using \D{is} or template constraints, but sometimes not. What's interesting is that you can do some introspection on types, but also on symbols or expressions.
+The general \D{\_\_traits} syntax can be found online \href{www.dlang.org/traits.html}{here}. Traits are basically another compile-time introspection\index{compile-time!introspection!with \_\_traits@with \D{\_\_traits}}\index{introspection!with \_\_traits@with \D{\_\_traits}} tool, complementary to the \D{is} expression (see appendix \ref{isexpression}). Most of time, \D{\_\_traits} will return \D{true} or \D{false} for simple type-introspection questions (is this type or symbol an abstract class, or a final function?). As D is wont to do, these questions are sometimes ones you could ask using \D{is} or template constraints, but sometimes not. What's interesting is that you can do some introspection on types, but also on symbols or expressions.
 
 Seeing how this is a document on templates and that we have already seen many introspection tools, here is a quick list of what yes/no questions you can ask which can or \emph{cannot} be tested with \D{is}:\footnote{As with any other affirmation in this document, readers should feel free to prove me wrong. That shouldn't be too difficult.}
 

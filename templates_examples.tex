@@ -17,7 +17,7 @@ As we saw in section \ref{tuples}, template tuple parameters can hold type tuple
 
 \subsubsection{Mapping on Type Tuples}
 
-Mapping a type tuple is simply applying another (unary) template on all types of a type tuple. Phobos already defines \DD{staticMap} in \href{www.d-programming-language.org/phobos/std_typetuple.html#staticMap}{std.typetuple}\index{std!typetuple}\index{Phobos}, but it's a nice exercise to code it again. We want a template that takes another template name (as an \D{alias} parameter), say \DD{Wrapper}, and a typetuple (\DD{T0, T1, T2, ..., Tn}) and returns \DD{Wrapper!T0, Wrapper!T1, Wrapper!T2, ..., Wrapper!Tn}.
+Mapping a type tuple is simply applying another (unary) template on all types of a type tuple. Phobos already defines \DD{staticMap} in \href{www.dlang.org/phobos/std_typetuple.html#staticMap}{std.typetuple}\index{std!typetuple}\index{Phobos}, but it's a nice exercise to code it again. We want a template that takes another template name (as an \D{alias} parameter), say \DD{Wrapper}, and a typetuple (\DD{T0, T1, T2, ..., Tn}) and returns \DD{Wrapper!T0, Wrapper!T1, Wrapper!T2, ..., Wrapper!Tn}.
 
 \begin{dcode}
 template staticMap(alias M, T...)

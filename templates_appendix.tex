@@ -6,7 +6,7 @@
 
 \subsection{General Syntax} \label{issyntax}
 
-The \D{is}\DD{(...)} expression gives you some compile-time introspection\index{compile-time!introspection} on types (and, as a side-effect, on D expressions). It's described \href{http://www.d-programming-language.org/expression.html#IsExpression}{here} in the D website. This expression has a quirky syntax, but the basic use is very simple and it's very useful in conjunction with \D{static if} (see section \ref{staticif} and template constraints (see section \ref{constraints}). The common syntaxes are:
+The \D{is}\DD{(...)} expression gives you some compile-time introspection\index{compile-time!introspection} on types (and, as a side-effect, on D expressions). It's described \href{http://www.dlang.org/expression.html#IsExpression}{here} in the D website. This expression has a quirky syntax, but the basic use is very simple and it's very useful in conjunction with \D{static if} (see section \ref{staticif} and template constraints (see section \ref{constraints}). The common syntaxes are:
 
 \index{syntax!is expression@\D{is} expression}
 \begin{dcode}
@@ -81,7 +81,7 @@ By the way, fun as it may be to use this trick, D provides you with a cleaner wa
 __traits(compiles, { /* some code */ })
 \end{dcode}
 
-\D{\_\_traits} is another of D numerous Swiss Army knife constructs. You can find the \DD{compiles} documentation \href{http://www.d-programming-language.org/traits.html#compiles}{here}. Section \ref{traits} is dedicated to it.
+\D{\_\_traits} is another of D numerous Swiss Army knife constructs. You can find the \DD{compiles} documentation \href{http://www.dlang.org/traits.html#compiles}{here}. Section \ref{traits} is dedicated to it.
 
 \subsection{\D{is}\DD{(Type : AnotherType)} and \D{is}\DD{(Type == AnotherType)}}
 \label{istypeanothertype}
@@ -140,7 +140,7 @@ static if (is(typeof(myVec) mv == Vector!(T, 1), T))
 
 \aparte{is A a supertype to B?}{ Hey, \D{is}\DD{(MyType : SuperType)} is good to know if \DD{MyType} is a subtype to \DD{SuperType}. How do I ask if \DD{MyType} is a supertype to \DD{SubType}? Easy, just use \D{is}\DD{(SubType : MyType)}.}
 
-For me, the main limitation\index{is expression@\D{is} expression!limitation} is that template tuple parameters are not accepted. Too bad. See, imagine you use \href{www.d-programming-language.org/phobos/std_typecons.html#Tuple}{std.typecons.Tuple}s\index{std!typecons}\index{Phobos} a lot. At one point, you need a template to test if something is a \DD{Tuple!(T...)} for some \DD{T} which can be 0 or more types. Though luck, \D{is} is a bit of a letdown there, as you cannot do:
+For me, the main limitation\index{is expression@\D{is} expression!limitation} is that template tuple parameters are not accepted. Too bad. See, imagine you use \href{www.dlang.org/phobos/std_typecons.html#Tuple}{std.typecons.Tuple}s\index{std!typecons}\index{Phobos} a lot. At one point, you need a template to test if something is a \DD{Tuple!(T...)} for some \DD{T} which can be 0 or more types. Though luck, \D{is} is a bit of a letdown there, as you cannot do:
 
 \begin{dcode}
 template isTuple(T)
