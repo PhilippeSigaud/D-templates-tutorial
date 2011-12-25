@@ -319,7 +319,7 @@ template isDynamicArray(T)
 }
 \end{dcode}
 
-As you can see, no curly braces after \D{static if} and we are also using the eponymous trick\index{eponymous trick} (\DD{isDynamicArray} is the only symbol defined by the template and its type is automatically deduced by the compiler), resulting in a very clean syntax. The \D{is}\DD{()}\index{is expression@\D{is} expression} part is a way to get compile-time introspection\index{compile-time!introspection} which goes hand in hand with \D{static if}. There is a crash course on it at the end of this document (see Appendix \ref{isexpression}).
+As you can see, no curly braces after \D{static if} and we are also using the eponymous trick\index{eponymous trick} (\DD{isDynamicArray} is the only symbol defined by the template and its type is automatically deduced by the compiler), resulting in a very clean syntax. The \D{is}\DD{()}\index{is expression@\D{is} expression} part is a way to get compile-time introspection\index{compile-time!introspection} which goes hand in hand with \D{static if}. There is a crash course on it at the end of this document (see \autoref{isexpression}).
 
 \subsubsection{Optional Code}
 
@@ -523,7 +523,7 @@ Given a template \DD{temp}, writing a \DD{curry} template that automatically gen
 \subsection{Templates Specializations}\label{specializations}
 
 \index{template!specialization}
-Up to now, when we write a \DD{T} in a template parameter list, there is no constraint on the type that \DD{T} can become during instantiation. Template specialization is a small `subsyntax', restricting templates instantiations to a subset of all possible types and directing the compiler into instantiating a particular version of a template instead of another. If you've read Appendix \ref{isexpression} on the \D{is} expression, you already know how to write them. If you didn't, please do it now, as it's really the same syntax. These specializations are a direct inheritance from C++\index{C++} templates, up to the way they are written and they existed in D from the very beginning, long before \D{static if} or templates constraints were added. 
+Up to now, when we write a \DD{T} in a template parameter list, there is no constraint on the type that \DD{T} can become during instantiation. Template specialization is a small `subsyntax', restricting templates instantiations to a subset of all possible types and directing the compiler into instantiating a particular version of a template instead of another. If you've read \autoref{isexpression} on the \D{is} expression, you already know how to write them. If you didn't, please do it now, as it's really the same syntax. These specializations are a direct inheritance from C++\index{C++} templates, up to the way they are written and they existed in D from the very beginning, long before \D{static if} or templates constraints were added. 
 
 The specializations are added in the template parameter list, the \DD{(T, U, V)} part of the template definition. \index{syntax!templates specialization}\DD{Type : OtherType} restricts \DD{Type} to be implicitly convertible into \DD{OtherType} and \DD{Type == OtherType} restricts \DD{Type} to be exactly \DD{OtherType}. 
 
