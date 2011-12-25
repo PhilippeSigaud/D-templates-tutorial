@@ -99,6 +99,156 @@ unittest {
 
 \subsubsection{Filtering Type Tuples}\label{staticfilter}
 
+You can search for and extract some types from a tuple, using a predicate to chose which type (or more generally, which tuple element) you want to keep. A predicate in this particular case means 'a template that, when given a type as argument, will return either \D{true} or \D{false}'. The test done on the tuple element can be as complicated as you want, particularly using \D{is}\DD{()} expressions (see \autoref{isexpression}).
+
+That gives us the following code:
+
+\begin{dcode}
+template staticFilter(alias Pred, T...)
+{
+    static if (T.length == 0) // End of sequence
+        alias TypeTuple!() staticFilter;
+    else static if (Pred!(T[0])
+        alias TypeTuple!(T[0], staticFilter!(Pred, T[1..$])) staticFilter;
+    else
+        alias TypeTuple!(      staticFilter!(Pred, T[1..$])) staticFilter;
+}
+\end{dcode}
+
+Using \DD{staticFilter} is quite simple. Let's get integral types from a tuple, by way of \stdanchor{traits}{isIntegral}:
+
+\begin{dcode}
+alias TypeTuple!(int, double, float, string, byte, bool, float, void) Types;
+
+alias staticFilter!(isIntegral, Types) OnlyIntegrals;
+
+static assert(is(OnlyIntegrals == TypeTuple!(int, byte, bool)));
+\end{dcode}
+
+But that is, admittedly, pretty boring stuff. Though useful from time to time, it's quite rare for someone to be given a pure type tuple like this. A much more common use for the likes of \DD{staticFilter} is when creating complex types.
+
+As a first example, imagine you have a \DD{Graph(Node, Edge)} struct, templated on the nodes (vertice) and edges types (themselves templated). When you create a \DD{Graph} with a factory function (\ref{factory}), it would be nice to be able to mix nodes and edges in a natural way. That is, given \DD{graph}, \DD{node} and \DD{edge} functions that do the obvious thing, you want to autorize calls like:
+
+\begin{dcode}
+/** 
+* Automatically creates a graph 
+*   - with four nodes labelled "A", "B", "C", "D", holding a double, 
+*   - with nodes linking "A" to "B", "D" to "A" and "D" to "C".
+*/
+auto g = graph(node("A", 3.14159), node("B", 1.0), 
+               edge("A","B"),
+               node("C", 2.71828), node("D", 0.0), 
+               edge("D","A"), edge("D", "C"));
+\end{dcode}
+
+This allows the user building her \DD{Graph} to create nodes and edges between these nodes in a natural way (as opposed to, say, batch-building all nodes and then adding edges between them). But, as a library writer, that means your \DD{graph} factory function has the following signature:
+
+\begin{dcode}
+auto graph(NodesOrEdges...)(NodesOrEdges args) 
+if (/* sanity check test on NodesOrEdges */)
+\end{dcode}
+
+Both the sanity check performed by the template constraint (\ref{constraints}) and the building code inside \DD{graph} can be quite complicated. \DD{staticFilter} helps by separating the arguments between nodes and edges. Without extending this example too much, say we have at our disposal the following predicate templates:
+
+\begin{dcode}
+template isNode(N) {/* true iff N is a Node!(LabelType, ValueType)*/}
+template isEdge(E) {/* true iff E is an Edge!(LabelType)*/}
+
+template isNodeOrEdge(T)
+{
+    static if (isNode!T || isEdge!T)
+        enum isNodeOrEdge = true;
+    else
+        enum isNodeOrEdge = false;
+}
+\end{dcode}
+
+And let's suppose also all \emph{bona fide} \DD{Node}s and \DD{Edge}s have  \DD{.LabelType}/\DD{.ValueType} members exposing their inner types (as shown in section \ref{inneralias}).
+
+Then, getting all nodes and edges is easy:
+\begin{dcode}
+alias staticFilter!(isNode, NodesOrEdges) Nodes;
+alias staticFilter!(isEdge, NodesOrEdges) Edges;
+\end{dcode}
+
+This is where things get interesting: obtaining the edges and nodes types is just a first building block. Now \DD{graph} must check at a minimum the following elements:
+
+\begin{enumerate}
+\item All arguments must be nodes or edges.
+\item Is there at least \emph{one} node in the list?
+\item If yes, do all nodes have the same \DD{LabelType} and the same \DD{ValueType}, or, at least, is there a common type between all the labels' types and another one for the values stored in the nodes?
+\item Do edges' \DD{LabelTypes} have a common type? (Note that there can be zero edges).
+\item Do the edges labels have the correct type to refer to the provided nodes?
+\end{enumerate}
+
+Note that \emph{all} these checks are done only on types and thus can be done at compile-time, thereby ensuring a pretty solid static check on the graph built. What cannot be done in this way is verifying during compilation that edges do indeed refer to existing nodes.
+
+Let's use what we have seen until now to create the \DD{GraphCheck} template, before seeing another \DD{staticFilter} example:
+
+\begin{dcode}
+import std.traits: CommonType;
+
+template GraphCheck(NodesOrEdges...)
+{
+    enum GraphCheck = GraphCheckImpl!(NodesOrEdges).result;
+}
+
+template GraphCheckImpl(NodesOrEdges...)
+{
+    alias staticFilter!(isNode, NodesOrEdges) Nodes;
+    alias staticFilter!(isEdge, NodesOrEdges) Edges;
+    
+    // 1. All arguments must be nodes or edges
+    static if (Nodes.length + Edges.length != NodesOrEdges.length)
+    static assert(0, "Some args are not nodes or edges.");
+    
+    // 2. There must be at least one node
+    static if (Nodes.length == 0)
+    static assert(0, "You must provide at least one node.");
+    
+    // 3. Is there a common type for the nodes' labels and values?
+    // First step: extracting labels and values
+    template GetLabel(T) if (isNode!T || isEdge!T)
+    {
+        alias T.LabelType GetLabel;
+    }
+    
+    template GetValue(T) if (isNode!T)
+    {
+        alias T.ValueType GetValue;
+    }
+
+    alias staticMap!(GetLabel, Nodes) NodesLabels;
+    alias staticMap!(GetValue, Nodes) NodesValues; 
+    
+    static if (is(CommonType!(NodesLabels) == void)) // no common type
+    static assert(0, "The nodes do not have all the same label type.");
+    
+    static if (is(CommonType!(NodesValues) == void))
+    static assert(0, "The nodes do not have all the same value type.");
+
+    // 4. Same for edges
+    alias staticMap!(GetLabel, Edges) EdgesLabels;  
+    
+    static if (is(CommonType!(EdgesLabels) == void))
+    static assert(0, "The edges do not have all the same label type.");
+        
+    // 5. Edges - Node compatibility
+    static if(!is(CommonType!NodesLabels == CommonType!EdgesLabels))
+        static assert(0, "Nodes and edges do not have the same label type.");
+    
+    enum result = true;
+}    
+\end{dcode}
+
+This is one huge template, but \DD{staticFilter} sits square in the middle and greatly simplifies the code. Now, \DD{graph} signature is simply:
+
+\begin{dcode}
+auto graph(NodesOrEdges...)(NodesOrEdges args) if (GraphCheck!NodesOrEdges)
+{ ... }
+\end{dcode}
+
+
 
 \subsubsection{Folding Type Tuples}\label{staticreduce}
 
