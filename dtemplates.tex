@@ -36,7 +36,7 @@
 
 %%%% Formatting commands %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\definecolor{shadecolor}{rgb}{0.8,0.8,0.85}
+\definecolor{shadecolor}{rgb}{0.8,0.8,0.9}
 \definecolor{darkblue}{rgb}{0.1,0.1,0.8}
 
 \newcommand{\D}[1]{{\color{darkblue}\texttt{#1}}}
@@ -53,10 +53,18 @@
 \newcommand{\aparte}[2]
 {
 \begin{shaded}
-{\large\textbf{#1}}\newline
+{\large\textbf{ #1}}\newline
 #2
 \end{shaded}
 }
+
+\newcommand{\unfinished}[1]
+{{\color{red}
+\begin{framed}
+\textsc{This section is still a Work In Progress:\ }\newline
+#1
+\end{framed}
+}}
 
 %%%%%%%% Hyperlinks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -78,6 +86,7 @@
 \input{templates_intro}
 \input{templates_basics}
 \input{templates_advanced}
+\input{templates_around}
 \input{templates_examples}
 \input{templates_appendix}
 
