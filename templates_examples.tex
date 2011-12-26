@@ -130,6 +130,8 @@ static assert(is(OnlyIntegrals == TypeTuple!(int, byte, bool)));
 
 But that is, admittedly, pretty boring stuff. Though useful from time to time, it's quite rare for someone to be given a pure type tuple like this. A much more common use for the likes of \DD{staticFilter} is when creating complex types.
 
+\subsubsection{Example: building a \DD{Graph}}
+
 As a first example, imagine you have a \DD{Graph(Node, Edge)} struct, templated on the nodes (vertice) and edges types (themselves templated). When you create a \DD{Graph} with a factory function (\ref{factory}), it would be nice to be able to mix nodes and edges in a natural way. That is, given \DD{graph}, \DD{node} and \DD{edge} functions that do the obvious thing, you want to autorize calls like:
 
 \begin{dcode}
@@ -251,11 +253,13 @@ auto graph(NodesOrEdges...)(NodesOrEdges args) if (GraphCheck!NodesOrEdges)
 { ... }
 \end{dcode}
 
-
-
 \subsubsection{Folding Type Tuples}\label{staticreduce}
 
+\TODO{Examples to give: biggest type in the lot, sorting types?}
+
 \subsection{Zipping Types, Interspersing Types, Crossing Types}
+
+\TODO{Determine if this subsection is really useful. Is there any short and telling example?}
 
 \begin{dcode}
 /**
@@ -281,6 +285,26 @@ Inspiration for this example comes from \href{http://david.rothlis.net/d/templat
 \section{Cloning, sort of}
 
 \TODO{(Elsewhere) creating a class from a struct?}
+
+\section{Generic Maker Function}
+
+Like this:
+
+\begin{dcode}
+class C
+{
+    int i, j;
+    
+    this(int _i) { i = _i; j = _i;}
+    this(int _i, int _j) { i = _i; j =_j;}
+}
+
+alias make!C makeC;
+
+auto theCs = map!makeC([0,1,2,3,4]);
+auto theCs2 = map!makeC(zip([0,1,2,3,4], 
+                            [4,3,2,1,0]));
+\end{dcode}
 
 \section{Recording Successive States}
 
