@@ -391,7 +391,7 @@ As values of this type can be created and named, they are \emph{almost} first-cl
 
 \emph{The }\DD{.tupleof}\emph{ property} is a property of aggregate types: classes and structs. It returns an expression tuple containing the members's values.
 
-\emph{Member names tuple} is a tuple of strings you get by using \DD{\_\_traits(members, SomeType)}. It contains all \DD{SomeType} members' names, as strings (including the methods, constructors, aliases and such).
+\emph{Member names tuple} is a tuple of strings you get by using \D{\_\_traits}\DD{(members, SomeType)}. It contains all \DD{SomeType} members' names, as strings (including the methods, constructors, aliases and such).
 
 \stdanchor{traits}{TypeTuple} is a pre-defined template in Phobos\index{Phobos}\index{std!typetuple} that's the simplest possible template holding a tuple. It's the common D way to deal with type tuples. The name is bit of a misnomer, because it's a standard template parameter tuple: it can hold types, but also values.
 
@@ -437,7 +437,8 @@ string toStrings(string sep = ", ", Args...)(Args args)
     return result;
 }
 
-assert( toStrings(1, "abc", 3.14, 'a', [1,2,3]) == "1, abc, 3.14, a, [1,2,3]"); 
+assert( toStrings(1, "abc", 3.14, 'a', [1,2,3]) 
+              == "1, abc, 3.14, a, [1,2,3]"); 
 \end{dcode}
 
 If you want to restrict the number of parameters or their types, use template constraints:
@@ -536,7 +537,7 @@ template nameOf(T...) if (T.length == 1) // restricted to one argument
 
 \subsection{Example: Inheritance Lists}\label{inheritancelist}
 
-\TODO{All this section should be rewritten. The compiler is more accepting than I thought.}
+\unfinished{All this section should be rewritten. The compiler is more accepting than I thought.}
 
 Using class templates\index{class templates} (\ref{classsyntax}), we might want to adjust the inheritance list at compile-time. Type tuples are a nice way to it: first define a template that alias itself to a type tuple, then have the class inherit from the template:
 
@@ -672,6 +673,9 @@ class NoError : CheckedInheritance!(MyClass) { ... }
 \section{Operator Overloading} \label{operatoroverloading}
 
 \index{operator!overloading}
+
+\unfinished{Oh yes, that's quite not finished. I'm afraid I find D syntax for operator overloading a bit heavy for my tastes. As D code in \LaTeX, it's becoming \emph{very} cumbersome to write.}
+
 D allows users to redefine some operators to enhance readability in code. And guess what? Operator overloading is based on templates. They are described \href{www.dlang.org/operators.html}{here} in the docs. 
 
 \subsection{Syntax}
@@ -679,11 +683,11 @@ D allows users to redefine some operators to enhance readability in code. And gu
 \index{syntax!operator overloading}
 Table \ref{table:operatoroverloading} gives you the operator that you can overload and which function template you must define:
 
-\begin{table}
-\begin{tabular}[htb]{|c|c|c|}
-\hline
-Category & Operators & Template to define\\ 
-\hline \hline
+%\begin{table}
+%\begin{tabular}[htb]{|c|c|c|}
+%\hline
+%Category & Operators & Template to define\\ 
+%\hline \hline
 
 %Unary & \DD{+}, \DD{-}, \DD{++}, \DD{--} &\\
 %      & \DD{times}, \DD{tilde} &\hline
@@ -723,10 +727,10 @@ Category & Operators & Template to define\\
 %Cast operator & \D{cast()} &\hline
 %\D{cast}\DD{(T)a} & & T opCast(T)() & \hline
 
-\end{tabular}
-\caption{Operator Overloading}
-\label{table:operatoroverloading}
-\end{table}
+%\end{tabular}
+%\caption{Operator Overloading}
+%\label{table:operatoroverloading}
+%\end{table}
 
 Many other operators can be overloaded in D, but do not demand templates.
 
@@ -901,7 +905,7 @@ Since string mixins\index{string mixins} really go hand in hand with \DD{opDispa
 
 \subsection{Getters and Setters}\label{opdispatchgetterssetters}
 
-For example, suppose you have a bunch of members, all private and want client code to access them through good ol' \DD{setXXX/getXXX} methods. Only, you do not want
+For example, suppose you have a bunch of members, all private and want client code to access them through good ol' \DD{setXXX/getXXX} methods. Only, you do not want to write all these methods by yourself. You lucky you, \DD{opDispatch} can help you.
 
 \index{example!string mixins}
 \index{string mixins}
@@ -950,8 +954,10 @@ writeln(gs.gettheString); // "abc"
 Nifty, eh? This could be a bit better by dealing with the capitalization of the first letter: \DD{getTheString}, but this is good enough for now. Even better, you could put this code in a mixin template to give this get/set capacity to any struct or class (see section \ref{mixintemplates}).
 
 \subsection{Wrapper Templates}\label{wrappertemplates}
-
 \index{template!wrapper templates}
+
+\unfinished{The idea is to put some functionality inside before (and possibly, after, the dispatching code.}
+
 We've seen how to inject code with mixin templates (\ref{mixintemplates}) or use template class inheritance to modify you classes' code (\ref{inheritancelist}). We've also seen how you can define a wrapper struct around a range to expose a new iteration scheme for its element (\ref{structflatten}). All these idioms\index{idiom!wrapper template} are way to modify pre-existing code. 
 
 But what you want to put a logging functionality around a predefined struct, so that any method call is logged? For class, you can inherit from the class and defined a subclass with new, modified, methods. But you have to do that `by hand', so to speak. And for a struct, you're out of luck.
@@ -965,19 +971,14 @@ But, templates can come to the rescue, with a bit of \DD{opDispatch} magic.
 - call typeof() on this.
 - opDispatch? Test if wrapped.foo() is legal. If yes, call
 
-X X X X X X X X
 
 \section{Templates All the Way Up}\label{templatesintemplates}
 
-\TODO{Write this section.}
-
-Double-decker templates.
-
-Curried templates.
-
-To separate two type tuples.
+\unfinished{In this section, you'll see: Double-decker templates, Curried templates and how to separate two type tuples.}
 
 \section{\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}}\label{fileandline}
+
+\unfinished{This section needs some heavy testing. My D config was broken when I wrote this part.}
 
 In section \ref{default}, we've seen that template parameters can have default values. There are also two special, reserved, symbols that are defined in D: \D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}. They are used in standard (non-\D{mixin}) templates, but their behaviour will remind you of mixins: when instantiated, they get replaced by strings containing the file name and the line in the file of the \emph{instantiation call site}. Yes, it's a sort of two-way dialogue: module \DD{a.d} defines template \DD{T}. Module \DD{b.d} asks for a \DD{T} instantiation. This instantiation is done in module \DD{a.d}, but will line and filename taken from \DD{b.d}!
 

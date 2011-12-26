@@ -172,12 +172,14 @@ In fact danger lies the other way round: it's easy to forget that CTE functions 
 
 \subsection{\D{\_\_ctfe}}
 
-
+\unfinished{Write something on this new functionality, which enables testing inside a function whether we are at compile-time or runtime.}
 
 \subsection{Templates and CTFE} \label{templatesandctfe}
-
 \index{CTFE!and templates}
 \index{template!and CTFE}
+
+\unfinished{Some juicy examples should be added.}
+
 That means: you can feed compile-time constants to your classical D function and its code will be evaluated at compile-time. As far as templates are concerned, this means that function return values can be used as template parameters and as \D{enum} initializers:
 
 \index{example!CTFE}
@@ -313,6 +315,8 @@ template interpolate(string code)
 
 \subsection{Example: extending \DD{std.functional.binaryFun}}\label{naryfun}
 
+\unfinished{This one is dear to my heart. Mapping $n$ ranges in parallel is one of the first things that I wanted to do with ranges, for examples to create ranges of structs with constructor taking more than one parameter.}
+
 Phobos has two really interesting templates: \stdanchor{functional}{unaryFun} and \stdanchor{functional}{binaryFun}.
 
 \TODO{Explain that this aims to extend that to n-args functions.}
@@ -387,6 +391,8 @@ template naryFun(string code, int arit = arity(code))
 
 \section{\D{\_\_traits}}\label{traits}
 
+\unfinished{I should maybe add an example about how to get all parents from a class type. Also, iterating on all members of a type, or extracting types and names from an aggregate (a module, a class or a struct).}
+
 The general \D{\_\_traits} syntax can be found online \href{www.dlang.org/traits.html}{here}. Traits are basically another compile-time introspection\index{compile-time!introspection!with \_\_traits@with \D{\_\_traits}}\index{introspection!with \_\_traits@with \D{\_\_traits}} tool, complementary to the \D{is} expression (see appendix \ref{isexpression}). Most of time, \D{\_\_traits} will return \D{true} or \D{false} for simple type-introspection questions (is this type or symbol an abstract class, or a final function?). As D is wont to do, these questions are sometimes ones you could ask using \D{is} or template constraints, but sometimes not. What's interesting is that you can do some introspection on types, but also on symbols or expressions.
 
 Seeing how this is a document on templates and that we have already seen many introspection tools, here is a quick list of what yes/no questions you can ask which can or \emph{cannot} be tested with \D{is}:\footnote{As with any other affirmation in this document, readers should feel free to prove me wrong. That shouldn't be too difficult.}
@@ -446,10 +452,4 @@ Example: iterating on members, extracting types from an aggregate.
 
 \section{Wrapping it all Together}\label{wrappingitup}
 
-Using traits to crack a type open.
-
-templated CT functions to generate strings to be mixed-in.
-
-Example: cloning a type
-Example: naryFun?
-
+\unfinished{Here is what I want to show: using traits to crack a type open, templated CT functions to generate strings to be mixed-in, cloning a type.}
