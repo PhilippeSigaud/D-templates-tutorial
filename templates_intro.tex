@@ -7,6 +7,9 @@ Templates are a central feature of D, giving you powerful compile-time code gene
 
 This document aims to be a kind of tutorial on D templates, to show the beginning D coder what can be achieved with them. When I was doing C++\index{C++}, I remember \emph{never} using templates for more than \emph{containers-of-T} stuff, and considered Boost-level\footnote{ The \href{http://www.boost.org}{Boost}\index{Boost} C++ library collection makes heavy use of templates.} metaprogramming the kind of code I could never understand, never mind produce. Well, D's sane syntax for templates, nifty things like \D{static if}, \D{alias} or tuples cured me of that impression. I hope this document will help you also.
 
+\section*{What's in This Document}
+\addcontentsline{toc}{section}{What's in This Document}
+
 \autoref{basics} deals with the very basics: how to declare and instantiate a template, the standard `building blocks' you'll use in almost all your templates, along with function (\ref{functiontemplates}), struct (\ref{structtemplates}) and class (\ref{classtemplates}) templates. Throughout the text, examples will present applications of these concepts. 
 
 \autoref{advanced} is about more advanced topics a D template user will probably use, but not on a daily basis, like template constraints (\ref{constraints}), mixin templates (\ref{mixintemplates}) or operator overloading (\ref{operatoroverloading}). 
@@ -15,4 +18,42 @@ This document aims to be a kind of tutorial on D templates, to show the beginnin
 
 \autoref{examples} presents more developed examples of what can be done with templates, based on real needs I had at some time and that could be fulfilled with templates.
 
-Finally, an appendix on the ubiquitous \D{is} expression (\ref{isexpression}) completes this document.
+Finally, an appendix (\autoref{isexpression}) on the ubiquitous \D{is} expression  completes this document.
+
+\section*{Conventions}
+\addcontentsline{toc}{section}{Conventions}
+
+In this doc:
+
+\begin{itemize}
+\item D keywords will be marked like this: \D{int}, \D{static if}, \D{\_\_traits}.
+\item Symbols and names used in code samples and cited in the text will be written like this: \DD{myFunc}, \DD{flatten}.
+\item internal and external links will be in red, like \href{http://www.dlang.org}{this} or like this (\ref{basics}).
+\end{itemize}
+
+Code samples are shown in their own syntax-highlighted box:
+
+\begin{dcode}
+import std.stdio;
+
+// This is a comment
+void hello(uint times)
+{
+    foreach(i; 0..times) writeln("Hello, Word!");
+}
+\end{dcode}
+
+For those of you interested by \LaTeX, this document uses the \href{http://code.google.com/p/minted/}{minted}\index{minted (LaTex package)@\DD{minted} (\LaTeX\ package)} package for the code samples. Yes, I know they are larger than the main text, but that's to get about 80-chars-long lines. And no, for the time being I'll just respect the standard \LaTeX\ text width, unless many people complain about it.
+
+I will sometimes make a little aparte, discussing a small piece of info too small to be its own section. These will be marked so:
+
+\aparte{What's with all that red and blue?}{What, don't you like having red links and blue keywords in your text?}
+
+Finally, some section in this doc are not finished yet. The sections I, at least, consider as unfinished will begin with a friendly frame:
+
+\unfinished{That's also true for this very intro. I should have a 'Thanks' subsection where I list people that contributed to this text.}
+
+\section*{How to Get This Document}
+\addcontentsline{toc}{section}{How to Get This Document}
+
+This doc is just a bunch of \LaTeX documents \href{http://github.com/PhilippeSigaud/D-templates-tutorial}{hosted on GitHub}. Don't hesitate to fork it or (even better for me), to make pull requests!
