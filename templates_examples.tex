@@ -39,7 +39,9 @@ Even a simple template such as this one can have great uses:
 \item Given a bunch of function types, getting their return types or parameter typetuples.
 \end{itemize}
 
-The seconde use can be useful to unit-test a part of your code. Suppose you have a templated function that is supposed to work on any built-in type. You do not need to generate all possible combinations of types. Just use \DD{staticMap} to generate them for you:
+\subsubsection{Example: Testing a Function}
+
+The seconde use in the previous section's list can be useful to unit-test a part of your code. Suppose you have a templated function that is supposed to work on any built-in type. You do not need to generate all possible combinations of types. Just use \DD{staticMap} to generate them for you:
 
 \begin{dcode}
 /** 
@@ -78,21 +80,22 @@ Now, if your function is supposed to work on all the generated qualified types, 
 \begin{dcode}
 void myFun(T)(T t) { ... }
 
-unittest {
-    /* Here we generate the qualified types, see above */
-    (...)
-    
-    template test(alias fun)
+/* Here we generate the qualified types, see above */
+(...) 
+temp
+late test(alias fun)
+{
+    void on(T...)()
     {
-        void on(T...)()
-        {
-            foreach(Type; T)
-                static if (!__traits(compiles, fun(Type.init)))
-                    pragma(msg, "Bad testing combination: " 
-                               ~ fun.stringof ~ " and " ~ Type.stringof);
-        }
+        foreach(Type; T)
+            static if (!__traits(compiles, fun(Type.init)))
+                pragma(msg, "Bad testing combination: " 
+                          ~ fun.stringof ~ " and " ~ Type.stringof);
     }
-    
+}
+   
+unittest 
+{
     test!(myFun).on!(QualifiedTypes);
 }
 \end{dcode}
@@ -183,7 +186,7 @@ This is where things get interesting: obtaining the edges and nodes types is jus
 
 Note that \emph{all} these checks are done only on types and thus can be done at compile-time, thereby ensuring a pretty solid static check on the graph built. What cannot be done in this way is verifying during compilation that edges do indeed refer to existing nodes.
 
-Let's use what we have seen until now to create the \DD{GraphCheck} template, before seeing another \DD{staticFilter} example:
+Let's use what we have seen until now to create the \DD{GraphCheck}\label{graphcheck} template, before seeing another \DD{staticFilter} example:
 
 \begin{dcode}
 import std.traits: CommonType;
