@@ -258,7 +258,7 @@ This code is much more powerful than the one we saw in section \ref{stringmixins
 
 \subsection{Simple String Interpolation}
 
-All this play with the concatenating operator (\DD{\~}) is becoming a drag. We should write a string interpolation function, evaluable at compile-time of course, to help us in our task. Here is how I want to use it:
+All this play with the concatenating operator (\DD{~}) is becoming a drag. We should write a string interpolation function, evaluable at compile-time of course, to help us in our task. Here is how I want to use it:
 
 \begin{dcode}
 alias interpolate!"struct #0 { #1 value; #0[#2] children;}" makeTree;
