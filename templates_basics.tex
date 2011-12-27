@@ -49,7 +49,7 @@ The template body can contain any standard D declarations: variable, function, c
 
 Inside the template body, the parameters are all accessible as placeholders for the future arguments. Also, the template's own name refers to its current instantiation when the code is generated. This is mostly used in struct (see section \ref{structtemplates}) and class (\ref{classtemplates}) templates.
 
-Here are some template declaration examples:\index{example!template definition}
+Here are some template declaration examples:\index{example!template definition}\label{templatedeclarationexamples}
 
 \begin{dcode}
 template ArrayOf(T) // T is a type
@@ -72,7 +72,7 @@ template Transformer(From, To) // From and To are types, too
     }
 }
 
-template NameOf(alias a)
+template nameOf(alias a)
 {
     enum string name = a.stringof; // enum: manifest constant
                                    // determined at compile-time
@@ -117,8 +117,6 @@ Note the `\DD{!}' before the comma-separated argument list. If the argument list
 templateName!argument
 \end{dcode}
 
-
-
 \aparte{Templates as templates arguments\index{template!arguments!templates as}}{Arguments can themselves be the result of another template instantiation. If a template returns a type upon instantiation, it's perfectly OK to use it inside another template argument list. In this document you'll regularly see Matrioshka calls like this: \DD{firstTemp!(secondTempl!(Arguments), OtherArguments).}}
 
 
@@ -133,7 +131,7 @@ Transformer!(double,int) // From is an alias for the type double
                          // To for the type int
 
 struct MyStruct { ... }
-NameOf!(MyStruct) // "MyStruct" is a identifier -> captured by alias
+nameOf!(MyStruct) // "MyStruct" is a identifier -> captured by alias
 
 ComplicatedOne!( int[]   // a type
                , "Hello" // a string literal
