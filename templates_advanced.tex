@@ -23,7 +23,7 @@ When the compiler tries to instantiate a template, if will first check the const
 
 You may have many template declarations with the same name and differing constraints (in fact, that's the very use case for constraints). Depending on the activated constraints, some or all will be considered by the compiler.
 
-\index{example!template constraints}
+\index{template constraints}
 \begin{dcode}
 template Constrained(T) 
     if (is(T : int)) { ... } // #1
@@ -57,7 +57,7 @@ class TheClass(T)
 
 When you write constraints, just remember they are a compile-time construct. For \DD{theFunction}, \DD{argument} is not known at compile-time, only its type, \DD{T}. So you should not use \DD{argument} in your constraint. If you need a value of type \DD{T}, use \DD{T.init}. For 
 
-\index{example!template constraints}
+\index{template constraints}
 \begin{dcode}
 auto callTwice(alias fun, T)(T arg)
     // Is it OK to do fun(fun(some T))?
@@ -75,8 +75,8 @@ Have a look at constraints poster-child: \emph{ranges}\index{range}.\footnote{ R
 
 \std{range} defines a set of templates\index{predicate templates!for ranges} that check the different ranges concepts, called \DD{isInputRange}, \DD{isForwardRange}\ldots I call these \D{bool}-becoming templates \emph{predicate templates} and talk about them in section \ref{predicates}. Usage is quite simple:
 
-\index{example!predicate templates}
-\index{example!range templates}
+\index{predicate templates}
+\index{range templates}
 \begin{dcode}
 import std.range;
 
@@ -103,7 +103,7 @@ The good news is that the compiler will complain\footnote{ I think \emph{compile
 
 The main problem is that, compared to templates specializations, you cannot do:
 
-\index{example!templates constraints limitations}
+\index{templates constraints limitations}
 \begin{dcode}
 template Temp(T) if (is(T:int)) // #1
 { ... } // specialized for ints
@@ -187,7 +187,7 @@ So in the end, the conclusion is a bit of \emph{D Zen}\index{D Zen}: you are giv
 
 \section{Predicate Templates}\label{predicates}
 
-When you find yourself typing again and again the same \D{is} expression\index{is expression@\D{is} expression} or the same complicated constraint\index{template!constraints}, it's time to abstract it into another template, a \D{bool}-becoming one.\index{predicate templates} If you have a look a section \ref{istype}, you'll see a way to test if a particular piece of D code is OK (compilable) or not. Another way to obtain this is by using \D{\_\_traits}\DD{(compiles, some Code)}\index{traits@\D{\_\_traits}}.
+When you find yourself typing again and again the same \D{is} expression\index{is expression@\D{is} expression} or the same complicated constraint\index{template!constraints}, it's time to abstract it into another template, a \D{bool}-becoming one.\index{predicate templates} If you have a look a section \ref{istype}, you'll see a way to test if a particular piece of D code is OK (compilable) or not. Another way to obtain this is by using \D{\_\_traits}\DD{(compiles, some Code)}\index{\_\_traits@\D{\_\_traits}}.
 
 In \autoref{examples}, the section \ref{staticfilter}, on page \pageref{graphcheck} shows another example of a predicate template.
 
@@ -195,7 +195,7 @@ In \autoref{examples}, the section \ref{staticfilter}, on page \pageref{graphche
 
 For example, if you want to test is some type can be serialized, through a \D{size\_t}\DD{ serialize()} member function:
 
-\index{example!predicate templates!member testing}
+\index{predicate templates!member testing}
 \begin{dcode}
 template isSerialazable(Type)
 {
@@ -213,7 +213,7 @@ template isSerialazable(Type)
 
 As seen in previous sections (\ref{structflatten}, \ref{constraintsusage}), we are writing here a kind of compile-time interface. Any type can pass this test, as long as it has a \DD{.serialize} member that returns a \D{size\_t}. Of course, you're not limited to testing member functions. Here is a template that verify some type has arithmetic operations:
 
-\index{example!predicate templates!operator testing}
+\index{predicate templates!operator testing}
 \begin{dcode}
 template hasArithmeticOperations(Type)
 {
@@ -247,8 +247,8 @@ You may also get a certain feel of a... \emph{pattern} emerging from the previou
 
 Let's come back to \DD{Flatten} from section \ref{structflatten}. Using concept-checking templates, we will verify the range-ness of the wrapper type and promote \DD{Flatten} to forward range status if \DD{Range} itself is a forward range:
 
-\index{example!predicate templates}
-\index{example!range}
+\index{predicate templates}
+\index{range}
 \begin{dcode}
 import std.range;
 
@@ -277,8 +277,8 @@ And now comes one of my favourite subjects: template tuple parameters\index{temp
 For this very reason (that it can bunch of types interspersed with symbols), some people consider it a mongrel addition to D templates. That is true, but the ease of use and the flexibility it gives us is in my opinion well worth the cost of a little cleanliness.
 D template tuples have a \DD{.length} member (defined at compile-time, obviously), their elements can be accessed using the standard indexing syntax and they can even be sliced (the \DD{\$} symbol is aliased to the tuple length):
 
-\index{example!template tuple parameter}
-\index{example!type tuple}
+\index{template tuple parameter}
+\index{type tuple}
 \begin{dcode}
 template DropFront(T...)
 {
@@ -296,7 +296,8 @@ static assert(is( Shortened[1] == string);
 
 You can declare a value of type `tuple'. This value (called an expression tuple) also has a length, can be indexed and can be sliced. You can also pass it directly to a function if the types check with a function parameter list. If you throw it into an array\index{arrays!and expression tuples}, it will `melt' and initialize the array:
 
-\index{example!expression tuple}
+\index{expression tuple}
+\index{tuple!expression tuple}
 \begin{dcode}
 template TupleDemonstration(T...)
 {
@@ -421,9 +422,8 @@ static assert(!is( TypeTuple!(int, void, string) == TypeTuple!(int, string)));
 
 Tuples are very useful to make function templates variadic (that is, accept a different number of parameters). Without restriction on the passe-in types, you will need most of the time another function template to process the arguments. A standard example for this is transforming all parameters into a \D{string}:
 
-\index{example!variadic functions}
-\index{example!compile-time iteration}
-\index{compile-time!iteration}
+\index{variadic functions}
+\index{compile-time iteration}
 \begin{dcode}
 string toStrings(string sep = ", ", Args...)(Args args)
 {
@@ -452,7 +452,7 @@ int howMany(Args...)(Args args) if (Args.length > 1 && Args.length < 10)
 
 Imagine you a have a bunch of ranges. Since they all have different types, you cannot put them in an array. And since most of them are structs, you cannot cast them to a base type, as you would for classes. So you hold them in a tuple. Then, you need to call the basic range methods on them: calling \DD{popFront} on all of them, etc. Here is a possible way to do that:
 
-\index{example!tuples!and ranges}
+\index{tuples!and ranges}
 \begin{dcode}
 import std.range, std.algorithm;
 
@@ -476,8 +476,7 @@ assert(equal( arr3, [1,4]));
 
 It works for any number of ranges, that's cool. And it's checked at compile-time, you cannot pass it an \D{int} discretly, hoping no one will see: it's the job of \DD{areAllRanges}\index{predicate templates!areAllRanges@\DD{areAllRanges}} to verify that. Its code is a classical example of recursion\index{recursion} on type tuples:
 
-\index{example!predicate template!on type tuples}
-\index{predicate templates}
+\index{predicate template!on type tuples}
 \index{type tuple!recursion}
 \index{static if@\D{static if}!nested}
 \begin{dcode}
@@ -541,7 +540,8 @@ template nameOf(T...) if (T.length == 1) // restricted to one argument
 
 Using class templates\index{class templates} (\ref{classsyntax}), we might want to adjust the inheritance list at compile-time. Type tuples are a nice way to it: first define a template that alias itself to a type tuple, then have the class inherit from the template:
 
-\index{example!class templates and type tuples}
+\index{class templates!and type tuples}
+\index{type tuples!and class templates}
 \begin{dcode}
 interface I { ... }
 interface J { ... }
@@ -631,7 +631,7 @@ By the way, code to do that, also called \DD{NoDuplicates}, is already in Phobos
 
 The last piece of the puzzle is to get a given class inheritance list. The \D{is} expression\index{is expression@\D{is} expression!types specializations} give us that by way of types specializations (\ref{typespecializations}):
 
-\index{example!is expression@\D{is} expression!types specializations}
+\index{is expression@\D{is} expression!types specializations}
 \begin{dcode}
 template SuperList(Class) if (is(Class = class))
 {
@@ -753,7 +753,7 @@ struct Number(T) if (isNumeric!T)
 
 To give it the four basic arithmetic operators with another \DD{Number} and another \DD{T}, you define \DD{opBinary} for \DD{+}, \DD{-}, \DD{*} and \DD{/}. This will activate operations were \DD{Number} is on the left. In case it's on the right, you have to define \DD{opBinaryRight}. Since this these overloading tend to use string mixins, I'll use them even though they are introduced only on section \ref{stringmixins}. The basic idea is: string mixins paste code (given as a compile-time string) where they are put.
 
-\index{example!arithmetic operators}
+\index{arithmetic operators}
 \index{operator!arithmetic}
 \begin{dcode}
 struct Number(T) if (isNumeric!T)
@@ -821,7 +821,7 @@ Note that the code you place inside a mixin template doesn't have to make sense 
 
 For example, remember the operator overloading code we saw in section \ref{operatoroverloading}? Here is a mixin containing concatenating functionality:
 
-\index{example!mixin templates}
+\index{mixin templates}
 \index{operator!concatenation, (~)@concatenation, (\DD{\~})}
 \begin{dcode}
 mixin template Concatenate()
@@ -878,7 +878,7 @@ The usual template constraints\index{templates constraints!and \DD{opDispatch}} 
 
 When a type has an \DD{opDispatch} method and a member call is done without finding a defined member, the call is dispatched to \DD{opDispatch} with the invoked name as a string.
 
-\index{example!opDispatch@\DD{opDispatch}}
+\index{opDispatch@\DD{opDispatch}}
 \begin{dcode}
 struct Dispatcher
 {
@@ -907,9 +907,8 @@ Since string mixins\index{string mixins} really go hand in hand with \DD{opDispa
 
 For example, suppose you have a bunch of members, all private and want client code to access them through good ol' \DD{setXXX/getXXX} methods. Only, you do not want to write all these methods by yourself. You lucky you, \DD{opDispatch} can help you.
 
-\index{example!string mixins}
 \index{string mixins}
-\index{example!opDispatch@\DD{opDispatch}}
+\index{opDispatch@\DD{opDispatch}}
 \begin{dcode}
 class GetSet
 {
@@ -984,7 +983,7 @@ In section \ref{default}, we've seen that template parameters can have default v
 
 They are mostly declared like this:
 
-\index{example!\_\_FILE\_\_ and \_\_LINE\_\_@\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}!unique types}
+\index{\_\_FILE\_\_ and \_\_LINE\_\_@\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}!unique types}
 \begin{dcode}
 struct Unique(T, string file, size_t line)
 {
@@ -1016,7 +1015,7 @@ Even though \DD{u} and \DD{v} are declared the same way, they have different typ
 
 Apart from \emph{one-of-a-kind} types, this is also useful for debugging: you can use the strings in error messages:
 
-\index{example!\_\_FILE\_\_ and \_\_LINE\_\_@\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}!debugging}
+\index{\_\_FILE\_\_ and \_\_LINE\_\_@\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}!debugging}
 \begin{dcode}
 auto flatten(Range, file == __FILE__, line == __LINE__)(Range range)
 { 

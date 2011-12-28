@@ -23,7 +23,7 @@ If what's inside the parenthesis is valid (see below), \D{is}\DD{()} returns \D{
 
 Let's begin with the very first syntax: if \DD{Type} is a valid D type in the scope\index{scope!local scope} of the \D{is} expression, \D{is}\DD{()} returns \D{true}. As a bonus, inside a \D{static if}, the optional \DD{identifier} becomes an alias for the type. For 
 
-\index{example!is expression@\D{is} expression}
+\index{is expression@\D{is} expression}
 \begin{dcode}
 template CanBeInstantiatedWith(alias templateName, Types...)
 {
@@ -44,7 +44,7 @@ An interesting use for this form of \D{is}, is testing whether or not some D cod
 
 Let's put this to some use. Imagine you have a function template \DD{fun} and some arguments, but you do not know if \DD{fun} can be called with this particular bunch of arguments. If it's a common case in your code, you should abstract it as a template. Let's call it \DD{validCall} and make it a function template also, to easily use it with the arguments:
 
-\index{example!is(typeof())@\D{is}\DD{(}\D{typeof}\DD{())}}
+\index{is(typeof())@\D{is}\DD{(}\D{typeof}\DD{())}}
 \begin{dcode}
 bool validCall(alias fun, Args...)(Args args) 
 {
@@ -96,7 +96,7 @@ is(Type identifier == SomeComplexTypeDependingOnUAndV, U, V)
 really means: `excuse me, Mr. D Compiler, but is \DD{Type} perchance some complex type depending on \DD{U} and \DD{V} for some \DD{U} and \DD{V}? If yes, please give me those.'
 For 
 
-\index{example!is expression@\D{is} expression}
+\index{is expression@\D{is} expression}
 \begin{dcode}
 template ArrayElement(T)
 {
@@ -151,7 +151,7 @@ template isTuple(T)
 
 But sometimes D channels its inner perl\index{perl!inner perl in D} and, lo! There is more than one way to do it! You can use IFTI\index{IFTI} (see \ref{ifti}) and our good friend the \D{is}\DD{(}\D{typeof}\DD{({...}()))} expression there. You can also use \D{\_\_traits}, depending on you mood, but since this appendix is specifically on \D{is}:
 
-\index{example!is(typeof())@\D{is}\DD{(}\D{typeof}\DD{())}}
+\index{is(typeof())@\D{is}\DD{(}\D{typeof}\DD{())}}
 \begin{dcode}
 template isTuple(T)
 {
@@ -206,7 +206,7 @@ Specialization & Satisfied if &\ \DD{identifier} becomes \\ \hline \hline
 
 Let's put that to some use: we want a factory template that will create a new struct or a new class, given its name as a template parameter:
 
-\index{example!is expression@\D{is} expression!types specialization}
+\index{is expression@\D{is} expression!types specialization}
 \index{std!algorithm}
 \begin{dcode}
 import std.algorithm;
