@@ -895,9 +895,7 @@ body
 
 \subsection{Modifying Functions: Memoizing a Function} \label{memoizing}
 
-\unfinished{Almost there, though.}
-
-\TODO{Should this section be moved in the struct templates section?}
+\TODO{Should this section be moved in the struct templates section? Or even in \autoref{examples}?}
 
 Let us use a template to wrap a function and provide some additional usefulness when calling the function. Memoizing is an interesting and useful example: if the function does long calculations, it might be efficient to store the computed results in an external structure and to query this structure for the result instead of calling the function again.
 
@@ -913,11 +911,14 @@ struct Memoize(alias fun)
     alias ParameterTypeTuple!fun PTT;
     RT[Tuple!(PTT)] memo; // stores the result, indexed by arguments.
 
-    RT opCall(PTT args) {
-        if (tuple(args) in memo) {    // Have we already seen these args?
+    RT opCall(PTT args)
+    {
+        if (tuple(args) in memo)      // Have we already seen these args?
+        {
             return memo[tuple(args)]; // if yes, use the stored result
         }
-        else {                        // if not, compute the result and store it.
+        else // if not, compute the result and store it.
+        {
             RT result = fun(args);
             memo[tuple(args)] == result;
             return result;
@@ -938,7 +939,7 @@ int veryLongCalc(int i double d, string s) { ... }
 
 auto vlcMemo = memoize!(veryLongCalc);
 
-// calculate veryLongCalc(1, 3.1r4, "abc")
+// calculate veryLongCalc(1, 3.14, "abc")
 // takes minutes!
 int res1 = vlcMemo(1, 3.14, "abc"); 
 int res2 = vlcMemo(2, 2.718, "def");// minutes again!
@@ -973,43 +974,80 @@ Here is a possible small implementation. It makes for a nice example of enabling
 \index{idiom!enabling/disabling code}
 \index{idiom!policy}
 \begin{dcode}
-enum MemoStoringPolicy { 
+enum Storing { 
     always,  // there is no tomorrow
     maximum  // sustainable growth
 }
 
-enum MemoDiscardingPolicy { 
+enum Discarding { 
     oldest,   // only discard the oldest result
     fraction, // discard a fraction (0.5 == 50%)
     all       // burn, burn!
 }
 
 struct Memoize(alias fun, 
-               MemoStoringPolicy storing,
-               MemoDiscardingPolicy discarding)
+               Storing storing,
+               Discarding discarding)
 {
     alias ReturnType!fun RT;
     alias ParameterTypeTuple!fun PTT;
 
-    static if (storing == MemoStoringPolicy.maximum)
+    static if (storing == Storing.maximum)
     {
         Tuple!(PTT)[] argsQueue;
         size_t maxNumStored;
     }
     
-    static if (discarding == MemoDiscardingPolicy.fraction)
+    static if (discarding == Discarding.fraction)
         float fraction;
 
     RT[Tuple!(PTT)] memo; // stores the result, indexed by arguments.
     
-    RT opCall(PTT args) {
-        if (tuple(args) in memo) {    // Have we already seen these args?
+    RT opCall(PTT args) 
+    {
+        if (tuple(args) in memo)      // Have we already seen these args?
+        {
             return memo[tuple(args)]; // if yes, use the stored result
         }
-        else {                        // if not, 
-            RT result = fun(args);    // compute the result and store it.
-            memo[tuple(args)] == result;
-            return result;
+        else                          // if not,
+        {                             
+            static if (storing == Storing.always)
+            {
+                RT result = fun(args);// compute the result and store it.
+                memo[tuple(args)] = result;
+                return result;
+            }
+            else // Storing.maximum
+            {
+                if (argsQueue.length >= maxNumStored)
+                {
+                    static if (discarding == Discarding.oldest)
+                    {
+                        memo.remove(argsQueue[0]);
+                        argsQueue = argsQueue[1..$];
+                        writeln("Discarding oldest.");
+                    }
+                    else static if (discarding == Discarding.fraction)
+                    {
+                        auto num = to!size_t(argsQueue.length * fraction);
+                        foreach(elem; argsQueue[0..num])
+                            memo.remove(elem);
+                        argsQueue = argsQueue[num..$];
+                        writeln("Discarding fraction.");
+                    }
+                    else static if (discarding == Discarding.all)
+                    {
+                        memo = null;
+                        argsQueue.length = 0;
+                        writeln("Discarding all.");
+                    }
+                }
+                
+                RT result = fun(args);// compute the result and store it.
+                memo[tuple(args)] = result;
+                argsQueue ~= tuple(args);
+                return result;            
+            }
         }
     }
 }
@@ -1019,42 +1057,52 @@ And a few factory function to help creating those \DD{Memoize} structs:
 
 \begin{dcode}
 // No runtime arg -> always store
-Memoize!(fun, MemoStoringPolicy.always, MemoDiscardingPolicy.all)
+Memoize!(fun, Storing.always, Discarding.all)
 memoize(alias fun)()
 {
-    return Memoize!(fun, 
-                    MemoStoringPolicy.always, 
-                    MemoDiscardingPolicy.all)();
+    Memoize!(fun, 
+             Storing.always, 
+             Discarding.all) result;
+    return result;
 }
 
 // One runtime size_t arg -> maximum store / discarding all
-Memoize!(fun, MemoStoringPolicy.maximum, MemoDiscardingPolicy.all)
+Memoize!(fun, Storing.maximum, Discarding.all)
 memoize(alias fun)(size_t max)
 {
-    return Memoize!(fun, 
-                    MemoStoringPolicy.maximum, 
-                    MemoDiscardingPolicy.all)(max);
+    Memoize!(fun, 
+             Storing.maximum, 
+             Discarding.all) result;
+    result.maxNumStored = max;
+    return result;
 }
 
 // Two runtime args (size_t, double) -> maximum store / discarding a fraction
-Memoize!(fun, MemoStoringPolicy.maximum, MemoDiscardingPolicy.fraction)
+Memoize!(fun, Storing.maximum, Discarding.fraction)
 memoize(alias fun)(size_t max, double fraction)
 {
-    return Memoize!(fun, 
-                    MemoStoringPolicy.maximum, 
-                    MemoDiscardingPolicy.fraction)(max, fraction);
+    Memoize!(fun, 
+             Storing.maximum, 
+             Discarding.fraction) result;
+    result.maxNumStored = max;
+    result.fraction = fraction;
+    return result;
 }
 
 // One compile-time argument (discarding oldest), one runtime argument (max)
-Memoize!(fun, MemoStoringPolicy.maximum, discarding)
-memoize(alias fun, MemoDiscardingPolicy discarding == MemoDiscardingPolicy.oldest)
+Memoize!(fun, Storing.maximum, discarding)
+memoize(alias fun, Discarding discarding = Discarding.oldest)
 (size_t max)
 {
-    return Memoize!(fun, 
-                    MemoStoringPolicy.maximum, 
-                    discarding)(max);
+    Memoize!(fun, 
+             Storing.maximum, 
+             Discarding.oldest) result;
+    result.maxNumStored = max;
+    return result;
 }
 \end{dcode}
+
+Note that, due to the introduction of an \DD{opCall} operator, it's not possible to use a struct literal. We have to first create the struct, then initialize its fields.
 
 Most of the time, the type of runtime arguments is enough to determine what you want as a memoizing/storing behavior. Only for the (rarer?) policy of discarding only the oldest stored result does the user need to indicate it with a template argument:
 
@@ -1068,7 +1116,7 @@ auto vlcMemo1 = memoize!(veryLongCalc)(1_000_000);
 auto vlcMemo2 = memoize!(veryLongCalc)(1_000_000, 0.5f);
 
 // Store first twenty results, discard only the oldest
-auto vlcMemo3 = memoize!(veryLongCalc, MemoDiscardingPolicy.oldest)(20);
+auto vlcMemo3 = memoize!(veryLongCalc, Discarding.oldest)(20);
 \end{dcode}
 
 \subsection{Modifying Functions: Currying a Function} \label{currying}
