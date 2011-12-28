@@ -164,7 +164,9 @@ You can put \D{mixin}\DD{()} expressions almost were you want to, but\ldots
 
 \subsection{Evaluation at Compile-Time} \label{compiletimeevaluation}
 
-Compile-Time Function Evaluation\index{CTFE}\index{Compile-Time Function Evaluation} (from now on, CTFE) is an extension of the constant-folding that's done during compilation\index{compile-time!constant folding} in D code: if you can calculate \DD{1 + 2 + 3*4} at compile-time, why not extend it to whole functions evaluation? I'll call evaluable at compile-time functions CTE functions from now on.
+Compile-Time Function Evaluation\index{CTFE}
+%\index{Compile-Time Function Evaluation|see{CTFE}}
+(from now on, CTFE) is an extension of the constant-folding that's done during compilation\index{compile-time!constant folding} in D code: if you can calculate \DD{1 + 2 + 3*4} at compile-time, why not extend it to whole functions evaluation? I'll call evaluable at compile-time functions CTE functions from now on.
 
 It's a very hot topic in D right now and the reference compiler has advanced by leaps and bounds in 2011. The limits to what can be done with CTE functions are pushed farther away at each new release.  All the \D{foreach}, \D{while}, \D{if}/\D{then}/\D{else} statements, arrays manipulation, struct manipulation, function manipulation\ldots are there. You can even do pointer arithmetics! When I began this document (DMD 2.055), the limitations\index{CTFE!limitations} were mostly: no classes and no exceptions (and so, no \DD{enforce}). This was changed with DMD 2.057, allowing the manipulation of classes at compile-time.
 

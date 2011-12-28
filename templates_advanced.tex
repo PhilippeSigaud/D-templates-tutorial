@@ -23,7 +23,7 @@ When the compiler tries to instantiate a template, if will first check the const
 
 You may have many template declarations with the same name and differing constraints (in fact, that's the very use case for constraints). Depending on the activated constraints, some or all will be considered by the compiler.
 
-\index{template constraints}
+\index{template!constraints}
 \begin{dcode}
 template Constrained(T) 
     if (is(T : int)) { ... } // #1
@@ -57,7 +57,7 @@ class TheClass(T)
 
 When you write constraints, just remember they are a compile-time construct. For \DD{theFunction}, \DD{argument} is not known at compile-time, only its type, \DD{T}. So you should not use \DD{argument} in your constraint. If you need a value of type \DD{T}, use \DD{T.init}. For 
 
-\index{template constraints}
+\index{template!constraints}
 \begin{dcode}
 auto callTwice(alias fun, T)(T arg)
     // Is it OK to do fun(fun(some T))?
@@ -103,7 +103,7 @@ The good news is that the compiler will complain\footnote{ I think \emph{compile
 
 The main problem is that, compared to templates specializations, you cannot do:
 
-\index{templates constraints limitations}
+\index{template!constraints!limitations}
 \begin{dcode}
 template Temp(T) if (is(T:int)) // #1
 { ... } // specialized for ints
@@ -239,7 +239,7 @@ struct S {}
 static assert(!hasArithmeticOperation!S);
 \end{dcode}
 
-As you can see, you can test for any type of D code, which means it's \emph{much} more powerful than templates specializations (\ref{specializations}\index{templates specialization!compared to constraints}) or the \D{is} expression (Appendix \ref{isexpression})\index{is expression@\D{is} expression!compared to constraints}.
+As you can see, you can test for any type of D code, which means it's \emph{much} more powerful than templates specializations (\ref{specializations}\index{template!specialization!compared to constraints}) or the \D{is} expression (Appendix \ref{isexpression})\index{is expression@\D{is} expression!compared to constraints}.
 
 You may also get a certain feel of a... \emph{pattern} emerging from the previous two examples. All the scaffolding, the boilerplate, is the same. And we could easily template it on what operator to test, for example. It's possible to do that, but it means crafting code at compile-time. Wait until you see string mixins\index{string mixins} (\ref{stringmixins}) and CTFE\index{CTFE} (\ref{ctfe}) in \autoref{around}.
 
@@ -277,7 +277,7 @@ And now comes one of my favourite subjects: template tuple parameters\index{temp
 For this very reason (that it can bunch of types interspersed with symbols), some people consider it a mongrel addition to D templates. That is true, but the ease of use and the flexibility it gives us is in my opinion well worth the cost of a little cleanliness.
 D template tuples have a \DD{.length} member (defined at compile-time, obviously), their elements can be accessed using the standard indexing syntax and they can even be sliced (the \DD{\$} symbol is aliased to the tuple length):
 
-\index{template tuple parameter}
+\index{template!tuple parameter}
 \index{type tuple}
 \begin{dcode}
 template DropFront(T...)
@@ -379,7 +379,7 @@ As values of this type can be created and named, they are \emph{almost} first-cl
 \item These tuples cannot be returned from a function. You have to wrap them in a struct. That's what \stdanchor{typecons}{Tuple} offers.
 \end{itemize}
 
-\index{tuples!the many kinds of}
+\index{tuple!the many kinds of}
 \aparte{tuple, Tuple, T... and .tupleof}{A common question from newcomers to D is the difference and definition between the different tuples found in the language and the standard library. I will try to explain:
 
 \emph{Template tuple parameters} are internal to templates. They are declared with \DD{T...} at the last position in the parameter list. They group together a list of template parameters, be they types, values or alias. Two `subtypes' are commonly used:
@@ -405,10 +405,10 @@ You can get a tuple's type by using \D{typeof}\DD{(tuple)}, like any other D typ
 
 \begin{description}
 \item[One-element tuples:] There is a difference between a tuple of one element and a lone type. You cannot initialize a standard value with a 1-element tuple. You have to extract the first (and only) element before. In the same idea, the 1-element tuple has a length and can be sliced: actions that do not make sense for a standard type.
-\item[Zero-element tuples:] It's possible to have an empty tuple\index{tuples!empty}, holding zero type, not to be confused with a uninitialized n-elements tuple or the tuple holding \D{void} as a type. In fact, the zero-element tuple can only have one value: its initialization value. For this reason, it's sometimes called the Unit type.\footnote{ Look: \D{bool} is a type with \emph{two} values (\D{true} and \D{false}). (), the empty tuple, is the type that has only \emph{one} value. And \D{void} is the type that has \emph{no} value.}
+\item[Zero-element tuples:] It's possible to have an empty tuple\index{tuple!empty}, holding zero type, not to be confused with a uninitialized n-elements tuple or the tuple holding \D{void} as a type. In fact, the zero-element tuple can only have one value: its initialization value. For this reason, it's sometimes called the Unit type.\footnote{ Look: \D{bool} is a type with \emph{two} values (\D{true} and \D{false}). (), the empty tuple, is the type that has only \emph{one} value. And \D{void} is the type that has \emph{no} value.}
 \end{description}
 
-\paragraph{\D{void}-containing tuples\index{void@\D{void}!in tuples}\index{tuples!containing void@containing \D{void}} and empty tuples: } A type tuple may hold the \D{void} type, like any other D type. It `takes a slot' in the tuple and a tuple holding only a \D{void} is \emph{not} the empty tuple.
+\paragraph{\D{void}-containing tuples\index{void@\D{void}!in tuples}\index{tuple!containing void@containing \D{void}} and empty tuples: } A type tuple may hold the \D{void} type, like any other D type. It `takes a slot' in the tuple and a tuple holding only a \D{void} is \emph{not} the empty tuple.
 
 \begin{dcode}
 alias TypeTuple!(void) Void;
@@ -452,7 +452,7 @@ int howMany(Args...)(Args args) if (Args.length > 1 && Args.length < 10)
 
 Imagine you a have a bunch of ranges. Since they all have different types, you cannot put them in an array. And since most of them are structs, you cannot cast them to a base type, as you would for classes. So you hold them in a tuple. Then, you need to call the basic range methods on them: calling \DD{popFront} on all of them, etc. Here is a possible way to do that:
 
-\index{tuples!and ranges}
+\index{tuple!and ranges}
 \begin{dcode}
 import std.range, std.algorithm;
 
@@ -538,10 +538,10 @@ template nameOf(T...) if (T.length == 1) // restricted to one argument
 
 \unfinished{All this section should be rewritten. The compiler is more accepting than I thought.}
 
-Using class templates\index{class templates} (\ref{classsyntax}), we might want to adjust the inheritance list at compile-time. Type tuples are a nice way to it: first define a template that alias itself to a type tuple, then have the class inherit from the template:
+Using class templates\index{class template} (\ref{classsyntax}), we might want to adjust the inheritance list at compile-time. Type tuples are a nice way to it: first define a template that alias itself to a type tuple, then have the class inherit from the template:
 
-\index{class templates!and type tuples}
-\index{type tuples!and class templates}
+\index{class template!and type tuples}
+\index{type tuple!and class templates}
 \begin{dcode}
 interface I { ... }
 interface J { ... }
@@ -874,7 +874,7 @@ The idea to take back home is: the concatenation code is written once. It is the
 ... opDispatch(string name, Args...)(Args args)
 \end{dcode}
 
-The usual template constraints\index{templates constraints!and \DD{opDispatch}} can be used: constraints on \DD{name}, constraints on the arguments.
+The usual template constraints\index{template!constraints!and \DD{opDispatch}} can be used: constraints on \DD{name}, constraints on the arguments.
 
 When a type has an \DD{opDispatch} method and a member call is done without finding a defined member, the call is dispatched to \DD{opDispatch} with the invoked name as a string.
 

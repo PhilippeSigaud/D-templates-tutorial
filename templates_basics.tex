@@ -49,7 +49,7 @@ The template body can contain any standard D declarations: variable, function, c
 
 Inside the template body, the parameters are all accessible as placeholders for the future arguments. Also, the template's own name refers to its current instantiation when the code is generated. This is mostly used in struct (see section \ref{structtemplates}) and class (\ref{classtemplates}) templates.
 
-Here are some template declaration examples:\index{template definition}\label{templatedeclarationexamples}
+Here are some template declaration examples:\index{template!definition}\label{templatedeclarationexamples}
 
 \begin{dcode}
 template ArrayOf(T) // T is a type
@@ -123,7 +123,7 @@ templateName!argument
 The compiler will have a look at the declarations (if more than one template were declared with the called name) and select the one with the correct number of arguments and the correct types to instantiate. If more than one template can be instantiated, it will complain  and stop there (though, have a look on template specializations in section \ref{specializations} and template constraints in section \ref{constraints}).
 
 When you instantiate a template, the global effect is that a new named scope\index{scope!named} is created in the template declaration scope\index{scope!template declaration}. The name of this new scope is the template name with its argument list: \DD{templateName!(args)}. Inside the scope, the parameters are now 'replaced' with the corresponding arguments (storage classes get applied, variables are initialized, \ldots). Here's what possible instantiations of the templates declared in section \ref{declarations} might look like:
-\index{template instantiation}
+\index{template!instantiation}
 \begin{dcode}
 ArrayOf!int
 
@@ -348,7 +348,6 @@ static if (isInfinite!R)     // Is innerRange an infinite range?
 \D{static if}s can be nested: just put another \D{static if} after \D{else}. Here is a template selecting an alias:
 
 \index{syntax!nested \D{static if}s}
-\index{nested \D{static if}s}
 \index{static if@\D{static if}!nested}
 \begin{dcode}
 import std.traits: isIntegral, isFloatingPoint;
@@ -523,7 +522,7 @@ Up to now, when we write a \DD{T} in a template parameter list, there is no cons
 
 The specializations are added in the template parameter list, the \DD{(T, U, V)} part of the template definition. \index{syntax!templates specialization}\DD{Type : OtherType} restricts \DD{Type} to be implicitly convertible into \DD{OtherType} and \DD{Type == OtherType} restricts \DD{Type} to be exactly \DD{OtherType}. 
 
-\index{template specialization}
+\index{template!specialization}
 \begin{dcode}
 template ElementType(T == U[], U) // can only be instantiated with arrays
 {
@@ -544,7 +543,7 @@ template ElementType(T : Array)
 
 Now, the \DD{Type == AnotherType} syntax may seem strange to you: if you know you want to restrict \DD{Type} to be \emph{exactly} \DD{AnotherType}, why make it a template parameter? It's because of templates specializations' main use: you can write different implementations of a template (with the same name, obviously) and when asked to instantiate one of them, the compiler will automatically decide which one to use based the `most adapted' to the provided arguments. `Most adapted' obeys some complicated rules you can find on the D Programming Language web site, but they act in a natural way most of the time. The neat thing is that you can define the most general template \emph{and} some specialization. The specialized ones will be chosen when it's possible. For 
 
-\index{template specialization}
+\index{template!specialization}
 \begin{dcode}
 template InnerType(T : U*, U) // Specialization for pointers
 {
@@ -669,7 +668,7 @@ auto morph(T, U, alias f)(U arg)
 
 \subsection{IFTI}\label{ifti}
 
-Even better is Implicit Function Template Instantiation (IFTI)\index{IFTI}\index{Implicit Function Template Instantiation}, which means that the compiler will most of the time be able to automatically determine a template parameters\index{template!parameters!IFTI} by studying the function arguments. If some template arguments are pure compile-time parameters, just provide them directly:
+Even better is Implicit Function Template Instantiation (IFTI)\index{IFTI}\index{Implicit Function Template Instantiation|see{IFTI}}, which means that the compiler will most of the time be able to automatically determine a template parameters\index{template!parameters!IFTI} by studying the function arguments. If some template arguments are pure compile-time parameters, just provide them directly:
 
 \begin{dcode}
 /* suppose the previous concatenate(A,B) function */
@@ -792,7 +791,6 @@ alias (a){ return a;} Id; // Error
 
 So what good are they? You can use them with template alias parameters, when these stand for functions and function templates:
 
-\index{anonymous function template}
 \begin{dcode}
 template callTwice(alias fun)
 {
@@ -905,7 +903,7 @@ Let us use a template to wrap a function and provide some additional usefulness 
 
 We have not seen struct templates yet (they are presented in section \ref{structtemplates}), but the following example should be easy to understand: the previous result are stored in an associative array, indexed on tuples of arguments. To get a function return type or parameter type tuple, just use Phobos' \stdanchor{traits}{ReturnType} and \stdanchor{traits}{ParameterTypeTuple}, which are templates that accept function \emph{names} or types.
 
-\index{struct templates!memoize@\DD{memoize}}
+\index{struct template!memoize@\DD{memoize}}
 \index{function templates!wrapping a function!memoize@\DD{memoize}}
 \index{template!parameters!alias}
 \begin{dcode}
@@ -967,7 +965,7 @@ The last X results could be stored in a queue: each time a result is pushed into
 
 Here is a possible small implementation. It makes for a nice example of enabling/disabling code with \D{static if} and \D{enum}-based policies. Note that I use D dynamic arrays as a primitive queue. A real queue could probably be more efficient, but there isn't one in the standard library as of this writing.
 
-\index{struct templates!memoize@\DD{memoize}}
+\index{struct template!memoize@\DD{memoize}}
 \index{function templates!wrapping a function!memoize@\DD{memoize}}
 \index{template!parameters!alias}
 \index{enabling/disabling code}
@@ -1446,7 +1444,7 @@ auto concatenate(A)(A a)
 The previous example is not legal D code.\index{mantra} Of course, there is a solution: just return a struct with a template member function (\ref{membertemplates}), in that case the \DD{opCall} operator:
 
 \index{inner struct}
-\index{templated methods}
+\index{templated method}
 \index{opCall, ()@\DD{opCall}, \DD{()}}
 \index{operator!opCall, ()@\DD{opCall}, \DD{()}}
 \begin{dcode}
@@ -1622,7 +1620,7 @@ But then, this only works for ranges of ranges\index{rank!of ranges} (of rank $\
 \index{factory function}
 \index{recursion}
 \index{static if@\D{static if}}
-\index{static if@\D{static if}!nested static ifs@nested \D{static if}s}
+\index{static if@\D{static if}!nested}
 \begin{dcode}
 auto flatten(Range)(Range range)
 { 
