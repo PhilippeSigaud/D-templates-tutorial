@@ -439,11 +439,11 @@ compiles & Yes (in a way) \\
 
 These can all be quite useful in your code, but I'll shy away from them since they are not heavily template-related. More interesting in my opinion is using \D{\_\_traits} to get new information about a type. These are really different from other introspection tools and I will deal with them in more detail right now.
 
-\subsection{\D{\_\_traits}\D{(identifier, XXX)}}
+\subsection{\DD{identifier}}
 
 \DD{identifier} gives you a symbol's name as a string. This is quite interesting, since some symbols are what I'd call \emph{active}: for example, if \DD{foo} is a function, \DD{foo.stringof} will try to first call \DD{foo} and the \DD{.stringof} will fail. Also, \DD{.stringof}, though eminently useful, sometimes returns strangely formatted strings. \DD{identifier} is much more well-behaved.
 
-Let's get back one of the very first template in this doc, \DD{NameOf} on page \pageref{templatedeclarationexample}. Initially, it was coded like this:
+Let's get back to one of the very first template in this doc, \DD{NameOf} on page \pageref{templatedeclarationexamples}. Initially, it was coded like this:
 
 \begin{dcode}
 template NameOf(alias a)
@@ -492,6 +492,7 @@ In a nutshell, \D{\_\_traits}\DD{(getMember, name, "member")} will give you dire
 \aparte{Aggregates}{I'll use \emph{aggregate} as a catch-all term for any D construct that has members. Structs and classes are obvious aggregates, but it's interesting to keep in mind that templates too have members (remember section \ref{instantiating}? A template is a named, parameterized scope). So all \D{\_\_traits} calls shown in this section can be used on templates. That's interesting to keep in mind. Even more interesting, to my eyes, is that \emph{modules} are also aggregates even though they are not first-class citizens in D-land. You'll see examples of this in the following sections.}
 
 \subsection{\DD{allMembers}}
+\index{\_\_traits!allMembers@\D{\_\_traits}!\DD{allMembers}}
 
 This one is cool. Given an aggregate name, \D{\_\_traits}\DD{(allMembers, aggregate)} will return a tuple of string literals, each of which is the name of a member. For a class, the parent classes' members are also included. Built-in properties (like \DD{.sizeof}) are not included in that list. Note that I did say 'tuple': it's a bit more powerful than an array, because it can be iterated over at compile-time.
 
@@ -554,7 +555,7 @@ assert([__traits(allMembers, MyClass!int)]
         "opEquals", "Monitor", "factory"]);
 \end{dcode}
 
-If you remember one of the very first use we saw for templates in \ref{instantiating}, that is as a named, parameterize scope, this can give rise to interesting introspection:
+If you remember one of the very first use we saw for templates in \ref{instantiating}, that is as a named, parameterize scope,\index{scope} this can give rise to interesting introspection:\index{introspection}
 
 \begin{dcode}
 template Temp(A, B)
@@ -572,9 +573,9 @@ assert([__traits(allMembers, Temp!(double,string))]
     == ["a","foo", "i", "AType", "AAType"]);
 \end{dcode} 
 
-As you can see, you also get aliases. By the way, this is true for structs and templates also\ldots
+As you can see, you also get aliases' names. By the way, this is true for structs and templates also\ldots
 
-Another fun fact is that D modules are amenable to \D{\_\_traits}'s calls:
+Another fun fact is that D modules\index{modules!as aggregates} are amenable to \D{\_\_traits}'s calls:
 
 \begin{dcode}
 // file a.d
@@ -602,7 +603,7 @@ void main()
 }
 \end{dcode}
 
-In the previous code, you see that among \DD{a} members, there is \DD{"object"} (the implicit \DD{object.d} module imported by the runtime). And since auto-introspection is possible, we also get \DD{b}'s members. There, there is also \DD{"a"}, as it's imported into \DD{b}, and \DD{"std"}, the global package that shows here whenever you import a \DD{std.*} module. It would be easy to imagine a template that recursively explore the members, find the modules and try to recurse into them to get a complete import-tree with a template. Halas \DD{"std"} blocks that, since the package itself do not have a member.\footnote{ If someone finds a way to determine with a template that \DD{b} imports \DD{std.algorithm}, I'd be delighted to see how it's done!}
+In the previous code, you see that among \DD{a} members, there is \DD{"object"} (the implicit \DD{object.d} module\index{module!implicit object.d module@module!implicit \DD{object.d} module} imported by the runtime). And since auto-introspection is possible, we also get \DD{b}'s members. There, there is also \DD{"a"}, as it's imported into \DD{b}, and \DD{"std"}, the global package that shows here whenever you import a \DD{std.*} module. It would be easy to imagine a template that recursively explore the members, find the modules and try to recurse into them to get a complete import-tree with a template. Halas \DD{"std"} blocks that, since the package itself do not have a member.\footnote{ If someone finds a way to determine with a template that \DD{b} imports \DD{std.algorithm}, I'd be delighted to see how it's done!}
 
 As for the other aggregates, you get the aliases also, and the unit tests defined in the module (for those of you curious about it, they are named \DD{\_\_unittestXXX} where \DD{XXX} is a number. Their type is more or less \D{void delegate}\DD{()}).\footnote{ I didn't try static constructors in modules. Don't hesitate to play with them and tell me what happens.}
 
@@ -613,6 +614,7 @@ What's the point of inspecting a module, you say? Well, first that was just for 
 Really it's the same as above, except that you do not get a class' parents members, only the class' own members.
 
 \subsection{\DD{getOverloads}}
+\index{\_\_traits!getOverload@\D{\_\_traits}!\DD{getOverload}}
 
 Given:
 
@@ -626,6 +628,7 @@ Then, \D{\_\_traits}\DD{(getOverloads, name, "member")} will gives you a tuple o
 
 
 \subsection{Getting All Members, Even Overloaded Ones}
+\index{\_\_traits!getting all members@\D{\_\_traits}!getting all members}
 
 Now, if you're like me, the urge to mix \DD{allMembers} (which returns the members' names without overloads) and \DD{getOverloads}  (which returns the overload of \emph{one} member) is quite great. So let's do that.
 
@@ -687,11 +690,11 @@ void main()
     
     /* 
     prints:
-    foo of type: void(int j)
-    foo of type: int(int j, int k = 0)
+    foo, of type: void(int j)
+    foo, of type: int(int j, int k = 0)
     */
     foreach(elem; o) 
-        writeln(elem.name, " of type: ", elem.Type.stringof);
+        writeln(elem.name, ", of type: ", elem.Type.stringof);
 }
 \end{dcode}
 
@@ -736,21 +739,21 @@ void main()
     alias AllMembers!MyClass o;
     /*
     prints:
-    i of type: int
-    __ctor of type: MyClass()
-    __ctor of type: MyClass(int j)
-    __dtor of type: void()
-    foo of type: void(int j)
-    foo of type: int(int j, int k = 0)
-    toString of type: string()
-    toHash of type: uint()
-    opCmp of type: int(Object o)
-    opEquals of type: bool(Object o)
-    opEquals of type: bool(Object lhs, Object rhs)
-    factory of type: Object(string classname)
+    i, of type: int
+    __ctor, of type: MyClass()
+    __ctor, of type: MyClass(int j)
+    __dtor, of type: void()
+    foo, of type: void(int j)
+    foo, of type: int(int j, int k = 0)
+    toString, of type: string()
+    toHash, of type: uint()
+    opCmp, of type: int(Object o)
+    opEquals, of type: bool(Object o)
+    opEquals, of type: bool(Object lhs, Object rhs)
+    factory, of type: Object(string classname)
     */
     foreach(elem; o) 
-        writeln(elem.name, " of type: ", elem.Type.stringof);    
+        writeln(elem.name, ", of type: ", elem.Type.stringof);    
 }
 \end{dcode}
 
@@ -758,17 +761,110 @@ That's cool, every member and overload is acounted for: the two contructors are 
 
 \TODO{Example: store all members in a hashtable or a polymorphic association list. As a mixin, to be put inside types to enable runtime reflection? (a.send("someMethod", args), a.setInstanceVariable("i",5))}
 
-\subsection{Traits TODO}
+\subsection{\DD{getVirtualFunctions}}
 
-\begin{itemize}
-\item getVirtualFunctions (returns an arrays of the virtual overloads)
-\item parent (get the parent directly). Example: recurse upwards.
-\end{itemize}
+It's in the same family than \DD{getOverloads} and such. It'll give you the list of virtual overloads for a class method. Given a class name, finding all overloads of all fields, even overriden ones, is let as a exercise to the reader.
 
-Example: iterating on members, extracting types from an aggregate.
+\subsection{\DD{parent}}\index{\_\_traits!parent@\D{\_\_traits}!\DD{parent}}\index{qualified name}
+
+\D{\_\_traits}\DD{(parents, symbol)} will return the symbol that's the parent of it. It's \emph{not} the parent in a 'class hierarchy' sense,\footnote{ If you came here to see a way to get all parents of a class, see section \ref{classhierarchy}.} it deals with qualified names and strip one level. Once you reach the toplevel scope, it returns the module name (this can be dangerous, because modules themselves do not have parents). See:
+
+\begin{dcode}
+module test;
+
+class C
+{
+    int i;
+    int foo(int j)
+    {
+        int k; // k is "test.C.foo.k"
+        assert(nameOf!(__traits(parent, k)) == "foo");
+        return i+k;
+    }
+}
+
+// toplevel (C is in fact test.C)
+static assert(nameOf!(__traits(parent, C)) == "test");
+
+void main() 
+{
+    auto c = new C(); // c is "test.main.c"
+    assert(nameOf!(__traits(parent, c)) == "main");
+    assert(nameOf!(__traits(parent, c.i)) == "C");
+    c.foo(1);
+}
+\end{dcode}
+
+Even if there is no \DD{qualifiedIdentifier} in \D{\_\_traits}, we can construct a template to get it:
+
+\begin{dcode}
+template qualifiedName(alias a)
+{
+    // does it have a parent?
+    static if (__traits(compiles, __traits(parent, a)))
+    // If yes, get the name and recurse
+        enum qualifiedName = qualifiedName!(__traits(parent, a)) 
+                           ~  "." ~ nameOf!(a);
+    // if not, it's a module name. Stop there.
+    else
+        enum qualifiedName = nameOf!a;
+}
+
+/* given the previous C class */
+
+void main()
+{
+    auto c = new C();
+    assert(qualifiedName!c == "test.main.c");
+    assert(qualifiedName!(c.foo) == "test.C.foo"); // same in both cases
+    assert(qualifiedName!(C.foo) == "test.C.foo");
+}
+\end{dcode}
+
+\subsection{Local Scope Name}
+\index{scope!local scope name}
+
+Sometimes, when dealing with mixin templates (\ref{mixintemplates}) or string mixins (\ref{stringmixins}), you'll inject code in an unknown scope. To get your way round, it can be useful to get the local scope's name. Intuitively, the previous example could help with that: just create a local variable, get the qualified name of its parent to determine in which scope the mixin is. Then, expose the scope name. Let's call this one \DD{scopeName} and the associated inquisitive template \DD{getScopeName}.
+
+\begin{dcode}
+mixin template getScopeName()
+{
+    enum scopeName = qualifiedName!(\_\_traits(parent, scopeName));
+}
+\end{dcode}
+
+The idea is to declare local enum called \DD{scopeName} and take the qualified name of its own parent in the same expression (yes, that works!).
+
+To use \DD{getScopeName}, just mix it in where you need a local scope name:
+
+\begin{dcode}
+module test;
+
+class C
+{
+    mixin getScopeName; // 1
+    
+    int i;
+    int foo(int j)
+    {
+        int k;
+        mixin getScopeName; // 2
+        writeln(scopeName);
+        return i+k;
+    }    
+}
+
+void main()
+{
+    auto c = new C();
+    writeln(c.scopeName); // "test.C" (1)
+    c.foo(1);             // "test.C.foo" (2)
+    
+    mixin getScopeName; // 3
+    writeln(scopeName);   // "test.main" (3)
+}
+\end{dcode}
 
 \section{Wrapping it all Together}\label{wrappingitup}
 
-\unfinished{Here is what I want to show: using traits to crack a type open, templated CT functions to generate strings to be mixed-in, cloning a type.}
-
-\subsection{Cracking Open a Type}
+\unfinished{I have to dig some cute examples in my code base. Using string mixins and CTFE and templates all together.}
