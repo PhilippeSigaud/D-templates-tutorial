@@ -180,7 +180,7 @@ This will be OK if \DD{T} is indeed an \DD{A} instantiated with an \DD{U} and a 
 
 \subsection{Type Specializations}\label{typespecializations}
 
-There is a last thing to know about \D{is}: with the \D{is}\DD{(Type (identifier) == Something)} version, \DD{Something} can also be a type specialization\index{is expression@\D{is} expression!types specializations}, one of the following D keywords: \D{function}, \D{delegate}, \D{return}, \D{struct}, \D{enum}, \D{union}, \D{class}, \D{interface}, \D{super}, \D{const}, \D{immutable} or \D{shared}. The condition is satisfied if \DD{Type} is one of those (except for \D{super} and \D{return}, see below). \DD{identifier} then becomes an alias for some property of \DD{Type}, as described in table \ref{table:typespecializations}.
+There is a last thing to know about \D{is}: with the \D{is}\DD{(Type (identifier) == Something)} version, \DD{Something} can also be a type specialization\index{is expression@\D{is} expression!type specialization}, one of the following D keywords: \D{function}, \D{delegate}, \D{return}, \D{struct}, \D{enum}, \D{union}, \D{class}, \D{interface}, \D{super}, \D{const}, \D{immutable} or \D{shared}. The condition is satisfied if \DD{Type} is one of those (except for \D{super} and \D{return}, see below). \DD{identifier} then becomes an alias for some property of \DD{Type}, as described in table \ref{table:typespecializations}.
 
 \begin{table}[htb]
 \centering
@@ -206,7 +206,7 @@ Specialization & Satisfied if &\ \DD{identifier} becomes \\ \hline \hline
 
 Let's put that to some use: we want a factory template that will create a new struct or a new class, given its name as a template parameter:
 
-\index{is expression@\D{is} expression!types specialization}
+\index{is expression@\D{is} expression!type specialization}
 \index{std!algorithm}
 \begin{dcode}
 import std.algorithm;

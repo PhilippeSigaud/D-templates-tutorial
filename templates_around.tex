@@ -611,7 +611,7 @@ void main()
 
 In the previous code, you see that among \DD{a} members, there is \DD{"object"} (the implicit \DD{object.d} module\index{module!implicit object.d module@implicit \DD{object.d} module} imported by the runtime). And since auto-introspection is possible, we also get \DD{b}'s members. There, there is also \DD{"a"}, as it's imported into \DD{b}, and \DD{"std"}, the global package that shows here whenever you import a \DD{std.*} module. It would be easy to imagine a template that recursively explore the members, find the modules and try to recurse into them to get a complete import-tree with a template. Halas \DD{"std"} blocks that, since the package itself do not have a member.\footnote{ If someone finds a way to determine with a template that \DD{b} imports \DD{std.algorithm}, I'd be delighted to see how it's done!}
 
-Like for the other aggregates, you get the aliases also, and the unit tests defined in the module (for those of you curious about it, they are named \DD{\_\_unittestXXX} where \DD{XXX} is a number. Their type is more or less \D{void delegate}\DD{()}).\footnote{ I didn't try static constructors in modules. Don't hesitate to play with them and tell me what happens.}
+Like for the other aggregates, you get the aliased names also, and the unit tests defined in the module.\footnote{ For those of you curious about it, they are named \DD{\_\_unittestXXX} where \DD{XXX} is a number. Their type is more or less \D{void delegate}\DD{()}}\footnote{ I didn't try static constructors in modules. Don't hesitate to play with them and tell me what happens.}
 
 \aparte{What's the point of inspecting a module?}{ Well, first that was just for fun and to see if I could duplicate a module or create a struct with an equivalent members list (all forwarding to the module's own members). But the real deal for me was when using string mixins to generate some type. If the user uses the mixin in its own module, it could create conflicts with already-existing names. So I searched for a way for a mixin template to inspect the module it's currently being instantiated in.
 
@@ -680,7 +680,7 @@ template OverloadsImpl(A...)
 }
 \end{dcode}
 
-It's a two-stage template as explained in sections \ref{eponymous} (eponymous templates) and \ref{templatesintemplates} (to get the overloads expansion as a tuple parameter). \DD{staticMap} is explained in section \ref{staticMap}.
+It's a two-stage template as explained in sections \ref{eponymous} (eponymous templates) and \ref{templatesintemplates} (to get the overloads expansion as a tuple parameter). \DD{staticMap} is explained in section \ref{staticmap}.
 
 Now, that already works:
 
@@ -725,7 +725,7 @@ template Overloads(alias a, string member)
 }
 \end{dcode}
 
-Line 3 is an example of the \emph{very handy} \D{\_\_traits}\DD{(compiles, someExpression)} construct alluded to in section \ref{yesnoquestionsontypes}. Line 7 can be a bit daunting, but it just creates the one-element tuple \D{\_\_traits} should have returned.
+Line 3 is an example of the \emph{very handy} \D{\_\_traits}\DD{(compiles, expression)} construct alluded to in section \ref{yesnoquestionsontypes}. Line 7 can be a bit daunting, but it just creates the one-element tuple \D{\_\_traits} should have returned.
 
 The last step is to get this for all members of a given aggregate. It's quite easy:
 

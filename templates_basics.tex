@@ -815,7 +815,7 @@ alias callTwice!( (a){ return a+b;}) addTwoB;
 assert(addTwoB(2) == 2 + 3 + 3);
 \end{dcode}
 
-\subsection{Closures are a Poor Man's Objects}
+\subsection{Closures are a Poor Man's Objects}\label{closuresareapoormansobjects}
 
 D closures can wrap runtime environment and keep them near their hot little hearts. We can of course create them with a template. To obtain the equivalent of an object, let's create a function that returns a tuple (a \stdanchor{typecons}{Tuple}) with named arguments.
 
