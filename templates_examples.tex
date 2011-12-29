@@ -168,7 +168,7 @@ template isNodeOrEdge(T)
 }
 \end{dcode}
 
-And let's suppose also all \emph{bona fide} \DD{Node}s and \DD{Edge}s have  \DD{.LabelType}/\DD{.ValueType} members exposing their inner types (as shown in section \ref{inneralias}).
+And let's suppose also all \emph{bona fide} \DD{Node}s and \DD{Edge}s have  \DD{.LabelType} and \DD{.ValueType} members exposing their inner types (as shown in \autoref{inneralias}).
 
 Then, getting all nodes and edges is easy:
 \begin{dcode}
@@ -253,27 +253,40 @@ auto graph(NodesOrEdges...)(NodesOrEdges args) if (GraphCheck!NodesOrEdges)
 { ... }
 \end{dcode}
 
+\unfinished{The second example will be one code generating a struct, with string literal and type parameters.}
+
 \subsubsection{Folding Type Tuples}\label{staticreduce}
 
 \TODO{Examples to give: biggest type in the lot, sorting types?}
 
-\subsection{Zipping Types, Interspersing Types, Crossing Types}
+\subsection{Zipping Types, Interleaving Types, Crossing Types}
 
 \TODO{Determine if this subsection is really useful. Is there any short and telling example?}
 
+\susubsection{Interleaving Types}\label{interleavingtypes}
+
 \begin{dcode}
 /**
-Helper template. Given T0, T1, T2, ..., Tn, Tn+1, ... T2n, will returns
-the interleaving of the first part with the second part: T0, Tn+1, T1, Tn+2, ... Tn, T2n
-It's fragile: no test, etc. A better way to do this would be as a two-steps template: Interleave!(T...).With!(U...)
-*/
-template Interleave(T...)
+ * Given T0, T1, T2, ..., Tn and U0, U1, ..., Um will returns
+ * the interleaving of the first part with the second part: 
+ * T0, U0, T1, U1, ...
+ * If one of the inputs is shorter than the other, the longer part is put at the end
+ * of the interleaving.
+ */
+template Interleave(First...)
 {
-    static if (T.length > 1)
-        alias TypeTuple!(T[0], T[$/2], Interleave!(T[1..$/2], T[$/2+1 .. $])) Interleave;
-    else
-        alias T Interleave;
+    template With(Second...)
+    {
+	static if (First.length == 0)
+	    alias Second With;
+	else static if (Second.length == 0)
+	    alias First With;
+	else
+	    alias TypeTuple!( First[0], Second[0]
+	                    , Interleave!(First[1..$]).With!(Second[1..$])) With;
+    }
 }
+
 \end{dcode}
 
 \section{Tuples as Sequences}\label{tuplesassequences}
@@ -291,7 +304,7 @@ template Interleave(T...)
 
 \section{Fun With Functions}\label{funwithfunctions}
 
-This section will present some templated wrappers around functions, to provide some additional usefulness. It's not part of \autoref{functiontemplates} because it uses struct templates and it's not part of \autoref{structemplates} because the wrapper struct is not the main focus of attention.
+This section will present some templated wrappers around functions, to provide some additional usefulness. It's not part of \autoref{functiontemplates} because it uses struct templates and it's not part of \autoref{structtemplates} because the wrapper struct is not the main focus of attention.
 
 \subsection{Memoizing a Function} \label{memoizing}
 
@@ -596,11 +609,17 @@ Inspiration for this example comes from \href{http://david.rothlis.net/d/templat
 
 \TODO{Extracting from a tuple: project, select. Also, natural/inner/outer join, cartesian product. And intersection/union/difference. rename!( "oldField", "newField"). Databases are just dynamic arrays of tuples.}.
 
-\section{Cloning, sort of}
+\section{Fun With Classes and Structs}
+
+\subsection{Class Hierarchy}\label{classhierarchy}
+
+\unfinished{Two things I'll show here: how to get a class parents an how to determine an entire hierarchy of classes in a local scope.}
+
+\subsection{Cloning, sort of}
 
 \TODO{(Elsewhere) creating a class from a struct?}
 
-\section{Generic Maker Function}
+\subsection{Generic Maker Function}
 
 Like this:
 
@@ -911,6 +930,8 @@ So if \DD{name(}\D{this}\DD{,a,b)} is a \D{void}-returning function, all is OK.
 The main limitation of this trick is that it doesn't work across modules boundaries. Too bad.
 
 \section{Pattern Matching With Functions}
+
+\unfinished{The idea is to group a bunch of templates together and use their pattern matching ability. Maybe to be put in \autoref{functiontemplates}?}
 
 \section{Generating a Switch for Tuples}
 Case 0:, etc.
