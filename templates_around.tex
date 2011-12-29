@@ -323,6 +323,8 @@ Phobos has two really interesting templates: \stdanchor{functional}{unaryFun} an
 
 \TODO{Explain that this aims to extend that to n-args functions.}
 
+\TODO{Augh, the introduction, as of DMD 2.058 of a nice closure syntax more or less alleviate the need for such a construction.}
+
 
 \begin{dcode}
 bool isaz(char c) {
@@ -390,6 +392,10 @@ template naryFun(string code, int arit = arity(code))
     mixin(naryFunBody(code, arit));
 }
 \end{dcode}
+
+\subsection{Sorting Networks}\label{sortingnetworks}
+
+\unfinished{I need to find the code on my HD, and explain what a sorting network is. Then show some benchmark again std.algorithm.sort.}
 
 \section{\D{\_\_traits}}\label{traits}
 
@@ -607,7 +613,14 @@ In the previous code, you see that among \DD{a} members, there is \DD{"object"} 
 
 Like for the other aggregates, you get the aliases also, and the unit tests defined in the module (for those of you curious about it, they are named \DD{\_\_unittestXXX} where \DD{XXX} is a number. Their type is more or less \D{void delegate}\DD{()}).\footnote{ I didn't try static constructors in modules. Don't hesitate to play with them and tell me what happens.}
 
-What's the point of inspecting a module, you say? Well, first that was just for fun and to see if I could duplicate a module or create a struct with an equivalent members list (all forwarding to the module's own members). But the real deal for me was when using string mixins to generate some type. If the user uses the mixin in its own module, it could create conflicts with already-existing names. So I searched for a way for a mixin template to inspect the module it's currently being instantiated in. 
+\aparte{What's the point of inspecting a module?}{ Well, first that was just for fun and to see if I could duplicate a module or create a struct with an equivalent members list (all forwarding to the module's own members). But the real deal for me was when using string mixins to generate some type. If the user uses the mixin in its own module, it could create conflicts with already-existing names. So I searched for a way for a mixin template to inspect the module it's currently being instantiated in.
+
+Then, I wanted to write a template the, given a class name, would give me the entire hierarchy it's in (as the local module scope would see it, that was enough for me). This Hierarchy template should be shown in this document.
+
+Then, while testing std.traits.ParameterTypeTuple, I saw that it give the parameter typetuple of \emph{one} function, even when it's overloaded.}
+
+\TODO{Inject Hierarchy here.}
+\TODO{Code a more powerful version of ParameterTypeTuple.}
 
 \subsection{\DD{derivedMembers}}
 
