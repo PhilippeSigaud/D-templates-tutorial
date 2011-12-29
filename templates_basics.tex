@@ -815,6 +815,43 @@ alias callTwice!( (a){ return a+b;}) addTwoB;
 assert(addTwoB(2) == 2 + 3 + 3);
 \end{dcode}
 
+\subsection{Closures are a Poor Man's Objects}
+
+D closures can wrap runtime environment and keep them near their hot little hearts. We can of course create them with a template. To obtain the equivalent of an object, let's create a function that returns a tuple (a \stdanchor{typecons}{Tuple}) with named arguments.
+
+\begin{dcode}
+auto makeCounter(T)(T _counter = T.init) if (isNumeric!T)
+{
+    bool sense = true;
+    auto changeSense = () { sense = !sense;};
+    auto inc = (T increment) { _counter += (sense ? increment : -increment); };
+    auto dec = (T decrement) { _counter += (sense ? -decrement : decrement); };
+    auto counter = () { return _counter;};
+    
+    return Tuple!( typeof(changeSense), "changeSense"
+                 , typeof(inc), "inc"
+                 , typeof(dec), "dec"
+                 , typeof(counter), "counter")(changeSense, inc, dec, counter);
+}
+\end{dcode}
+
+The \D{if} part after the argument list is just sanity-check template constraint (they are described in \autoref{constraints}). The returned \DD{Tuple} is a bit heavy for my taste, but using named tuple fields gives us a nice object-like call syntax. Otherwise, a simple \D{return }\DD{tuple(changeSense, inc, dec, counter);} could have been used but then the inner closures would have to be accessed by their index and not a name.
+
+Here is how it's used:
+
+\begin{dcode}
+auto c = makeCounter(0); // T is int.
+auto c2 = makeCounter!int; // The very same.
+
+c.inc(5);
+assert(c.counter() == 5);
+c.inc(10);
+assert(c.counter() == 15);
+c.changeSense(); // now each increment will in fact decrement
+c.inc(5);
+assert(c.counter() == 10);
+\end{dcode}
+
 \subsection{Functions Overloading}\label{functionsoverloading}
 
 \unfinished{OK, I need to write something on this.}
@@ -938,10 +975,10 @@ Here we can extend \DD{nmap} to accept $n$ functions in parallel too. There is a
 
 \begin{dcode}
 auto nmap(fun..., R...)(R ranges) if (allSatisfy!(isInputRange, R))
-{ ... 
+{ ...  }  ^^^^^^^^^^^^^ Uh?
 \end{dcode}
 
-See the problem? Tuples must be the last parameter of a template: there can be only one. Double-stage templates come to the rescue:
+See the problem? Tuples must be the last parameter of a template: there can be only one. Double-stage templates (\autoref{templatesintemplates}) come to the rescue:
 
 \begin{dcode}
 template nmap(fun...) if (fun.length >= 1)
