@@ -8,6 +8,7 @@ This project is about a wonderful part of the [D programming language](www.dlang
 
 The master document is `dtemplates.tex` and calls the other subfiles:
 
+* `dtemplates_intro.tex` is just, well, the introduction text, explaining the goal of this document and the formatting conventions used.
 * `dtemplates_basics.tex` is about templates syntax, basic building blocks (`static if`, eponymous trick) and function, struct and class templates.
 * `dtemplates_advanced.tex` is about more advanced ideas, like constraints, tuples or operator overloading
 * `dtemplates_around.tex` deals with other metaprogramming constructs interacting with templates: traits, compile-time function evaluation (CTFE) and string mixins.
