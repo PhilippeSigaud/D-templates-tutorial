@@ -263,15 +263,17 @@ auto graph(NodesOrEdges...)(NodesOrEdges args) if (GraphCheck!NodesOrEdges)
 
 \TODO{Determine if this subsection is really useful. Is there any short and telling example?}
 
-\susubsection{Interleaving Types}\label{interleavingtypes}
+\subsubsection{Interleaving Types}\label{interleavingtypes}
 
 \begin{dcode}
 /**
- * Given T0, T1, T2, ..., Tn and U0, U1, ..., Um will returns
+ * Given (T0, T1, T2, ..., Tn) and (U0, U1, ..., Um) will returns
  * the interleaving of the first part with the second part: 
- * T0, U0, T1, U1, ...
- * If one of the inputs is shorter than the other, the longer part is put at the end
- * of the interleaving.
+ *
+ * (T0, U0, T1, U1, ...
+ *
+ * If one of the inputs is shorter than the other, 
+ * the longer part is put at the end of the interleaving.
  */
 template Interleave(First...)
 {
@@ -283,7 +285,8 @@ template Interleave(First...)
 	    alias First With;
 	else
 	    alias TypeTuple!( First[0], Second[0]
-	                    , Interleave!(First[1..$]).With!(Second[1..$])) With;
+	                    , Interleave!(First[1..$]).With!(Second[1..$])) 
+             With;
     }
 }
 
@@ -534,7 +537,7 @@ auto vlcMemo3 = memoize!(veryLongCalc, Discarding.oldest)(20);
 
 \unfinished{Some explanations would greatly help there.}
 
-Another useful transform on functions is to \emph{curry} them,\footnote{from Haskell Curry, the guy who formalized the idea.}: to transform a $n$-args function into $n$ one-parameter functions inside another.
+Another useful transform on functions is to \emph{curry}\footnote{from Haskell Curry, the guy who formalized the idea.} them: to transform a $n$-args function into $n$ one-parameter functions inside another.
 
 \TODO{Show some example: mapping a range for example.}
 

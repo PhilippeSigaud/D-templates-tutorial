@@ -627,13 +627,13 @@ assert(is( NoDuplicates!(int,double,int,string,double)
            == TypeTuple!(int,double,string)));
 \end{dcode}
 
-By the way, code to do that, also called \DD{NoDuplicates}, is already in Phobos. It can be found in \std{typetuple}. I found coding it again a good exercise in type tuple manipulation\index{type tuple!manipulation}.
+By the way, code to do that, also called \DD{NoDuplicates}, is already in Phobos. It can be found in \std{typetuple}. I found coding it again a good exercise in type tuple manipulation\index{type tuple!manipulation}. You can find a few examples of this kind of templates in \autoref{typesorcery}.
 
-The last piece of the puzzle is to get a given class inheritance list. The \D{is} expression\index{is expression@\D{is} expression!types specializations} give us that by way of types specializations (\ref{typespecializations}):
+The last piece of the puzzle is to get a given class inheritance list. The \D{is} expression\index{is expression@\D{is} expression!type specialization} give us that by way of types specializations (\ref{typespecializations}):
 
 \index{is expression@\D{is} expression!types specializations}
 \begin{dcode}
-template SuperList(Class) if (is(Class = class))
+template SuperList(Class) if (is(Class == class))
 {
     static if (is(Class list == super))
         alias TypeTuple!(list) SuperList;
@@ -971,9 +971,210 @@ But, templates can come to the rescue, with a bit of \DD{opDispatch} magic.
 - opDispatch? Test if wrapped.foo() is legal. If yes, call
 
 
-\section{Templates All the Way Up}\label{templatesintemplates}
+\section{Templates in Templates}\label{templatesintemplates}
 
-\unfinished{In this section, you'll see: Double-decker templates, Curried templates and how to separate two type tuples.}
+Sometimes, you know users of your code will send to your template a first list (of indefinite length) of parameters, followed by a second. Seeing that, you may want to write code like this one:
+
+\begin{dcode}
+template MyTemp(A..., B...)
+{ ... }
+\end{dcode}
+
+Halas, two template parameters tuples do not make sense (see \autoref{declarations}) and are not authorized by the grammar. But it's not a dead-end. First, you could envisage to write:
+
+\begin{dcode}
+template(AB...)
+{ ... }
+\end{dcode}
+
+And filter the \DD{AB}s to find the ones you need. It can be done by \DD{staticFilter}, presented in \ref{staticfilter} (and its associated function on a function arguments would be \DD{tupleFilter} shown in \ref{filteringtuples}). In this case, the two series of arguments can be mixed (and not separated in two lists), which is strictly more powerful. On the other hand, it means you must be able to separate them by their types alone, which may not be possible.
+
+\subsection{Templates All the Way Down}
+
+Happily, the initial problem can easily be solved this way:
+
+\begin{dcode}
+template MyTemp(A...)
+{
+    template MyTemp(B...)
+    {
+    (...)
+    }
+}
+\end{dcode}
+
+Remember, a template can have template members. So you can nest templates within templates, each with its own constraints and intermediate code. If you use only the same name, the eponymous trick may be activated, but sometimes using a different name at each stage can make your code more readable.
+
+For example, what if you want to compare to template tuples to see if they contain the same arguments?
+
+\begin{dcode}
+template Compare(First...)
+{
+    template With(Second...)
+    {
+        static if (First.length != Second.length)
+            enum With = false;
+        else static if (First.length == 0) // End of comparison
+            enum With = true;
+        else static if (!is(First[0] == Second[0]))
+            enum With = false;
+        else
+            enum With = Compare!(First[1..$]).With!(Second[1..$]);
+    }
+}
+
+//Usage:
+Compare!(int, double, string).With!(int, double, char);
+\end{dcode}
+
+In that case, using \DD{With} inside \DD{Compare} let the code be quite easy to use. Notice that the eponymous trick is done only on \DD{With}, because it's this inner template that we want the result of.
+
+Going back to \DD{MyTemp}, using it is slightly more complicated:
+
+\begin{dcode}
+// Yes:
+alias MyTemp!(int, double, string) MyTemp1;
+MyTemp1!(char, void);
+
+// No:
+MyTemp!(int, double, string)!(char, void);
+// No :
+MyTemp!(int, double, string).!(char, void);
+\end{dcode}
+
+The D grammar does not authorize a multiple template call like the ones on lines 6 and 8. You must use an alias for the intermediate stage. It's not that drastic a limitation, because if you created the template as a multi-step construction, it's most probably because you wanted to do a multi-step invocation\ldots
+
+\subsection{Double-Stage Function Templates}
+
+For function templates, this can give very powerful things. You can have a place in your code where compile-time parameters are given, which delivers a crafted-just-for-your-needs other template which you can instantiate a bit later on. Policies are particularly good with this. Section \ref{memoizing} presents a template that transforms a standard D function into a memoized one. Here is what could be done if it was a two-steps template:
+
+\begin{dcode}
+/*
+ * memoizer will store the first million tuple of args
+ * and discard half of them when the maximum is reached, to free some memory.
+ * At this stage, the function it will memoize is not known. It has be crafted
+ * by the user as the best memoizing strategy in her code, and it could (and will!)
+ * be applied on many different functions.
+ */
+alias memoize!(Storing.maximum, 1_000_000, Discarding.fraction, 0.5f) memoizer;
+
+auto longCalculation1(int i, double d) { ... }
+auto longCalculation2(double d, string s) { ... }
+
+/*
+ * longCalculation1 and longCalculation2 will both profit from the memoization
+ * even though they have a different signature, different arguments and return
+ * a different type.
+ */
+alias memoizer!longCalculation1 mlc1;
+alias memoizer!longCalculation2 mlc2;
+\end{dcode}
+
+\TODO{OK, now maybe I should provide an updated version of \DD{memoize} in \ref{memoizing}.}
+
+\subsection{Named-Fields Tuples}
+
+Let's have another example, to use IFTI (\ref{ifti}). In Phobos, the function \stdanchor{typecons}{tuple} lets you create a tuple on the fly. It's a very nice example of IFTI in action:
+
+\begin{dcode}
+auto tuple1 = tuple(1, 3.14159, "abc"); // tuple1 is a Tuple!(int,double,string)
+auto tuple2 = tuple('a','b','c'); // tuple2 is a Tuple!(char,char,char)
+\end{dcode}
+
+But Phobos \DD{Tuple} is more powerful than that. It can have named paramters:
+
+\begin{dcode}
+Tuple!(int, "counter", string, "name") myCounter;
+myCounter.counter = -1;
+myCounter.name = "The One and Only Counter Around There";
+\end{dcode}
+
+As of this writing, Phobos doesn't provide a \DD{tuple} factory function allowing named arguments in an nice, automated manner:
+
+\begin{dcode}
+auto myCounter = tuple!("counter", "name")(-1, "Who's his Daddy's counter?");
+
+myCounter.counter = 1;
+
+// Or even:
+alias tuple!("counter", "name") makeCounter;
+
+auto c1 = makeCounter(0, "I count ints!");
+auto c2 = makeCounter("Hello", "I'm a strange one, using strings");
+
+c2.counter ~= " World!";
+\end{dcode}
+
+In the previous example, \DD{c1} is a \DD{Tuple!(}\D{int}\DD{,}\D{string}\DD{)}, whereas \DD{c2} is a \DD{Tuple!(}\D{string}\DD{,}\D{string}\DD{)}. That means \DD{makeCounter} is a factory function for tuples with two fields, named \DD{counter} and \DD{name}, which see their types determined later on. I want this, so let's code it.
+
+First, it's obvious we need a two-stage template:
+
+\index{template!constraints}
+\begin{dcode}
+import std.typetuple: allSatisfy;
+
+template tuple(names...) if (names.length && allSatisfy!(isAStringLiteral, names))
+{
+    auto tuple(T...)(T args)
+    {
+    (...)
+    }
+}
+\end{dcode}
+
+The constraint is here to check that the user gives me at least one name and that all passed \DD{names} are indeed string literals template parameters. I use \stdanchor{typetuple}{allSatisfy} to verify the condition on all of them. I cannot use directly \stdanchor{traits}{isSomeString} because this template acts on types, whereas I need something checking a string literal.
+
+\begin{dcode}
+import std.traits: isSomeString;
+
+template isAStringLiteral(alias name)
+{
+    enum isAStringLiteral = isSomeString!(typeof(name));
+}
+\end{dcode}
+
+That being in place, we need to create the correct \DD{Tuple}. Arguments names are provided right after each type (so as to allow for a mix between named and anonymous fields:
+
+\begin{dcode}
+/*
+ * The first two fields are named, and the fourth.
+ * The third is anonymous.
+ */
+alias Tuple!(int, "counter", string, "name", double, double, "total") MyTuple;
+\end{dcode}
+
+For our function, we consider that, given $n$ names, the first $n$ arguments will be named and the remaining (if any) will be anonymous. That give us another constraint: if the user provide less than $n$ arguments, we refuse the input and stop the compilation right there.
+
+\index{template!constraints}
+\begin{dcode}
+import std.typetuple: allSatisfy;
+
+template tuple(names...) if (names.length && allSatisfy!(isAStringLiteral, names))
+{
+    auto tuple(T...)(T args) if (T.length >= names.length)
+    {
+    (...)
+    }
+}
+\end{dcode}
+
+Now, we just need the alternate the names and the argument types. Happily, this document describe a \DD{Interleave} template in \ref{interleavingtypes}, that does just that:
+
+\begin{dcode}
+import std.typetuple: allSatisfy;
+
+template tuple(names...) if (names.length && allSatisfy!(isAStringLiteral, names))
+{
+    auto tuple(T...)(T args) if (T.length >= names.length)
+    {
+        return Tuple!(Interleave!(T).With!(names))(args);
+    }
+}
+\end{dcode}
+
+And, presto, here we have our named-tuple factory function. Isn't that nice? The closure example in \ref{closuresareapoormansobjects} could use it to simplify its returned value.
+
+\TODO{And a curried template.}
 
 \section{\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}}\label{fileandline}
 
