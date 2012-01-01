@@ -655,133 +655,223 @@ enum Type
     Parallel,
 }
 
-struct Typedef( T, Type type = Type.Sub, T init = T.init, string _f = __FILE__,
-int _l = __LINE__ )
+struct Typedef( T, 
+                Type type = Type.Sub, 
+                T init = T.init, 
+                string _f = __FILE__,
+                int _l = __LINE__ )
 {
     T payload = init;
 
-
     static if ( type != Type.Independent )
-    {
         this( T value )
         {
             payload = value;
         }
-    }
+
     static if ( type == Type.Sub)
-    {
         // typedef int foo; foo f;
         // f.opCast!(t)() == cast(t) f
         T opCast(T)()
         {
             return payload;
         }
-    }
+
     static if ( type == Type.Sub || type == Type.Parallel )
-    {
         alias payload this;
-    }
+
     static if ( type == Type.Super )
-    {
         typeof( this ) opAssign( T value )
         {
             payload = value;
             return this;
         }
-    }
     else static if ( type == Type.Sub )
-    {
         @disable void opAssign( T value );
-    }
 }
 \end{dcode}
 
-\section{Recording Successive States}
+\section{Emitting Events}
 
-From Andrej Mitrovic:
+This example template, comprising \DD{Fields} and \DD{Notify}, comes from Andrej Mitrovic. He has be kind enough to allow me to put it there and to give me some explanations for the logic behind this template. He's using it in his experimental GUI library to signal an event.
 
 \begin{dcode}
-import std.stdio;
-import std.traits;
-
-struct Shape
+template isSomeStringLiteral(alias a)
 {
-    int x, y;
-    void foo(int val) { x += val; }
-    int bar(int val) { y += val; return y; }
+    enum isSomeStringLiteral = isSomeString!(typeof(a));
 }
 
-struct RecorderImpl(T)
+mixin template Fields(T, fields...) 
+    if (allSatisfy!(isSomeStringLiteral, fields))
 {
-    T t;
-    T[] t_states;
-    
-    this(T t)
-    {
-        this.t = t;
-        t_states ~= t;
-    }
-    
-    auto opDispatch(string method, Args...)(Args args)
-    {
-        static if (mixin("is(ReturnType!(t." ~ method ~ ") == void)"))
-        {
-            mixin("t." ~ method ~ "(args);");
-            t_states ~= t;
-        }
-        else
-        {
-            mixin("auto result = t." ~ method ~ "(args);");
-            t_states ~= t;
-            return result;
-        }
-    }
-    
-    auto opIndex(size_t index)
-    {
-        assert(index < t_states.length);
-        return t_states[index];
-    }
-    
-    auto opSlice(size_t lowerBound, size_t upperBound)
-    {
-        return t_states[lowerBound..upperBound];
-    }
-    
-    auto opSlice()
-    {
-        return t_states[];
-    }
-}
+    alias typeof(this) This;
 
-auto Recorder(T)(T t)
-{
-    return RecorderImpl!T(t);
-}
+    static string __makeFields(T, fields...)()
+    {
+        string res;
+        foreach(field; fields) res ~= T.stringof~ " " ~ field ~ ";\n";
+        return res;
+    }
 
-void main()
-{
-    auto shape = Recorder(Shape(0, 0));
-    
-    shape.foo(5);
-    shape.bar(5);
-    
-    writeln(shape[0]);
-    writeln(shape[]);
+    static string __makeOpBinaryFields(string op, fields...)()
+    {
+        string res;
+        foreach(field; fields) 
+            res ~= "res." ~ field 
+                 ~ " = this." ~ field ~ op ~ " rhs." ~ field ~ ";\n";
+        return res;
+    }
+
+    mixin(__makeFields!(T, fields)());
+
+    This opBinary(string op)(This rhs)
+    {
+        This res;
+        mixin(__makeOpBinaryFields!(op, fields)());
+        return res;
+    }
+
+    void opOpAssign(string op)(This rhs)
+    {
+        mixin("this = this " ~ op ~ " rhs;");
+    }                
 }
 \end{dcode}
 
+The user mix it in its own types:
 
+\begin{dcode}
+struct Point {
+    mixin Fields!(int, "x", "y", "z", "w");
+}
+
+struct Size {
+    mixin Fields!(int, "width", "height");
+}
+\end{dcode}
+
+This goes hand in hand with the \DD{Notify} struct template:
+
+\begin{dcode}
+struct Notify(T)
+{
+    alias void delegate(ref T) OnEventFunc;
+    OnEventFunc onEvent;
+
+    void init(OnEventFunc func) {
+        onEvent = func;
+    }
+
+    string toString()
+    {
+        return raw.toString;
+    }
+
+    auto opEquals(T)(T rhs)
+    {
+        return rhs == rhs;
+    }
+
+    void opAssign(T)(T rhs)
+    {
+        if (rhs == raw)
+            return;  // avoid infinite loops
+        
+        // temp used for ref
+        auto temp = rhs;  
+        onEvent(temp);
+    }
+
+    auto opBinary(string op, T)(T rhs)
+    {
+        mixin("return raw " ~ op ~ " rhs;");
+    }
+
+    void opOpAssign(string op, T)(T rhs)
+    {
+        // temp used for ref
+        mixin("auto temp = raw " ~ op ~ " rhs;");  
+
+        if (temp == raw)
+            return;  // avoid infinite loops
+
+        onEvent(temp);
+    }
+
+    public T raw;  // raw access when we don't want to invoke event()
+    alias raw this;
+}
+\end{dcode}
+
+Which you mix in classes you want to notify any changes to their internal state:
+
+\begin{dcode}
+class Widget 
+{
+    this()
+    {
+        point.init((Point pt) { writefln("changed point to %s", pt); });
+        size.init((Size sz)   { writefln("changed size to %s", sz); });
+    }
+
+    Notify!Point point;
+    Notify!Size size;
+}
+\end{dcode}
+
+For example, a user might change the point (position) field of a widget via: 
+
+\begin{dcode}
+Point moveBy = Point(10, 0); widget.point += moveBy;}. 
+\end{dcode}
+
+This doesn't modify the field yet, but only triggers \DD{onEvent(moveBy)}, which in turn emits a signal containing the \DD{Widget} reference and the requested position \DD{doMove.emit(this, moveBy)}. This gets processed by a chain of an arbitrary number of listeners. These listeners take \DD{moveBy} by reference and this comes in handy when e.g. a \DD{Widget} is part of a \DD{Layout}. The \DD{Layout} simply adds itself to the chain of listeners and edits the ref argument if it wants to, or even returns \D{false} to completely deny any changes to a field.
+
+This allows for some great flexibility. For example, say a user subclasses from \DD{Widget} (let's call it \DD{Child}), and overrides \DD{onMove()} of the widget to limit it to the position of:
+
+\begin{dcode}
+min: Point(10, 10) (top-left)
+max: Point(100, 100) (bottom-right)
+\end{dcode}
+
+This \DD{Widget} has a parent \DD{Widget} (call it \DD{Parent}), which has a layout set. The layout might allow any child \DD{Widget}s of the \DD{Parent} to only be set between the following positions:
+
+\begin{dcode}
+min: Point(20, 20)
+max: Point(80, 80)
+\end{dcode}
+
+Additionally the layout might take a child's size into account so the \DD{Widget} never overflows the \DD{min} and \DD{max} points of the layout. If this \DD{Widget} was at \DD{Point(20, 20)} and had \DD{Size(50, 50)} it means the layout will limit the \DD{Wid\-get}'s minimum and maximum points to:
+
+\begin{dcode}
+min: Point(20, 20)
+max: Point(30, 30)
+\end{dcode}
+
+When the \DD{Widget} is at \DD{Point(30, 30)} its bottom-right point will be \DD{Point(80, 80)}, which is the maximum bottom-right point the layout has set. The layout won't allow the \DD{Widget} to be at position \DD{Point(10, 10)} either, even though \DD{Widget}'s \DD{onMove} method allows it.
+
+So if the user tries to call:
+
+\begin{dcode}
+child.point = Point(120, 120);
+\end{dcode}
+
+First, \DD{Child}'s \DD{onMove} is the first listener of some \DD{doMove} signal. It will modify the ref argument and set it to \DD{Point(100, 100)} as the user coded it that way. Then, the layout will modify it to \DD{Point(30, 30)} since it takes \DD{Widget}'s size into account so it doesn't overflow.
+
+There could be any number of listeners, and you could add a listener to any position in the chain of events (maybe you want to intercept and modify the argument before it reaches \DD{Parent}'s layout if you want to set temporary limits to a \DD{Widget}'s position).
+
+Finally, there is always one last listener. This one is an internal function that actually modifies the \DD{.raw} field, and calls into internal painting and blitting functions to make the \DD{Widget} appear into its new position. Also, any listener can return \D{false} to break further processing of events and deny modifying the field.
+
+Notice that assignments never happen, external code has to use the \DD{.raw} field to actually modify the internal payload, which avoids calling \DD{onEvent()}.
 
 \section{Fields}
 
-From Jacob's Carlborg Orange:
-
-\TODO{Test typeof(s.tupleof)}
+From Jacob's Carlborg \href{https://github.com/jacob-carlborg/orange}{Orange} serialization library:
 
 \begin{dcode}
 /**
- * Evaluates to an array of strings containing the names of the fields in the given type
+ * Evaluates to an array of strings containing 
+ * the names of the fields in the given type
  */
 template fieldsOf (T)
 {
@@ -795,62 +885,63 @@ template fieldsOf (T)
  */
 template fieldsOfImpl (T, size_t i)
 {
-	static if (T.tupleof.length == 0)
-		const fieldsOfImpl = [""];
+    static if (T.tupleof.length == 0)
+        enum fieldsOfImpl = [""];
 
-	else static if (T.tupleof.length - 1 == i)
-		const fieldsOfImpl = [T.tupleof[i].stringof[1 + T.stringof.length + 2 .. $]];
+    else static if (T.tupleof.length - 1 == i)
+        enum fieldsOfImpl = [T.tupleof[i].stringof[1 + T.stringof.length + 2 .. $]];
 
-	else
-		const fieldsOfImpl = T.tupleof[i].stringof[1 + T.stringof.length + 2 .. $] ~ fieldsOfImpl!(T, i + 1);
+    else
+        enum fieldsOfImpl = T.tupleof[i].stringof[1 + T.stringof.length + 2 .. $] ~ fieldsOfImpl!(T, i + 1);
 }
 \end{dcode}
 
 \section{Extending an enum}
 
-From Simen Kjaeraas
+From Simen Kjaeraas (posted on the D newsgroup).
 
 \begin{dcode}
 string EnumDefAsString(T)() if (is(T == enum)) {
-  string result = "";
-  foreach (e; __traits(allMembers, T)) {
-      result ~= e ~ " = T." ~ e ~ ",";
-  }
-  return result;
+    string result = "";
+    foreach (e; __traits(allMembers, T))
+        result ~= e ~ " = T." ~ e ~ ",";
+    return result;
 }
 
-template ExtendEnum(T, string s) if (is(T == enum) &&
-is(typeof({mixin("enum a{"~s~"}");}))) {
-  mixin("enum ExtendEnum {" ~
-      EnumDefAsString!T() ~ s ~
-  "}");
+template ExtendEnum(T, string s) 
+    if (is(T == enum) &&
+        is(typeof({mixin("enum a{"~s~"}");}))) 
+{
+mixin(
+    "enum ExtendEnum {"
+   ~ EnumDefAsString!T() ~ s
+   ~ "}");
 }
 
-unittest {
-  enum bar {
-      a = 1,
-      b = 7,
-      c = 19
-  }
+enum bar 
+{
+    a = 1,
+    b = 7,
+    c = 19
+}
 
-  import std.typetuple;
+import std.typetuple;
 
-  alias ExtendEnum!(bar, q{ // Usage example here.
+alias ExtendEnum!(bar, q{ // Usage example here.
       d = 25
-  }) bar2;
+    }) bar2;
 
-  foreach (i, e; __traits(allMembers, bar2)) {
-      static assert( e == TypeTuple!("a", "b", "c", "d")[i] );
-  }
-
-  assert( bar2.a == bar.a );
-  assert( bar2.b == bar.b );
-  assert( bar2.c == bar.c );
-  assert( bar2.d == 25 );
-
-  static assert(!is(typeof( ExtendEnum!(int, "a"))));
-  static assert(!is(typeof( ExtendEnum!(bar, "25"))));
+foreach (i, e; __traits(allMembers, bar2)) {
+    static assert( e == TypeTuple!("a", "b", "c", "d")[i] );
 }
+
+assert( bar2.a == bar.a );
+assert( bar2.b == bar.b );
+assert( bar2.c == bar.c );
+assert( bar2.d == 25 );
+
+static assert(!is(typeof( ExtendEnum!(int, "a"))));
+static assert(!is(typeof( ExtendEnum!(bar, "25"))));
 \end{dcode}
 
 \section{Static Switching} \label{examples:staticswitch}
