@@ -427,12 +427,13 @@ int ceilLog2(int n)
 /**
  * Given a length n, returns an array of indices pairs
  * corresponding to a sorting network for length n.
+ * Looks a bit like C code, isn't it?
  */
 int[2][] sortingNetwork(int n)
 {
     int[2][] network;
-    auto tee = ceilLog2(n);
-    auto p = 1 << (tee-1);
+    auto t = ceilLog2(n);
+    auto p = 1 << (t-1);
     while (p > 0)
     {
         auto q = 1 << (tee-1);
@@ -508,7 +509,7 @@ sort32(myArr);
 sort32!"a > b"(myArr);
 \end{dcode}
 
-\DD{sort32} is designed to work on 32-elements-long random-access ranges, without knowing in advance the nature of the range nor the predicate used to sort. If you call it on ranges with a length less than 32, it will sort only the first 32 elements. For less than 32 elements, the enforcement will fail.
+\DD{sort32} is designed to work on 32-elements-long random-access ranges, without knowing in advance the nature of the range nor the predicate used to sort. If you call it on ranges with a length greater than 32, it will sort only the first 32 elements. For less than 32 elements, the enforcement will fail.
 
 So, what does that little sorting routine buy us? It appears to be quite efficient for small-size arrays, compared to \stdanchor{algorithm}{sort}, but sees its performance degrade after a point. Table \ref{table:sortingnetworkperformance} compares one million sorting of $n$-elements randomly-shuffled arrays done with \DD{networkSort} and \DD{std.algorithm.sort} and gives the ratio of speed-up brought by pre-computing the sorting code. 
 
