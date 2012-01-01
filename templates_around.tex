@@ -755,9 +755,9 @@ Like for the other aggregates, you get the aliased names also, and the unit test
 
 \aparte{What's the point of inspecting a module?}{ Well, first that was just for fun and to see if I could duplicate a module or create a struct with an equivalent members list (all forwarding to the module's own members). But the real deal for me was when using string mixins to generate some type. If the user uses the mixin in its own module, it could create conflicts with already-existing names. So I searched for a way for a mixin template to inspect the module it's currently being instantiated in.
 
-Then, I wanted to write a template the, given a class name, would give me the entire hierarchy it's in (as the local module scope would see it, that was enough for me). This Hierarchy template should be shown in this document.
+Then, I wanted to write a template the, given a class name, would give me the entire hierarchy it's in (as the local module scope would see it, that was enough for me). This \DD{Hierarchy} template should be shown in this document.
 
-Then, while testing std.traits.ParameterTypeTuple, I saw that it give the parameter typetuple of \emph{one} function, even when it's overloaded.}
+Then, while testing \stdanchor{traits}{ParameterTypeTuple}, I saw that it gives the parameter typetuple of \emph{one} function, even when it's overloaded. So inspecting a module is also a way to get the full list of functions with a particular name and getting the parameter typetuple for each of them.}
 
 \TODO{Inject Hierarchy here.}
 \TODO{Code a more powerful version of ParameterTypeTuple.}
@@ -809,18 +809,14 @@ template MakeMember(alias member)
 Now, given an aggregate name and a member name (as a string, since these do not exist by themselves), we want a list of \DD{Member} structs holding all the information:
 
 \begin{dcode}
-emplate Overloads(alias a, string member)
+template Overloads(alias a, string member)
 {
-    alias OverloadsImpl!(__traits(getOverloads,a, member)).result Overloads;
-}
-
-template OverloadsImpl(A...)
-{
-    alias staticMap!(MakeNameAndType,A) result;
+    alias staticMap!(MakeMember, __traits(getOverloads,a, member))
+          Overloads;
 }
 \end{dcode}
 
-It's a two-stage template as explained in sections \ref{eponymous} (eponymous templates) and \ref{templatesintemplates} (to get the overloads expansion as a tuple parameter). \DD{staticMap} is explained in section \ref{staticmap}.
+\DD{staticMap} is explained in section \ref{staticmap}.
 
 Now, that already works:
 
@@ -857,7 +853,7 @@ We indeed got two \DD{Member} instances, one for each overload. Each \DD{Member}
 template Overloads(alias a, string member)
 {
     static if (__traits(compiles, __traits(getOverloads, a, member)))
-        alias OverloadsImpl!(__traits(getOverloads,a, member)).result
+        alias staticMap!(MakeMember, __traits(getOverloads,a, member))
               Overloads;
     else
         alias TypeTuple!(Member!(member, typeof(__traits(getMember, a, member)))) 
