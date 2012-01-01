@@ -1046,7 +1046,9 @@ The D grammar does not authorize a multiple template call like the ones on lines
 
 \subsection{Double-Stage Function Templates}
 
-For function templates, this can give very powerful things. You can have a place in your code where compile-time parameters are given, which delivers a crafted-just-for-your-needs other template which you can instantiate a bit later on. Policies are particularly good with this. Section \ref{memoizing} presents a template that transforms a standard D function into a memoized one. Here is what could be done if it was a two-steps template:
+For function templates, this can give very powerful things. You can have a place in your code where compile-time parameters are given, which delivers a crafted-just-for-your-needs other template which you can instantiate a bit later on. See for example \ref{stringinterpolation} and the \DD{interpolate} function-in-template.
+
+Policies are particularly good with this idiom.\index{idiom!functions in templates} Section \ref{memoizing} presents a template that transforms a standard D function into a memoized one. Here is what could be done if it was a two-steps template:
 
 \begin{dcode}
 /*

@@ -258,7 +258,7 @@ assert(gs.get1 == "abc");
 
 This code is much more powerful than the one we saw in section \ref{stringmixinsandtemplates}: the number of types is flexible, and an entire set of getters/setters is generated when asked to. All this is done by simply plugging \D{string}-returning functions together, and a bit of looping by way of a compile-time \D{foreach}.
 
-\subsection{Simple String Interpolation}
+\subsection{Simple String Interpolation}\label{stringinterpolation}
 
 All this play with the concatenating operator (\DD{\~}) is becoming a drag. We should write a string interpolation function, evaluable at compile-time of course, to help us in our task. Here is how I want to use it:
 
