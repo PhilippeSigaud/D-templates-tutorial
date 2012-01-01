@@ -397,13 +397,13 @@ template naryFun(string code, int arit = arity(code))
 
 Sorting networks are a nice example of what compile-time code generation can buy you. Sorting is a very vast subject and obtaining near-optimal sort in many circumstances is quite difficult. But in some cases, if you know your input length, you can build a pre-defined list of comparisons between elements and swap them if they are not in the correct order. Here, I will represent sorting networks as pairs of indices in the input range: given indices $i$ and $j$, compare \DD{input[i]} and \DD{input[j]}, and so on.
 
-For example, given an array\footnote{ Or a random-access range.} of length $l$, \autoref{table:sortingnetworks} present possible (optimal, in this case) sorting networks.
+For example, given an array\footnote{ Or a random-access range.} of length $n$, \autoref{table:sortingnetworks} presents possible (optimal, in this case) sorting networks.
 
 \begin{table}[htb]
 \centering
 \begin{tabular}[c]{|l|l|}
 \hline
-$l$ & Sorting network \\ \hline \hline
+$n$ & Sorting network \\ \hline \hline
 2   & [[0, 1]] \\ \hline
 3   & [[0, 2], [0, 1], [1, 2]] \\ \hline
 4   & [[0, 2], [1, 3], [0, 1], [2, 3], [1, 2]] \\ \hline
@@ -413,7 +413,7 @@ $l$ & Sorting network \\ \hline \hline
 \label{table:sortingnetworks}
 \end{table}
 
-The code to generate the list of indices can be found in Knuth's \emph{The Art of Computer Programming} or on the net. The code given below I translated from Common Lisp\index{lisp} (!) to D, and is taken from Doug Hoyte's \emph{Let Over Lambda}, a very opinionated book about Common Lisp's macros.\footnote{ If anyone find \DD{ceilLog2} in Phobos, tell me where it is!}
+The code to generate the list of indices can be found in Knuth's \emph{The Art of Computer Programming} or on the net. The code given below I translated from Common Lisp\index{lisp} (!) to D, and is taken from Doug Hoyte's \href{http://letoverlambda.com}{Let Over Lambda}, a very opinionated book about Common Lisp's macros.
 
 \begin{dcode}
 int ceilLog2(int n)
@@ -454,29 +454,23 @@ int[2][] sortingNetwork(int n)
 }
 \end{dcode}
 
-\DD{sortingNetwork} returns an array of indices pairs. From this, it's easy to generate code. The basic building block is \DD{buildCAS} (for 'compare-and-swap'):
+\DD{sortingNetwork} returns an array of indices pairs. From this, it's easy to generate code. The basic building block done by \DD{interpolate} (\ref{stringinterpolation}):
 
 \begin{dcode}
-import std.conv: to;
-
-string buildCAS(alias pred)(int[2] indices)
+string buildSortingCode(size_t l)()
 {
-    return "t1 = input[" ~ to!string(indices[0]) ~ "];"
-         ~ "t2 = input[" ~ to!string(indices[1]) ~ "];"
-         ~ "if binaryFun!pred(t1,t2)"
-         ~ "{ auto temp = t2;"
-         ~ "input[" ~ to!string(indices[1]) ~ "] = t1;"
-         ~ "input[" ~ to!string(indices[0]) ~ "] = temp;}\n";
-}
-\end{dcode}
-
-Assembling it into a big CAS list is done by \DD{buildSortingCode}:
-
-\begin{dcode}
-string buildSortingCode(int[2][] network)
-{
+    enum network = sortingNetwork!(l);
     string result;
-    foreach(elem; network) result ~= buildCAS(elem);
+    foreach(elem; network) result ~= 
+        interpolate!(
+        "t1 = input[#0];
+         t2 = input[#1];
+         if (!binaryFun!pred(t1, t2))
+         { 
+             auto temp = t2;
+             input[#1] = t1;
+             input[#0] = temp;
+         }\n")(elem[0], elem[1]);
     return result;
 }
 \end{dcode}
@@ -490,17 +484,20 @@ import std.exception;
 
 template networkSort(size_t l)
 {
-    mixin(interpolate!(
-    "void networkSort(alias pred = \"a < b\", R)(ref R input) if (isRandomAccessRange!R)
-    { 
-        enforce(input.length >= #, \"Calling networkSort!# with a range of less than # elements\");
-	ElementType!R t1, t2;")(l)
-      ~ buildSortingCode(sortingNetwork(l)) 
+    mixin(
+interpolate!(
+    "void networkSort(alias pred = \"a < b\", R)(ref R input)
+     if (isRandomAccessRange!R)
+     { 
+         enforce(input.length >= #, 
+                 \"Calling networkSort!# with a range of less than # elements\");
+	      ElementType!R t1, t2;")(l)
+      ~ buildSortingCode!(l) 
  ~ "}");
 }
 \end{dcode}
 
-The strange mixin-in-a-template construction that uses the previsously-seen \DD{interpolate} help is there to cut the template in two, to allow user code like this:
+The strange mixin-in-a-template construction is there to cut the template in two, to allow user code like this:
 
 \begin{dcode}
 // somewhere in your code
@@ -513,7 +510,7 @@ sort32!"a > b"(myArr);
 
 \DD{sort32} is designed to work on 32-elements-long random-access ranges, without knowing in advance the nature of the range nor the predicate used to sort. If you call it on ranges with a length less than 32, it will sort only the first 32 elements. For less than 32 elements, the enforcement will fail.
 
-So, what does that little sorting routine buy us? It appears to be quite efficient for small-size arrays, compared to \stdanchor{algorithm}{sort}, but see its performance degrade after a point. Table \ref{table:sortingnetworkperformance} compares one million sorting of $n$-elements randomly-shuffled arrays done with \DD{networkSort} and \DD{std.algorithm.sort} and gives the ratio of speed-up brought by pre-computing the sorting code. 
+So, what does that little sorting routine buy us? It appears to be quite efficient for small-size arrays, compared to \stdanchor{algorithm}{sort}, but sees its performance degrade after a point. Table \ref{table:sortingnetworkperformance} compares one million sorting of $n$-elements randomly-shuffled arrays done with \DD{networkSort} and \DD{std.algorithm.sort} and gives the ratio of speed-up brought by pre-computing the sorting code. 
 
 \begin{table}[htb]
 \centering
