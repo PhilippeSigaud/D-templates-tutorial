@@ -292,6 +292,39 @@ template Interleave(First...)
 
 \end{dcode}
 
+\subsection{Annotating Types}\label{annotatingtypes}
+
+\unfinished{The idea is to wrap values in a template adding some meta data. Ideally, I'd like to get things like the following code to work:}
+
+\begin{dcode}
+auto arr = [0,1,2,3,4]; // Array of ints
+auto arr2 = sorted(arr); // Now, we know it's sorted
+auto arr3 = positive(arr2); // Sorted *and* all elements are positive
+\end{dcode}
+
+Or, more generally:
+
+\begin{dcode}
+auto arr = [0,1,2,3,4]; // Array of ints
+auto arr2 = annotate!("sorted", (a,b) => a<b)(arr);
+auto arr3 = annotate!("positive")(arr2);
+
+assert("positive" in arr3.properties);
+assert(arr3.Properties == TypeTuple!( Property!("sorted", (a,b) => a < b)
+                                    , Property!("positive")));
+
+// the wrapped value is still there:             
+auto arr4 = array(filter!((a) => a%2==0))(arr3);
+// getting rid of some properties
+auto arr5 = arr3.discardProperty!"positive"; 
+assert(arr5.Properties == TypeTuple!(Property!("sorted", (a,b) => a < b)));
+
+auto arr6 = annotate!("negative")([-4, -3, -2, -1]);
+auto arr7 = annotate!("sorted", (a,b) => a<b)(arr6);
+
+assert(arr3.property!"sorted" == arr7.property!"sorted"); // same predicate                                    
+\end{dcode}
+
 \section{Tuples as Sequences}\label{tuplesassequences}
 
 \subsection{Mapping on Tuples}\label{mappingontuples}
