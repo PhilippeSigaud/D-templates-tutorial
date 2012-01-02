@@ -1180,7 +1180,7 @@ And, presto, here we have our named-tuple factory function. Isn't that nice? The
 
 \section{\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}}\label{fileandline}
 
-\unfinished{This section needs some heavy testing. My D config was broken when I wrote this part.}
+\unfinished{This section needs some heavy testing. My D config was broken when I wrote this part. Take everything in there with a \emph{big} grain of salt. It's on my todo list to test and rewrite everything.}
 
 In section \ref{default}, we've seen that template parameters can have default values. There are also two special, reserved, symbols that are defined in D: \D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}. They are used in standard (non-\D{mixin}) templates, but their behaviour will remind you of mixins: when instantiated, they get replaced by strings containing the file name and the line in the file of the \emph{instantiation call site}. Yes, it's a sort of two-way dialogue: module \DD{a.d} defines template \DD{T}. Module \DD{b.d} asks for a \DD{T} instantiation. This instantiation is done in module \DD{a.d}, but will line and filename taken from \DD{b.d}!
 
@@ -1249,9 +1249,45 @@ template Debug(alias toTest, file == __FILE__, line == __LINE__)
 }
 
 /* Usage */
-Debug!(templateToBeTested).With!(Arguments);
+Debug!(templateToBeTested).With!(Argument0, Argument1, Argument2);
 \end{dcode}
 
 That way, no need to modify your beautiful templates.
 
 \TODO{Test that.}
+
+\section{User-Defined Literals}\label{userdefinedliterals}
+
+In \href{http://drdobbs.com/blogs/tools/229401068}{this article}, Walter Bright makes a convincing case for using templates as user-defined literals. His example is now the \stdanchor{conv}{octal} wrapper that allowed D to (see if it's possible to) ditch octal literals as a compiler construct and push them into library-space. That way, you can use:
+
+\begin{dcode}
+auto o1 = octal!"755";
+// or even:
+auto o2 = octal!755;
+\end{dcode}
+
+as a stand-in replacement for the \DD{0755} octal literal. It's no more complicated to type (a few chars to add at most), it's clearer for a reader of your code (who may miss the beginning \DD{0}) that he's dealing with an octal there. Best of all, the implementation is there as library code: easy to reach, easy to debug\footnote{ And less intimidating than diving into compiler code.} and easy to duplicate for other encodings. That way, this could be done:
+
+\begin{dcode}
+auto h1 = hexa!"deadbeef";
+auto b1 = binary!1011011;
+// Or even:
+auto number = base!(36, "4d6r7th2h7y");
+\end{dcode}
+
+Behind the scene, \DD{octal} reads its \D{string} or \D{int} argument and converts it into an \D{int} or a \D{long} depending on the argument size.  It's a nice piece of work that could pave the way to similar well-integrated language extensions.
+
+\unfinished{Also, DSL in strings in D, see Statically-Checked Writeln in \ref{staticallycheckedwriteln}, encoding informations in types (\ref{encodinginformationwithtypes}) and annotating types (\ref{annotatingtypes}).}
+
+\section{Encoding Information With Types} \label{encodinginformationwithtypes}
+
+This is an extension of the previous section's idea, that you can find for example in \stdanchor{range}{assumeSorted} and \stdanchor{range}{SortedRange}. These Phobos constructs encode some information in a type (in this case, the fact than the range is sorted, with an associated predicate). That way, subsequent operations acting on a range can use better algorithm if they know it's sorted.
+
+This kind of encoding can be used for many different schemes:
+
+\begin{itemize}
+\item For a matrix library, you could have a, for example, \DD{assumeHermitian} or \DD{assumeTriangular} that just wraps a pre-existing matrix.
+\item For a XML/HTML library, you could imagine a \DD{Validated} struct that's used to indicate, er, validated content. Any external input will have to pass trough a \DD{validate} function that delivers the \DD{Validated} object. Subsequent operations will work only on \DD{Validated} data, not raw data.
+\item A units library (as in, $kg.m/s^{2}$, not unit-testing) is mainly a bunch of \D{double} (or complex) values wrapped in a multi-checked type that allows only some operations, depending on types. \DD{meter(5) + kilo(gram(10))} is a no-no, but \DD{meter(5)*kilo(gram(10))} is OK.
+\end{itemize}
+
