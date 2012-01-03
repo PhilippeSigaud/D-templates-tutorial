@@ -636,7 +636,7 @@ enum name3 = nameOf!(std.typecons); //"typecons"
 
 In a nutshell, \D{\_\_traits}\DD{(getMember, name, "member")} will give you direct access to \DD{name.member}. This is the real member: you can get its value (if any), set it anew, etc. Any D construct with members is OK as a \DD{name}. If you wonder why the aggregate is called directly by its own name whereas the member needs a string, it's because the aggregate is a valid symbol (it exists by itself), when the member's name has no existence outside the aggregate (or even worse, may refer to another, unrelated, construct).
 
-\aparte{Aggregates}{I'll use \emph{aggregate} as a catch-all term for any D construct that has members. Structs and classes are obvious aggregates, but it's interesting to keep in mind that templates too have members (remember section \ref{instantiating}? A template is a named, parameterized scope). So all \D{\_\_traits} calls shown in this section can be used on templates. That's interesting to keep in mind. Even more interesting, to my eyes, is that \emph{modules} are also aggregates even though they are not first-class citizens in D-land. You'll see examples of this in the following sections.}
+\aparte{Aggregates}{I'll use \emph{aggregate} as a catch-all term for any D construct that has members. Structs and classes are obvious aggregates, as are interfaces, but it's interesting to keep in mind that templates too have members (remember section \ref{instantiating}? A template is a named, parameterized scope). So all \D{\_\_traits} calls shown in this section can be used on templates. That's interesting to keep in mind. Even more interesting, to my eyes, is that \emph{modules} are also aggregates even though they are not first-class citizens in D-land. You'll see examples of this in the following sections.}
 
 \subsection{\DD{allMembers}}
 \index{\_\_traits@\D{\_\_traits}!allMembers@\DD{allMembers}}
@@ -702,7 +702,7 @@ assert([__traits(allMembers, MyClass!int)]
         "opEquals", "Monitor", "factory"]);
 \end{dcode}
 
-If you remember one of the very first use we saw for templates in \ref{instantiating}, that is as a named, parameterize scope,\index{scope} this can give rise to interesting introspection:\index{introspection}
+If you remember one of the very first use we saw for templates in \ref{instantiating}, that is as a named, parameterized scope,\index{scope} this can give rise to interesting introspection:\index{introspection}
 
 \begin{dcode}
 template Temp(A, B)
@@ -779,8 +779,6 @@ Given:
 
 Then, \D{\_\_traits}\DD{(getOverloads, name, "member")} will gives you a tuple of all local overloads of \DD{name.member}. By 'local', I mean that for classes, you do not get the parents classes overloads. There is a difference between using \DD{getOverloads} on a type and on an instance: in the former case, you get \ldots, well I don't know exactly what it is you get but it's a bit akin to static members. On an instance, you get an expression that is the exact member overload. The \href{http://dlang.org/traits.html#getOverloads}{documentation} is misleading: it says \DD{getOverloads} returns an array, but than cannot be the case, as all overloads must have a different type. What's cool is that, by using \DD{"\_\_ctor"}, you also get a direct access to a type's constructor overloads. That can be quite handy in some cases.
 
-
-
 \subsection{Getting All Members, Even Overloaded Ones}
 \index{\_\_traits@\D{\_\_traits}!getting all members}
 
@@ -848,21 +846,39 @@ void main()
 }
 \end{dcode}
 
-We indeed got two \DD{Member} instances, one for each overload. Each \DD{Member} holds the name \DD{"foo"} and the overload's type. Except, there is a catch: for a field, there are no overloads. We need to pay attention to that in \DD{Overloads}:
+We indeed got two \DD{Member} instances, one for each overload. Each \DD{Member} holds the name \DD{"foo"} and the overload type. Except, there is a catch: for a field, there are no overloads. Aliases are also problematic and not correctly dealt with. We need to pay attention to that in \DD{Overloads}:
 
 \begin{dcode}
+/**
+ * Helper template to obtain make is(__traits()) compiles
+ */
+template Alias(alias a)
+{
+    alias a Alias;
+}
+
+/**
+ * Gets the overloads of a given member, as a Member type tuple.
+ */
 template Overloads(alias a, string member)
 {
-    static if (__traits(compiles, __traits(getOverloads, a, member)))
+    static if (__traits(getOverloads, a, member).length > 0) // Method
         alias staticMap!(MakeMember, __traits(getOverloads,a, member))
               Overloads;
-    else
-        alias TypeTuple!(Member!(member, typeof(__traits(getMember, a, member)))) 
-              Overloads;
+    else // field or alias
+        static if (is(typeof(__traits(getMember, a, member)))) // Field or symbol alias
+            alias TypeTuple!(Member!(member, typeof(__traits(getMember, a, member)))) 
+            Overloads;
+        else static if (is(Alias!(__traits(getMember, a, member))))// Type alias
+            alias TypeTuple!(Member!(member, __traits(getMember, a, member)))
+            Overloads;
+        else // template
+            alias TypeTuple!(Member!(member, void))
+            Overloads;
 }
 \end{dcode}
 
-Line 3 is an example of the \emph{very handy} \D{\_\_traits}\DD{(compiles, expression)} construct alluded to in section \ref{yesnoquestionsontypes}. Line 7 can be a bit daunting, but it just creates the one-element tuple \D{\_\_traits} should have returned.
+\DD{Alias} is just there to get around a limitation in D syntax\footnote{ Or maybe a bug?}. The entire template may be a bit daunting, but it's to give it a (mostly) correct way to deal with the many kinds of member an aggregate may have: fields, methods, type aliases, symbols aliases, template names\ldots As of this writing, it does not deal correctly with \D{unittest}\DD{\{\}} blocks, even  though they are members and should appear.
 
 The last step is to get this for all members of a given aggregate. It's quite easy:
 
@@ -910,6 +926,57 @@ void main()
 That's cool, every member and overload is acounted for: the two contructors are there, the destructor also, and of course \DD{i}, of type \D{int}.
 
 \TODO{Example: store all members in a hashtable or a polymorphic association list. As a mixin, to be put inside types to enable runtime reflection? (a.send("someMethod", args), a.setInstanceVariable("i",5))}
+
+\subsection{Testing for Interface Implementation}\label{implements}
+
+The previous section gave us a way to get an aggregate member list. From there, it's an easy step to get an interface's member list and to see if a given symbol's members contains the entire interface member list:
+
+\begin{dcode}
+/**
+ * Statically check if symbol 'a' implements interface I
+ * (that is, if all members of I are found in members of a.
+ */
+template implements(alias a, I) if (is(I == interface))
+{
+    alias implementsImpl!(a, AllMembers!I) implements;
+}
+
+template implementsImpl(alias a, Items...)
+{
+    static if (Items.length == 0)
+        enum implementsImpl = true;
+    else static if (staticIndexOf!(Items[0], AllMembers!a) == -1)
+        enum implementsImpl = false;
+    else
+        enum implementsImpl = implementsImpl!(a, Items[1..$]);
+}
+
+interface I
+{
+    int foo(int i);
+    void foo();
+    
+    string toString();
+}
+
+class Bad
+{
+    void foo(int i) {}
+}
+
+struct Good
+{
+    int field;
+    
+    int foo(int i) { return i;}
+    void foo() { writeln("Hello, World!");}
+            
+    string toString() { return "I'm a good struct!";}
+}
+
+assert( implements!(Good, I));
+assert(!implements!(Bad, I));
+\end{dcode}
 
 \subsection{\DD{getVirtualFunctions}}
 
