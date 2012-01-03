@@ -868,13 +868,13 @@ template Overloads(alias a, string member)
     else // field or alias
         static if (is(typeof(__traits(getMember, a, member)))) // Field or symbol alias
             alias TypeTuple!(Member!(member, typeof(__traits(getMember, a, member)))) 
-            Overloads;
+                  Overloads;
         else static if (is(Alias!(__traits(getMember, a, member))))// Type alias
             alias TypeTuple!(Member!(member, __traits(getMember, a, member)))
-            Overloads;
+                  Overloads;
         else // template
             alias TypeTuple!(Member!(member, void))
-            Overloads;
+                  Overloads;
 }
 \end{dcode}
 
