@@ -1074,25 +1074,44 @@ template staticSwitch(List...) // List[0] is the value commanding the switching
 
 \section{Generic Structures}
 
+\unfinished{This section will present some generic structures of growing complexity.}
+
 \subsection{Gobble}\label{gobble}
+
+Let's begin with \DD{Gobbler}, a small exercise in tuple manipulation and operator overloading. \DD{Gobbler} is a struct wrapping a tuple and defining only one operator: the right-concatenation operator (\DD{\~}).
 
 \begin{dcode}
 
 struct Gobbler(T...)
 {
+    alias T Types;
     T store;
-    Gobbler!(T, string,U) opBinary(string op, U)(U u) if (op == "~")
+    Gobbler!(T, U) opBinary(string op, U)(U u) if (op == "~")
     {
-        return Gobbler!(T,string, U)(store, op, u);
+        return Gobbler!(T, U)(store, u);
     }
 }
 
 Gobbler!() gobble() { return Gobbler!()();}
 \end{dcode}
 
-\subsection{A Polymorphic Tree}\label{polymorphictree}
+\DD{gobble} creates an empty gobbler and is there to activate the aspiration:
+
+\begin{dcode}
+auto list = gobble ~ 1 ~ "abc" ~ 3.14 ~ "another string!";
+
+assert(is(list.Types == TypeTuple!(int, string, double, string)));
+\end{dcode}
+
+\TODO{Indexing the \DD{Gobbler}.}
+
 
 \subsection{Polymorphic Association Lists}\label{associationlists}
+
+An association list as a sort of 'flat' associative array: it holds key-value pairs in a linear list. A polymorphic (aka, templated) one is a tuple holding a bunch of key-value keys, but with more flexibility on the types for keys and values. Different trade-off can be done here between the runtime or compile-time nature of keys and values.
+
+\unfinished{This section will present one solution.}
+
 
 Usage: a bit like Lua tables: structs, classes (you can put anonymous functions in them?),  namespaces.
 Also, maybe to add metadata to a type?
@@ -1137,17 +1156,116 @@ alias AList!( 1,     "abc"
             , "foo", 3.14
             ,        "Default") al;
 
-writeln("Keys: ", al.Keys);
-writeln("Values: ", al.Values);
+writeln("Keys: ", al.Keys.stringof);
+writeln("Values: ", al.Values.stringof);
 writeln("at!1: ", al.at!(1));
 writeln("at!2: ", al.at!(2));
 writeln("at!\"foo\": ", al.at!("foo"));
 writeln("Default: ", al.at!4);
 \end{dcode}
 
+\subsection{A Polymorphic Tree}\label{polymorphictree}
+
+So, what's a polymorphic tree? It's just a tuple hoding other tuples as elements, as a standard tree container, only all values can be of a different type. Obviously this means that trees holding values of different types will also be of a different type, since the entire content's type is part of the tree signature. It can be a bit baffling to see one, but with a few helper functions to transform a tree or extract some values, it can be quite interesting to use.
+
+Just to get a little feel for them and to use a less-used example for trees, imagine wanting to manipulate mark-up text in D. You could create your document as a D structure and then invoke some functions to transform it into DDoc text, or a \LaTeX document, a Markdown one or even HTML:
+
+\begin{dcode}
+auto doc = 
+document(
+    title("Ranges: A Tutorial"),
+    author("John Doe"),
+    tableOfContents,
+    
+    /* level-one section */
+    section!1(
+        title("Some Range Definitions"),
+        "Ranges are a nice D abstraction...",
+        definition(
+            "Input Range", 
+            "The most basic kind of range, it must define the following methods:",
+            list(definition("front", "..."),
+                 definition("popFront", "..."),
+                 definition("empty", "..."))
+        )
+    )
+    section!1(
+        title("Some ranges examples"),
+        "...",
+        code(
+            "auto m = map!((a) => a*a)([0,1,2,3]);
+             assert(m.length == 4);"
+        ),
+        link("http://dlang.org/", "Website")
+    )
+    section!1(
+        title("Beyond ranges"),
+        "..."
+    )
+);
+
+auto latex = doc.to!"LaTeX";
+auto html = doc.to!"HTML";
+auto ddoc = doc.to!"Ddoc";
+auto simple = doc.to!"text";
+\end{dcode}
+
+In the previous (imaginary, but tempting for me) code, \DD{doc} is a tuple made by the \DD{document} factory function and holding small specifically marked pieces of text: \DD{title}, \DD{section} or \DD{link}. Each is a factory function producing a user-defined struct following a few simple conventions. If all types have a \DD{to!"HTML"} member that transforms their content into HTML code, then the entire document can be dumped as a HTML file. The different types need not be classes inheriting from a common base and that must be shoe-horned into a defined hierarchy: template constraints (\ref{constraints}) do the verification for you. Think ranges.
+
+This is an example of a polymorphic tree\ldots
+
 \subsection{Expression Templates}\label{expressiontemplates}
 
+Expression templates are a kind of polymorphic tree, but restricted to some known operations (most of the times unary/binary/ternary operators) and their operands. It allows one to store for example an arithmetic operation like this:
 
+\begin{dcode}
+// From "x + 1 * y":
+Binary!("+", 
+             Variable!"x",
+             Binary!("*", 
+                         Constant(1),
+                         Variable!"y"))
+\end{dcode}
+
+The advantages are that you can then manipulate the resulting tree to simplify the expression or avoid temporary evaluations. The previous expression could be simplified to hold the equivalent of \DD{x + y} (getting rid of the multiplication by one.
+
+More generally, you can encode a programming language expression in such a tree:
+
+\begin{dcode}
+AST!"
+if (x == 0) 
+then 
+{ 
+    writeln(x);
+} 
+else 
+{ 
+    ++x;
+    foo(x,y);
+}"
+=>
+If(Comparison!("==", Symbol!"x", value(0)), // Condition
+// then branch
+   Block!( FunctionCall!("writeln", Symbol!"x") ),
+// (optional) else branch
+   Block!( Unary!("++", Symbol!"x"),
+           FunctionCall!("foo", Symbol!"x", Symbol!"y")))
+\end{dcode}
+
+This way lies madness and the power of macros, because you can then manipulate the resulting Abstract Syntax Tree in any way you wish, rewrite the code it represents, convert it back into a string and write it into the file that will be given to the compiler. 
+
+So,
+
+\begin{enumerate}
+\item Define a compile-time parser,
+\item feed it (a reasonable part of) the D grammar,
+\item define some new authorized constructs and the associated AST and the way this new constructs can be behind-the-scene assembled from existing part of the D language (aka, macros),
+\item write code in your new D extension, your \emph{precious},
+\item feed it with the macros to a program that will create the resulting AST, modifying it like you wish and reassemble it into \emph{bona fide} D code.
+\item and will then feed it to the standard D compiler.
+\end{enumerate}
+
+And \emph{voila}, your own toy D extension. Or, you know, you could just bug Walter till he adds the syntax you want into the language.
 
 \section{Statically-Checked Writeln}\label{staticallycheckedwriteln}
 
