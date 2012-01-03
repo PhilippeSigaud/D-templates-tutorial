@@ -327,16 +327,87 @@ assert(arr3.property!"sorted" == arr7.property!"sorted"); // same predicate
 
 \section{Tuples as Sequences}\label{tuplesassequences}
 
+\unfinished{The idea here is to treat tuples of values (is in \DD{tuple(1, "abc", 3.14, 3, 0)} as sequences: map a (polymorphic, aka templated) function on them, filter them, etc. Why do that: imagine for example having a bunch of ranges, all of a different type. If you want to group them in a range and process them, you can't because a range must be homogeneous in type. The functinos presented there lift that restriction.}
+
 \subsection{Mapping on Tuples}\label{mappingontuples}
 
+\begin{dcode}
+/**
+ * Helper template to get a template function return type.
+ */
+template RT(alias fun)
+{
+    template RT(T)
+    {
+        alias typeof(fun(T.init)) RT;
+    }
+}
+
+/// Maps on a tuple, using a polymorphic function. Produces another tuple.
+Tuple!(StaticMap!(RT!fun, T)) mapTuple(alias fun, T...)(Tuple!T tup)
+{
+    StaticMap!(RT!fun, T) res;
+    foreach(i, Type; T) res[i] = unaryFun!fun(tup.field[i]);
+    return tuple(res);
+}
+\end{dcode}
+
+
 \subsection{Filtering Tuples}\label{filteringtuples}
+
+\unfinished{The idea here is to filter a tuple with a predicate acting on types. It's quite useful when you can get a bunch of parameters in a function and want only some of them. See \ref{staticfilter} to see an example with the \DD{graph} function.}
+
+\begin{dcode}
+template FilterTupleTypes(alias pred, alias tup)
+{
+    static if (tup.field.length)
+    {
+        static if (pred(tup.field[0]))
+            alias TypeTuple!(tup.Types[0], FilterTupleTypes!(pred, tuple(tup.expand[1..$]))) FilterTupleTypes;
+        else
+            alias FilterTupleTypes!(pred, tuple(tup.expand[1..$])) FilterTupleTypes;
+    }
+    else
+    {
+        alias TypeTuple!() FilterTupleTypes;
+    }
+
+}
+
+template FilterTupleIndices(alias pred, alias tup, size_t ind)
+{
+    static if (tup.field.length)
+    {
+        static if (pred(tup.field[0]))
+            alias TypeTuple!(ind, FilterTupleIndices!(pred, tuple(tup.expand[1..$]), ind+1)) FilterTupleIndices;
+        else
+            alias /+TypeTuple!(+/FilterTupleIndices!(pred, tuple(tup.expand[1..$]), ind+1)/+)+/ FilterTupleIndices;
+    }
+    else
+    {
+        alias TypeTuple!() FilterTupleIndices;
+    }
+
+}
+
+/// Filter a tuple on its values.
+Tuple!(FilterTupleTypes!(pred, tup)) filterTuple(alias pred, alias tup)()
+{
+    FilterTupleTypes!(pred, tup) result;
+    alias FilterTupleIndices!(pred, tup, 0) indices;
+    foreach(i, ind; indices)
+    {
+        result[i] = tup.field[ind];
+    }
+    return tuple(result);
+}
+\end{dcode}
 
 \begin{dcode}
 (1, "abc", 2, "def", 3.14)
 ->
 ((1,2),("abc","def"),(3,14))
 \end{dcode}
-
 
 \section{Fun With Functions}\label{funwithfunctions}
 
@@ -643,7 +714,7 @@ auto curry(alias fun)()
 
 Inspiration for this example comes from \href{http://david.rothlis.net/d/templates}{This blog article}.
 
-\TODO{Extracting from a tuple: project, select. Also, natural/inner/outer join, cartesian product. And intersection/union/difference. rename!( "oldField", "newField"). Databases are just dynamic arrays of tuples.}.
+\TODO{I have the code somewhre. What it should do: extracting from a tuple: project, select. Also, natural/inner/outer join, cartesian product. And intersection/union/difference. rename!( "oldField", "newField"). Databases are just dynamic arrays of tuples.}.
 
 \section{Fun With Classes and Structs}
 
