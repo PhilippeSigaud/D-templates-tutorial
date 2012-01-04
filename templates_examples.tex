@@ -257,7 +257,113 @@ auto graph(NodesOrEdges...)(NodesOrEdges args) if (GraphCheck!NodesOrEdges)
 
 \subsubsection{Folding Type Tuples}\label{staticreduce}
 
-\TODO{Examples to give: biggest type in the lot, sorting types?}
+With mapping and filtering, folding (aka, reducing) is the third standard operation on sequences.\footnote{ In fact, it's the mother of all operations on sequences, since map and filter can be defined using reduce.} The idea is the same than \stdanchor{algorithm}{reduce}: given a seed \DD{S} and a binary function \DD{bin}, calculate \DD{bin(bin(bin(S, T[0]),T[1],T[2],...))}: apply \DD{bin} on the seed and the first type of the tuple, then take the resulting type as a new seed and re-apply \DD{bin} to this and the second type of the tuple, and so on, until the entire tuple is used.
+
+So, what's the use of such a function? It's used to \emph{collapse} a type tuple into one type. This one type can a simple type (for example, the 'biggest' type in the tuple, for some definition of big) or a complex structure built iteratively step by step along the tuple: a binary tree holding all the types, for example, or the reverse of the tuple, or even all the types but sorted according to a predicate.
+
+Here, we will see two examples: getting the maximum type and sorting a type tuple.
+
+But first, here is \DD{staticReduce}:
+
+\begin{dcode}
+template staticReduce(alias bin, Types...) // Types[0] is the seed
+{
+    static if (Types.length < 2)
+        static assert(0, "staticReduce: tuple " 
+               ~ Types.stringof ~ " has not enough elements (min: 2 elements)");
+    else static if (Types.length == 2) // end of recursion
+        alias bin!(Types[0], Types[1]) staticReduce;
+    else // recurse
+        alias staticReduce!(bin, bin!(Types[0], Types[1])
+                               , Types[2..$]) staticReduce;
+}
+\end{dcode}
+
+From here, how do we get the biggest type? Simple, just apply a \DD{Max} binary template to your type list:
+
+\begin{dcode}
+template Max(T1, T2)
+{
+    static if (T1.sizeof >= T2.sizeof)
+        alias T1 Max;
+    else
+        alias T2 Max;
+}
+\end{dcode}
+
+\begin{dcode}
+alias TypeTuple!(int, bool, double, float delegate(float), string[]) Types;
+
+alias staticReduce!(Max, Types) MaxType;
+static assert(is(MaxType == double));
+\end{dcode}
+
+You can vary your definition of \DD{Max} according to taste. Here I used the built-in \DD{.sizeof} property to compare two unknown types. To compare on the names, I'd have used \DD{.stringof} and so on.
+
+\subsubsection{Sorting Types}\label{sortingtypes}
+
+\aparte{Ivory Tower Wankery!}{I mean, when would sorting types be useful? It can, read on\ldots}
+
+When can sorting a tuple be useful? Mainly for the same reason you'd want to sort any sequence:
+
+\begin{itemize}
+\item easily find a type (in $\log(n)$),
+\item easily get afterwards the first $p$ types or last $p$ types,
+\item compare two type tuples for equivalence,
+\item easily getting rid of duplicates (transforming a tuple into a set of types).
+\end{itemize}
+
+I'll focus on the third use, comparing two type tuples. See for example the \stdanchor{variant}{Algebraic} template struct. \DD{Algebraic!(Type0, Type1, ... TypeN)} can hold a value of one of \DD{Type0}, \ldots \DD{TypeN}. But of course, in a certain sense, the previous type is also the same than \DD{Algebraic!(Type1, TypeN, ... Type0)} or any other reordering of the types. But that's not the case currently:
+
+\begin{dcode}
+import std.variant;
+
+Algebraic!(int, double, string) algOne = 1;
+Algebraic!(double, int, string) algTwo = algOne; // fail!
+\end{dcode}
+
+Using sorted types internally (or even using a factory function to create algebraic values, that always returned sorted \DD{Algebraic}) would allow for a seamless use of algebraic values.
+
+Now I may have convinced you to try and sort types, here is one way to do it. Using \DD{staticReduce}, the standard situation is the following:
+
+XXXXXXXXXXXXXXXXXXXXXXXXXX
+
+\begin{dcode}
+template Max(T1, T2)
+{
+    static if (T1.stringof >= T2.stringof)
+        alias T1 Max;
+    else
+        alias T2 Max;
+}
+
+template AddToSorted(Sorted, Type)
+{
+// Length 0: already sorted
+    static if (Sorted.Types.length == 0)
+        alias Tuple!(Type) AddToSorted;
+// Smaller than the first one: put Type in first place
+    else static if (is(Max!(Sorted.Types[0], Type) == Sorted.Types[0]))
+        alias Tuple!(Type, Sorted.Types) AddToSorted;
+// Bigger than the last one: put Type at the end
+    else static if (is(Max!(Sorted.Types[$-1], Type) == Type))
+        alias Tuple!(Sorted.Types, Type) AddToSorted;
+// Else, compare to the middle type and recurse left or right of it
+    else static if (is(Max!(Sorted.Types[$/2], Type) == Type))
+        alias Tuple!(Sorted.Types[0..$/2],
+                     AddToSorted!(Tuple!(Sorted.Types[$/2..$]),Type).Types)
+              AddToSorted;
+    else
+        alias Tuple!(AddToSorted!(Tuple!(Sorted.Types[0..$/2]),Type).Types,
+                     Sorted.Types[$/2..$])
+              AddToSorted;    
+}
+
+template Sort(Types...)
+{
+    alias staticReduce!(AddToSorted, Tuple!(), Types) Sort;
+}
+\end{dcode}
 
 \subsection{Zipping Types, Interleaving Types, Crossing Types}
 
