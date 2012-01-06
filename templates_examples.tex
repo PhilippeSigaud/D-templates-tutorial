@@ -13,6 +13,7 @@ One of the most fundamental use of templates is type sorcery: type creation, typ
 
 As we saw in section \ref{tuples}, template tuple parameters can hold type tuples (that's even their original role). Since these can be iterated, indexed or sliced, they are ideal candidates to some standard iteration algorithms. As for ranges, you can map another template on type tuples, filter the types you want to extract or fold (reduce) them into another type.
 
+\label{andnontypes}
 \aparte{And non-types?}{What about acting on expression tuples? You can do that too. Even though this section is called \emph{Type} Sorcery, all templates here can work on expression tuples too. Do not feel limited.}
 
 \subsubsection{Mapping on Type Tuples}\label{staticmap}
@@ -111,7 +112,7 @@ template staticFilter(alias Pred, T...)
 {
     static if (T.length == 0) // End of sequence
         alias TypeTuple!() staticFilter;
-    else static if (Pred!(T[0])
+    else static if (Pred!(T[0]))
         alias TypeTuple!(T[0], staticFilter!(Pred, T[1..$])) staticFilter;
     else
         alias TypeTuple!(      staticFilter!(Pred, T[1..$])) staticFilter;
@@ -128,7 +129,51 @@ alias staticFilter!(isIntegral, Types) OnlyIntegrals;
 static assert(is(OnlyIntegrals == TypeTuple!(int, byte, bool)));
 \end{dcode}
 
-But that is, admittedly, pretty boring stuff. Though useful from time to time, it's quite rare for someone to be given a pure type tuple like this. A much more common use for the likes of \DD{staticFilter} is when creating complex types.
+What about separating types from non-types? First, let creates a template that is \D{true} for pure types and \D{false} on non-types:
+
+\begin{dcode}
+template isType(T)
+{
+    enum isType = true;
+}
+
+template isType(alias a)
+{
+    static if (is(a))
+        enum isType = true;
+    else
+        enum isType = false;
+}
+\end{dcode}
+
+Hey, wait! OK with having two specialised templates, one on template type parameters and another on aliases. But why the \D{static if}? It's because user-defined types (\DD{MyClass} and such) are \emph{both} a type and a symbol (we saw that in section \ref{declarations}). For this particular use, I want them to be considered as types, opposed to other symbols (function names, module names, variables, \ldots). Hence the \D{is}\DD{()} test. If you simplify the second \DD{isType} to just give \D{false}, what you get is a builtin-type detector, which may also be interesting:
+
+\begin{dcode}
+template isBuiltinType(T)
+{
+    enum isBuiltinType = true;
+}
+
+template isBuiltinType(alias a)
+{
+    enum isBuiltinType = false;
+}
+\end{dcode}
+
+And, here we go:
+
+\begin{dcode}
+class MyClass {}
+int foo(int i) { return i;}
+
+alias staticFilter!(isType, 1, int, 3.14, "abc", foo, MyClass) Types;
+alias staticFilter!(isBuiltinType, 1, int, 3.14, "abc", foo, MyClass) Builtins;
+
+static assert(is(Types == TypeTuple!(int, MyClass)));
+static assert(is(Builtin == TypeTuple!(int)));
+\end{dcode}
+
+But that is, admittedly, pretty run-of-the-mill stuff. Though useful from time to time, it's quite rare for someone to be given a pure type tuple like this. A much more common use for the likes of \DD{staticFilter} is when creating complex types.
 
 \subsubsection{Example: building a \DD{Graph}}
 
@@ -302,7 +347,7 @@ You can vary your definition of \DD{Max} according to taste. Here I used the bui
 
 \subsubsection{Sorting Types}\label{sortingtypes}
 
-\aparte{Ivory Tower Wankery!}{I mean, when would sorting types be useful? It can, read on\ldots}
+\aparte{Ivory Tower Wankery!}{I mean, when would sorting types be useful? It can be useful, read on\ldots}
 
 When can sorting a tuple be useful? Mainly for the same reason you'd want to sort any sequence:
 
@@ -324,9 +369,12 @@ Algebraic!(double, int, string) algTwo = algOne; // fail!
 
 Using sorted types internally (or even using a factory function to create algebraic values, that always returned sorted \DD{Algebraic}) would allow for a seamless use of algebraic values.
 
-Now I may have convinced you to try and sort types, here is one way to do it. Using \DD{staticReduce}, the standard situation is the following:
+Here is one way to sort types using \DD{staticReduce}. The standard situation is the following: you have a list of already sorted types (the initial tuple's first $n$ types) which is your current state, the value being constructed. \DD{staticReduce} takes this list and puts the first remaining unsorted type in it and then reiterates on the next unsorted type. So the basic step is to add a new type to a sorted list. 
 
-XXXXXXXXXXXXXXXXXXXXXXXXXX
+A small problem arises: the state is just one type, but it has to store all the sorted types. It cannot be a naked type tuple, since these auto-flatten (see \ref{tupleproperties}). We will use \stdanchor{typecons}{Tuple} to wrap it. Inner types of a \DD{Tuple} are accessible through the \DD{.Types} alias. I'm afraid that will uglify the code a bit.
+
+Finally, what predicate to use? \DD{.sizeof} is not adequate: many different types have the same size and that would have a bad consequence, as the initial order would influence the sorted order. I'll just use the stringified version of the types, obtained by the built-in \DD{.stringof} property:
+
 
 \begin{dcode}
 template Max(T1, T2)
@@ -364,6 +412,22 @@ template Sort(Types...)
     alias staticReduce!(AddToSorted, Tuple!(), Types) Sort;
 }
 \end{dcode}
+
+As I said, in the end \DD{Sort} is just applying \DD{AddToSorted} to the target tuple. The initial (seed) state for \DD{staticReduce} is an empty typetuple, \DD{Tuple!()}.
+
+Now, does that work? You bet:
+
+\begin{dcode}
+alias TypeTuple!(int, bool, string function(int), float[]) Types1;
+alias TypeTuple!(int, float[], string function(int), bool) Types2;
+
+static assert(is(Sort!Types1 == Sort!Types2));
+\end{dcode}
+
+If you do not like sorting types alphabetically by name, you can resort to other definitions of \DD{Max} or, even better, make a version of \DD{Sort} that accepts another, binary, template as an argument and uses this template as way to determine ordering.
+
+\aparte{What about non-types?}{As was said at the very beginning of the section (\ref{andnontypes}, on page \pageref{andnontypes}), the templates presented here work most of the time for other template parameters: pure numbers, strings, aliases, \ldots Here you'd have to change \DD{AddToSorted} second parameter to accept non-types. Or, another way to do it would be to first map a stringifier on the tuple's elements and \emph{then} sort the resulting strings.}
+
 
 \subsection{Zipping Types, Interleaving Types, Crossing Types}
 
