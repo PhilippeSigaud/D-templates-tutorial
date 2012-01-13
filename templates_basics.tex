@@ -628,7 +628,7 @@ auto result = myFunc!(double,3)(3.1415);
 assert(result = to!int(3.1415)*3);
 \end{dcode}
 
-Well, the true story is even better. First, D has a simple way to declare a function template: just put a template parameter list before the argument list:
+Well, the full story is even better. First, D has a simple way to declare a function template: just put a template parameter list before the argument list:
 
 \index{syntax!function templates}
 \index{function template}
@@ -677,7 +677,7 @@ auto morph(T, U, alias f)(U arg)
 
 \subsection{IFTI}\label{ifti}
 
-Even better is Implicit Function Template Instantiation (IFTI)\index{IFTI}\index{Implicit Function Template Instantiation|see{IFTI}}, which means that the compiler will most of the time be able to automatically determine a template parameters\index{template!parameters!IFTI} by studying the function arguments. If some template arguments are pure compile-time parameters, just provide them directly:
+Even better is Implicit Function Template Instantiation (IFTI)\index{IFTI}\index{Implicit Function Template Instantiation|see{IFTI}}, which means that the compiler will generally be able to automatically determine a template's parameters\index{template!parameters!IFTI} by studying the function arguments. If some template arguments are pure compile-time parameters, just provide them directly:
 
 \begin{dcode}
 /* suppose the previous concatenate(A,B) function */
@@ -699,7 +699,7 @@ We may encounter The Mantra again in this tutorial.
 
 \subsection{Example: Flattening Arrays and Ranges}\label{functionflatten}
 
-Let's use what we have just seen in a concrete way. In D, you can manipulate 2D, 3D arrays\index{arrays}, but sometimes need to process them linearly. As of this writing, neither \std{algorithm} nor \std{range} provide a \DD{flatten} function. Beginning with simple arrays, here is what we want:
+Let's use what we have just seen in a concrete way. In D, you can manipulate 2D and 3D arrays\index{arrays}, but sometimes need to process them linearly. As of this writing, neither \std{algorithm} nor \std{range} provide a \DD{flatten} function. Beginning with simple arrays, here is what we want:
 
 \begin{dcode}
 assert( flatten([[0,1],[2,3],[4]]) == [0,1,2,3,4] );
@@ -861,7 +861,7 @@ c.inc(5);
 assert(c.counter() == 10);
 \end{dcode}
 
-\subsection{Functions Overloading}\label{functionsoverloading}
+\subsection{Function Overloading}\label{functionsoverloading}
 
 \unfinished{OK, I need to write something on this.}
 
@@ -881,7 +881,7 @@ init(i);
 assert(i == 0);
 \end{dcode}
 
-Should the need arises, that also means you can customize your storage classes according to templates arguments. There is no built-in syntax for that, so you'll have to resort to our good friend \D{static if}\index{static if@\D{static if}!functions storage classes} and the eponymous trick:\index{eponymous trick!functions storage classes}
+Should the need arise, this means you can customize your storage classes according to template arguments. There is no built-in syntax for that, so you'll have to resort to our good friend \D{static if}\index{static if@\D{static if}!functions storage classes} and the eponymous trick:\index{eponymous trick!functions storage classes}
 
 \index{storage class}
 \index{is expression@\D{is} expression!type specialization}
@@ -911,17 +911,17 @@ In D, a function can have the following properties:
 
 \begin{itemize}
 \item A function can be tagged with the \D{pure} property, which means it does not have side-effects: the value you get back is the only thing that matters. 
-\item They can also be tagged with \D{@safe}, \D{@trusted} and \D{@system}. \D{@safe} means a function cannot corrupt memory. A \D{@trusted} function can call \D{@safe} ones, but offers no other garanty concerning memory. And a \D{@system} function just laugh at you.
-\item The last property is \D{nothrow} which means you guarantee the function does not throw any exception.
+\item They can also be tagged with \D{@safe}, \D{@trusted} and \D{@system}. \D{@safe} means a function cannot corrupt memory. A \D{@trusted} function can call \D{@safe} ones, but offers no other guaranty concerning memory. And a \D{@system} function may do what it pleases and makes no guarantees.
+\item The last property is \D{nothrow} which means you guarantee the function will not throw any exceptions.
 \end{itemize}
 
-As the compiler gets complete access to a function template code, it can analyze it and automatically deduce properties for you. This feature is still quite new as of this writing, but it does seem it works. So, \emph{all} of your function templates will get a smattering of properties when they are instantiated (these properties will of course vary with the template parameters).
+As the compiler gets complete access to a function template code, it can analyze it and automatically deduce properties for you. This feature is still quite new as of this writing, but it seems to work. So, \emph{all} of your function templates will get a smattering of properties when they are instantiated (these properties will of course vary with the template parameters).
 
 \subsection{\texorpdfstring{\D{in} and \D{out} Clauses}
                            {in and out Clauses}}
 \label{inandoutclauses}
 
-The \D{in} and \D{out} clauses for a function are given full access to templates parameters. As for other parameterized code, that means you can use \D{static if} to enable or disable code, depending on the template arguments.
+The \D{in} and \D{out} clauses for a function are given full access to a template's parameters. As for other parameterized code, that means you can use \D{static if} to enable or disable code, depending on the template arguments.
 
 \index{in and out clauses@\D{in} and \D{out} clauses}
 \index{static if@\D{static if}!enabling/disabling code}
@@ -943,7 +943,7 @@ body
 
 \subsection{Modifying Functions}\label{modifyingfunctions}
 
-This section will show you how to use wraper templates to add new functionalities to pre-defined functions. More powerful examples are shown in \autoref{funwithfunctions}, but they use templates we have not seen yet. Be sure to have a look at them when you can, though.
+This section will show you how to use wrapper templates to add new functionalities to pre-defined functions. More powerful examples are shown in \autoref{funwithfunctions}, but they use templates we have not seen yet. Be sure to have a look at them when you can, though.
 
 
 \unfinished{I want to put some small function-wrapping templates: 
@@ -981,7 +981,7 @@ auto nmap(alias fun, R...)(R ranges) if (allSatisfy!(isInputRange,R))
 }
 \end{dcode}
 
-More complicated: \stdanchor{algorithm}{map} accepts to take more than one function as template argument. In that case, the functions are all mapped in parallel on the range, internally using \stdanchor{functional}{adjoin}.
+More complicated: \stdanchor{algorithm}{map} accepts more than one function as template arguments. In that case, the functions are all mapped in parallel on the range, internally using \stdanchor{functional}{adjoin}.
 Here we can extend \DD{nmap} to accept $n$ functions in parallel too. There is a first difficulty:
 
 \begin{dcode}
@@ -1066,11 +1066,11 @@ struct Heap(Type, alias predicate = lessThan, float reshuffle = 0.5f)
 }
 \end{dcode}
 
-Struct templates are heavily used in \std{algorithm} and \std{range} for lazy iteration, have a look there.
+Struct templates are heavily used in \std{algorithm} and \std{range} for lazy evaluation, have a look there.
 
 \subsection{Factory Functions}\label{factory}
 
-Now, there is one limitation: structs constructors do not do activate IFTI (\ref{ifti}) like template functions do. In the previous subsection to instantiate \DD{Tree(T)} I had to explicitly indicate \DD{T}:
+Now, there is one limitation: struct constructors do not do activate IFTI (\ref{ifti}) like template functions do. In the previous subsection to instantiate \DD{Tree(T)} I had to explicitly indicate \DD{T}:
 
 \begin{dcode}
 auto t0 = Tree!int(0); // Yes.
@@ -1120,7 +1120,7 @@ static assert(is( T0.Type == string ));
 
 \subsection{Templated Member Functions}\label{membertemplates}
 
-A struct template is a template like any other: you can declare templates inside, even functions templates. Which means you can have templated member functions. 
+A struct template is a template like any other: you can declare templates inside, even function templates. Which means you can have templated member functions. 
 
 \paragraph{Mapping on a Tree} Let us use that to give our \D{Tree} a mapping ability. For a range,\index{range} you can use \stdanchor{algorithm}{map} to apply a function in turn to each element, thus delivering a transformed range. The same process can be done for a tree, thereby keeping the overall \emph{shape} but modifying the elements.\footnote{ We could easily make that a free function, but this \emph{is} the member function section.}
 
@@ -1128,7 +1128,7 @@ Let's think a little bit about it before coding. \DD{map} should be a function t
 
 What about the children? We will map \DD{fun} on them too and collect the result into a new children array. They will have the same type: \DD{Tree!(B)}. If the mapped \DD{Tree} is a leaf (ie: if it has no children), the process will stop.
 
-Since this is a recursive template,\index{recursion} we have to help the compiler a bit with the return type. Here we go:\footnote{ The difference with Phobos\index{Phobos} \DD{map} is that it's not lazy.}
+Since this is a recursive template,\index{recursion} we have to help the compiler a bit with the return type. Here we go:\footnote{ The difference with Phobos\index{Phobos} \DD{map} is that our version isn't lazy.}
 
 \index{templated method}
 \begin{dcode}
@@ -1213,7 +1213,7 @@ auto fold(alias ifLeaf, alias ifBranch = ifLeaf, S)(S seed)
 }
 \end{dcode}
 
-Let's play a bit with it. First, we want to sum all values of a tree. For leaves, we just return the node's \DD{value} plus \DD{seed}. For branches, we are given \DD{value} and an array containing the sums of values for all children. We need to sum the values of this array, add it to the node's \DD{value} and return that. In that case, we do not care for the seed.
+Let's play a bit with it. First, we want to sum all values of a tree. For leaves, we just return the node's \DD{value} plus \DD{seed}. For branches, we are given \DD{value} and an array containing the sums of values for all children. We need to sum the values of this array, add it to the node's \DD{value} and return that. In that case, we do not about the seed value.
 
 \begin{dcode}
 auto sumLeaf(T, S)(T value, S seed)
@@ -1254,7 +1254,7 @@ And as a last use, why not build a tree?
 
 \subsection{Templated Constructors}\label{constructortemplates}
 
-Struct constructors are member function, so they can be templated too. They need not have the same template parameters than their mother struct:
+Struct constructors are member function, so they can be templated too. They need not have the same template parameters as the struct definition:
 
 \index{syntax!templated constructors}
 \begin{dcode}
@@ -1266,7 +1266,7 @@ struct S(T)
 auto s = S!string(1); // T is string, U is int.
 \end{dcode}
 
-As you can see, IFTI (\ref{ifti})\index{IFTI!for constructors} works for constructors. \DD{U} is automatically deduced, though you have to indicate \DD{T} in this case. The previous example is drastically limited: you cannot have any value of type \DD{U} in the struct, because \DD{U} does not exist outside the constructor. A bit more useful would be to collect an alias (a function, for example) and use it to initialize the struct. If it's used only for initialization, it can be discarded afterwards. But then, IFTI is not activated by an alias\ldots
+As you can see, IFTI (\ref{ifti})\index{IFTI!for constructors} works for constructors. \DD{U} is automatically deduced, though you have to indicate \DD{T} in this case. However, this example is drastically limited: you cannot have any value of type \DD{U} in the struct, because \DD{U} does not exist outside the constructor. A bit more useful would be to collect an alias (a function, for example) and use it to initialize the struct. If it's used only for initialization, it can be discarded afterwards. But then, IFTI is not activated by an alias\ldots
 
 The most interesting use I've seen is to make conversions during the struct's construction:
 
@@ -1354,7 +1354,7 @@ auto cc = c("abc");
 assert(cc == "3.14abc");
 \end{dcode}
 
-See section \ref{operatoroverloading} for more on operators overloading.
+See section \ref{operatoroverloading} for more on operator overloading.
 
 What about templated inner structs inside struct templates? It's perfectly legal:
 
@@ -1393,19 +1393,19 @@ Inside a struct or class template, there is another kind of template parameter: 
 
 \subsection{Example: a Concat / Flatten Range}\label{structflatten}
 
-We will use what we've seen for a struct template  a lazy range\index{range} that flattens ranges of ranges\index{range!of ranges} into linear ranges. Remember the \DD{flatten} function from section \ref{functionflatten}? It worked quite well but was \emph{eager}, not \emph{lazy}: given an infinite range (a cycle, for example) it would choke on it. We will here make a lazy flattener.
+We will use what we've learned about struct templates to create a lazy range\index{range} that flattens ranges of ranges\index{range!of ranges} into linear ranges. Remember the \DD{flatten} function from section \ref{functionflatten}? It worked quite well but was \emph{eager}, not \emph{lazy}: given an infinite range (a cycle, for example) it would choke on it. We will here make a lazy flattener.
 
-If you look at the ranges defined in \std{range}, you will see that most (if not all) of them are structs. That's the basic way to get laziness in D: the struct holds the iteration state and exposes the basic range primitives. At the very least to be an \emph{input range} --- the simplest kind of range ---, a type must have the following members\index{range!members} (be they properties, member functions or manifest constants):
+If you look at the ranges defined in \std{range}, you will see that most (if not all) of them are structs. That's the basic way to get laziness in D: the struct holds the iteration state and exposes the basic range primitives. At the very least to be an \emph{input range}---the simplest kind of range---a type must have the following members\index{range!members} (be they properties, member functions or manifest constants):
 
 \begin{description}
 \item[front:] Which returns the range's first element.
 \item[popFront:] Which discards the first element and advances the range by one step.
-\item[empty:] Which returns \D{true} if the range has no more element, \D{false} otherwise.
+\item[empty:] Which returns \D{true} if the range has no more elements, \D{false} otherwise.
 \end{description}
 
 From this simple basis, powerful algorithms can be designed that act on ranges. D defines more refined range concepts by adding other constraints. A \emph{forward range} adds the \DD{save} member that's used to store a range internal state and allows an algorithm to start again from a saved position. A \emph{bidirectional range} also has the \DD{back} and \DD{popBack} primitives for accessing the end of the range, and so on.
 
-Here we will begin by creating a simple input range\index{range} that takes a range of ranges\index{range!of ranges} and iterate on the inner elements. Let's begin with the very basis:
+Here we will begin by creating a simple input range\index{range} that takes a range of ranges\index{range!of ranges} and iterate on the inner elements. Let's begin with the very basics:
 
 \index{range}
 \index{struct template}
@@ -1430,7 +1430,7 @@ auto flatten(Range)(Range range)
 }
 \end{dcode}
 
-So we have a struct template and its associated factory function. It doesn't make sense to instantiate \DD{Flatten} with any old type, so \DD{Range} is checked to be a range, using the \DD{rank}\index{range} template we saw on page \pageref{rankforranges}. We haven't seen template constraints yet (they are described in section \ref{constraints}), but they would be a good fit there too.
+So we have a struct template and its associated factory function. It doesn't make sense to instantiate \DD{Flatten} with any old type, so \DD{Range} is checked to be a range, using the \DD{rank}\index{range} template we saw on page \pageref{rankforranges}. We haven't seen template constraints yet (they are described in section \ref{constraints}), but they would be a good fit here too.
 
 A range of ranges\index{range!of ranges} can be represented like this:
 
@@ -1563,7 +1563,7 @@ Here it is. It works and we used a struct template (this section, \ref{structtem
 
 \subsection{Syntax}\label{classsyntax}
 
-No surprise there, just put the template parameters list between \D{class} and the optional inheritance indication.
+No surprise here, just put the template parameters list between \D{class} and the optional inheritance indication:
 
 \index{syntax!class templates}
 \begin{dcode}
@@ -1599,7 +1599,7 @@ template Base(WhatBase whatBase = WhatBase.Object)
 }
 \end{dcode}
 
-With this, \DD{MyClass} can inherit either from \DD{Object}, D root to the class hierarchy, or from an interface or from another class. Obviously, the dispatching template could be much more refined. With a second template parameter, the base class could itself be parameterized, and so on.
+With this, \DD{MyClass} can inherit from \DD{Object}, the root of D's class hierarchy, from an interface, or from another class. Obviously, the dispatching template could be much more refined. With a second template parameter, the base class could itself be parameterized, and so on.
 
 What this syntax \emph{cannot} do however is change the number of interfaces at compile-time.\footnote{ Except, maybe, by having an interface template be empty for certain parameters, thus in effect disappearing from the list.} It's complicated to say: `with \emph{this} argument, \DD{MyClass} will inherit from \DD{I}, \DD{J} and \DD{K} and with \emph{that} argument, it will inherit only from \DD{L}.' You'd need the previous interfaces to all participate in the action, to all be templates and such. If the needed interfaces are all pre-defined and not templated, you need wrapping templates. It's a pain. However, type tuples can be used to greatly simplify this (see section \ref{inheritancelist} for an example).
 
@@ -1636,7 +1636,7 @@ class MyClass(T, U, V)
 
 \subsection{Inner Classes}\label{innerclasses}
 
-It's the same principle than for structs (\ref{innerstructs}). You can define inner classes using the template parameters. You can even give them methods templates that use other template arguments. There is really nothing different from inner structs.
+It's the same principle than for structs (\ref{innerstructs}). You can define inner classes using the template parameters. You can even give them method templates that use other template arguments. There is really nothing different from inner structs.
 
 \subsection{Anonymous Classes}\label{anonymousclasses}
 
