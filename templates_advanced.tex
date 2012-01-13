@@ -975,21 +975,21 @@ But, templates can come to the rescue, with a bit of \DD{opDispatch} magic.
 
 \section{Templates in Templates}\label{templatesintemplates}
 
-Sometimes, you know users of your code will send to your template a first list (of indefinite length) of parameters, followed by a second. Seeing that, you may want to write code like this one:
+Sometimes, you know users of your code will send to your template a first list (of indefinite length) of parameters, followed by a second list. Seeing that, you may want to write code like the following:
 
 \begin{dcode}
 template MyTemp(A..., B...)
 { ... }
 \end{dcode}
 
-Halas, two template parameters tuples do not make sense (see \autoref{declarations}) and are not authorized by the grammar. But it's not a dead-end. First, you could envisage to write:
+Halas, two template parameters tuples do not make sense (see \autoref{declarations}). But it's not a dead-end. First, you could try to write:
 
 \begin{dcode}
 template(AB...)
 { ... }
 \end{dcode}
 
-And filter the \DD{AB}s to find the ones you need. It can be done by \DD{staticFilter}, presented in \ref{staticfilter} (and its associated function on a function arguments would be \DD{tupleFilter} shown in \ref{filteringtuples}). In this case, the two series of arguments can be mixed (and not separated in two lists), which is strictly more powerful. On the other hand, it means you must be able to separate them by their types alone, which may not be possible.
+And filter the \DD{AB}s to find the ones you need. It can be done by \DD{staticFilter}, presented in \ref{staticfilter} (and its associated function on a function arguments would be \DD{tupleFilter} shown in \ref{filteringtuples}). In this case, the two series of arguments can be completely mixed (and not separated in two lists), which is strictly more powerful. On the other hand, it means you must be able to separate them by their types alone, which may not be possible.
 
 \subsection{Templates All the Way Down}
 
@@ -1005,7 +1005,7 @@ template MyTemp(A...)
 }
 \end{dcode}
 
-Remember, a template can have template members. So you can nest templates within templates, each with its own constraints and intermediate code. If you use only the same name, the eponymous trick may be activated, but sometimes using a different name at each stage can make your code more readable.
+Remember, a template can have template members. So you can nest templates within templates, each with its own constraints and intermediate code. If you use the same name through and through the eponymous trick will be activated, but sometimes using a different name at each stage can make your code more readable.
 
 For example, what if you want to compare to template tuples to see if they contain the same arguments?
 
@@ -1044,21 +1044,23 @@ MyTemp!(int, double, string)!(char, void);
 MyTemp!(int, double, string).!(char, void);
 \end{dcode}
 
-The D grammar does not authorize a multiple template call like the ones on lines 6 and 8. You must use an alias for the intermediate stage. It's not that drastic a limitation, because if you created the template as a multi-step construction, it's most probably because you wanted to do a multi-step invocation\ldots
+The D grammar does not authorize multiple template calls like the ones on lines 6 and 8. You must use an alias for the intermediate stage. It's not that drastic a limitation, because if you created the template as a multi-step construction, it's most probably because you wanted to do a multi-step invocation\ldots
 
 \subsection{Double-Stage Function Templates}
 
-For function templates, this can give very powerful things. You can have a place in your code where compile-time parameters are given, which delivers a crafted-just-for-your-needs other template which you can instantiate a bit later on. See for example \ref{stringinterpolation} and the \DD{interpolate} function-in-template.
+For function templates, this can give very powerful things. You can have a place in your code where compile-time parameters are given, which delivers another, crafted-just-for-your-needs, template which you can instantiate later on. See for example \ref{stringinterpolation} and the \DD{interpolate} function-in-template.
 
 Policies are particularly good with this idiom.\index{idiom!functions in templates} Section \ref{memoizing} presents a template that transforms a standard D function into a memoized one. Here is what could be done if it was a two-steps template:
 
 \begin{dcode}
 /*
  * memoizer will store the first million tuple of args
- * and discard half of them when the maximum is reached, to free some memory.
- * At this stage, the function it will memoize is not known. It has be crafted
- * by the user as the best memoizing strategy in her code, and it could (and will!)
- * be applied on many different functions.
+ * and discard half of them when the maximum is reached, 
+ * to free some memory. At this stage, the function it 
+ * will memoize is not known. The user decided this
+ * particular instantiation was the best memoizing 
+ * strategy in her code. memoizer could (and will!) be 
+ * applied on many different functions.
  */
 alias memoize!(Storing.maximum, 1_000_000, Discarding.fraction, 0.5f) memoizer;
 
@@ -1066,9 +1068,9 @@ auto longCalculation1(int i, double d) { ... }
 auto longCalculation2(double d, string s) { ... }
 
 /*
- * longCalculation1 and longCalculation2 will both profit from the memoization
- * even though they have a different signature, different arguments and return
- * a different type.
+ * longCalculation1 and longCalculation2 will both profit 
+ * from the memoization even though they have different 
+ * signatures, different arguments and return a different type.
  */
 alias memoizer!longCalculation1 mlc1;
 alias memoizer!longCalculation2 mlc2;
@@ -1085,7 +1087,7 @@ auto tuple1 = tuple(1, 3.14159, "abc"); // tuple1 is a Tuple!(int,double,string)
 auto tuple2 = tuple('a','b','c'); // tuple2 is a Tuple!(char,char,char)
 \end{dcode}
 
-But Phobos \DD{Tuple} is more powerful than that. It can have named paramters:
+But Phobos' \DD{Tuple} is more powerful than that. It can have named parameters:
 
 \begin{dcode}
 Tuple!(int, "counter", string, "name") myCounter;
@@ -1117,7 +1119,8 @@ First, it's obvious we need a two-stage template:
 \begin{dcode}
 import std.typetuple: allSatisfy;
 
-template tuple(names...) if (names.length && allSatisfy!(isAStringLiteral, names))
+template tuple(names...) 
+if (names.length && allSatisfy!(isAStringLiteral, names))
 {
     auto tuple(T...)(T args)
     {
@@ -1126,7 +1129,7 @@ template tuple(names...) if (names.length && allSatisfy!(isAStringLiteral, names
 }
 \end{dcode}
 
-The constraint is here to check that the user gives me at least one name and that all passed \DD{names} are indeed string literals template parameters. I use \stdanchor{typetuple}{allSatisfy} to verify the condition on all of them. I cannot use directly \stdanchor{traits}{isSomeString} because this template acts on types, whereas I need something checking a string literal.
+The constraint is here to check that the user gives at least one name and also that all passed \DD{names} are indeed string literals template parameters. I use \stdanchor{typetuple}{allSatisfy} to verify the condition on all of them. I cannot use directly \stdanchor{traits}{isSomeString} because this template acts on types, whereas I need something checking a string literal.
 
 \begin{dcode}
 import std.traits: isSomeString;
@@ -1153,7 +1156,8 @@ For our function, we consider that, given $n$ names, the first $n$ arguments wil
 \begin{dcode}
 import std.typetuple: allSatisfy;
 
-template tuple(names...) if (names.length && allSatisfy!(isAStringLiteral, names))
+template tuple(names...) 
+if (names.length && allSatisfy!(isAStringLiteral, names))
 {
     auto tuple(T...)(T args) if (T.length >= names.length)
     {
@@ -1167,7 +1171,8 @@ Now, we just need the alternate the names and the argument types. Happily, this 
 \begin{dcode}
 import std.typetuple: allSatisfy;
 
-template tuple(names...) if (names.length && allSatisfy!(isAStringLiteral, names))
+template tuple(names...) 
+if (names.length && allSatisfy!(isAStringLiteral, names))
 {
     auto tuple(T...)(T args) if (T.length >= names.length)
     {
