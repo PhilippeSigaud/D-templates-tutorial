@@ -775,9 +775,11 @@ struct Number(T) if (isNumeric!T)
 
 \DD{op} being a template parameter, it's usable to do compile-time constant folding\index{compile-time!constant folding}: in this case the concatenation of strings to generate D code. The way the code is written, \DD{Number}s respect the global D promotion rules. A \DD{Number!}\D{int} plus a \DD{Number!}\D{double} returns a \DD{Number!}\D{double}.
 
-\subsection{Special Case: \D{in}}
-
-\subsection{Special Case: \D{cast}}
+\subsection{\texorpdfstring{Special Case: \D{in}}
+                           {Special Case: in}}
+                           
+\subsection{\texorpdfstring{Special Case: \D{cast}}
+                           {Special Case: cast}}
 
 \section{Mixin Templates}\label{mixintemplates}
 
@@ -1178,7 +1180,9 @@ And, presto, here we have our named-tuple factory function. Isn't that nice? The
 
 \TODO{And a curried template.}
 
-\section{\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}}\label{fileandline}
+\section{\texorpdfstring{\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}}
+                        {\_\_FILE\_\_ and \_\_LINE\_\_}}
+\label{fileandline}
 
 \unfinished{This section needs some heavy testing. My D config was broken when I wrote this part. Take everything in there with a \emph{big} grain of salt. It's on my todo list to test and rewrite everything.}
 

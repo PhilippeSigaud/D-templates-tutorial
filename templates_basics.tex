@@ -265,7 +265,9 @@ MyTemplate!(int,string,double[]) someValue;
 
 You can find an example of this two-templates idiom\index{idiom!two templates} in Phobos, for example in \stdanchor{functional}{unaryFun} or \stdanchor{functional}{binaryFun}.
 
-\subsection{Inner \D{alias}}\label{inneralias}
+\subsection{\texorpdfstring{Inner \D{alias}}
+                           {Inner alias}}
+\label{inneralias}
 
 A common use for templates is to do some type magics: deducing types, assembling them in new way, etc. Types are not first-class entities in D (there is no `\D{type}' type), but they can easily be manipulated as any other symbol, by aliasing them. So, when a template has to expose a type, it's done by aliasing it to a new name.
 \index{exposing a type through an alias}
@@ -282,7 +284,9 @@ template AllArraysOf(T)
 
 \aparte{Exposing Template Parameters}{Though they are part of a template's name, its parameters are \emph{not} directly accessible externally. Keep in mind that a template name is just a scope name\index{scope}. Once it's instantiated, all the \DD{T}s and \DD{U}s and such do not exist anymore. If you need them externally, expose them through a template member, as is done with \DD{AllArraysOf.Element}. You will find other examples of this in section \ref{structtemplates} on structs templates and section \ref{classtemplates} on class templates.}
 
-\subsection{\D{static if}}\label{staticif}
+\subsection{\texorpdfstring{\D{static if}}
+                           {static if}}
+\label{staticif}
 
 \subsubsection{Syntax}
 
@@ -343,7 +347,8 @@ static if (isInfinite!R)     // Is innerRange an infinite range?
 // And so on...
 \end{dcode}
 
-\subsubsection{Nested \D{static if}s}
+\subsubsection{\texorpdfstring{Nested \D{static if}s}
+                              {Nested static ifs}}
 
 \D{static if}s can be nested: just put another \D{static if} after \D{else}. Here is a template selecting an alias:
 
@@ -365,7 +370,9 @@ template selector(T, alias intFoo, alias floatFoo, alias defaultFoo)
 
 If you need a sort of \D{static switch} construct, see section \ref{examples:staticswitch}.
 
-\subsubsection{Recursion with \D{static if}}\label{staticifrecursion}
+\subsubsection{\texorpdfstring{Recursion with \D{static if}}
+                              {Recursion with static if}}
+\label{staticifrecursion}
 
 \paragraph{Rank:}\label{rank}
 
@@ -645,7 +652,9 @@ Arg select(string how = "max", Arg)(Arg arg0, Arg arg1)
 
 Nice and clean, uh? Notice how the return type can be templated too, using \DD{Arg} as a return type in \DD{select}. 
 
-\subsection{\D{auto} return}\label{autoreturn}
+\subsection{\texorpdfstring{\D{auto} return}
+                           {auto return}}
+\label{autoreturn}
 
 Since you can select among code paths, the function return type can vary widely, depending on the template parameters you passed it. Use \D{auto} to simplify your code:\footnote{ \D{auto} return functions used to have some limitations, like for example not appearing in docs. I remember having to code type-manipulating templates to get correct the return type.}
 
@@ -908,7 +917,9 @@ In D, a function can have the following properties:
 
 As the compiler gets complete access to a function template code, it can analyze it and automatically deduce properties for you. This feature is still quite new as of this writing, but it does seem it works. So, \emph{all} of your function templates will get a smattering of properties when they are instantiated (these properties will of course vary with the template parameters).
 
-\subsection{\D{in} and \D{out} Clauses}\label{inandoutclauses}
+\subsection{\texorpdfstring{\D{in} and \D{out} Clauses}
+                           {in and out Clauses}}
+\label{inandoutclauses}
 
 The \D{in} and \D{out} clauses for a function are given full access to templates parameters. As for other parameterized code, that means you can use \D{static if} to enable or disable code, depending on the template arguments.
 
@@ -1598,7 +1609,9 @@ An object's methods are nothing more than delegates with a reference to the loca
 
 \unfinished{I need to write something on overriding methods with templates. Also, I need to find some interesting method example. Man, I do not do classes.}
 
-\subsection{\D{invariant} clauses}\label{class:invariant}
+\subsection{\texorpdfstring{\D{invariant} clauses}
+                           {invariant clauses}}
+\label{class:invariant}
 
 In the same family than \D{in}/\D{out} clauses for functions (section \ref{inandoutclauses}), a class template's \D{invariant} clause has access to the template parameter. You cannot make it disappear totally, but you can get it to be empty with a \D{static if} statement.
 

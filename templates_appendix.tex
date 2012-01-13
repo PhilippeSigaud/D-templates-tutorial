@@ -2,7 +2,10 @@
 \part*{Appendices}
 \addcontentsline{toc}{part}{Appendices}
 \appendix
-\section{A Crash Course on the \D{is}\DD{(...)} Expression}\label{isexpression}
+\section{
+\texorpdfstring{A Crash Course on the \D{is}\DD{(...)} Expression}
+               {A Crash Course on the is(...) expression}}
+\label{isexpression}
 
 \subsection{General Syntax} \label{issyntax}
 
@@ -19,7 +22,9 @@ is( Type (optional identifier) == OtherType,
 
 If what's inside the parenthesis is valid (see below), \D{is}\DD{()} returns \D{true} at compile-time, else it returns \D{false}.
 
-\subsection{\D{is}\DD{(Type)}} \label{istype}
+\subsection{\texorpdfstring{\D{is}\DD{(Type)}}
+                           {is(Type)}}
+\label{istype}
 
 Let's begin with the very first syntax: if \DD{Type} is a valid D type in the scope\index{scope!local scope} of the \D{is} expression, \D{is}\DD{()} returns \D{true}. As a bonus, inside a \D{static if}, the optional \DD{identifier} becomes an alias for the type. For example:
 
@@ -83,7 +88,9 @@ __traits(compiles, { /* some code */ })
 
 \D{\_\_traits} is another of D numerous Swiss Army knife constructs. You can find the \DD{compiles} documentation \href{http://www.dlang.org/traits.html#compiles}{here}. Section \ref{traits} is dedicated to it.
 
-\subsection{\D{is}\DD{(Type : AnotherType)} and \D{is}\DD{(Type == AnotherType)}}
+\subsection{
+\texorpdfstring{\D{is}\DD{(Type : AnotherType)} and \D{is}\DD{(Type == AnotherType)}}
+               {is(Type : AnotherType) and is(Type == AnotherType)}}
 \label{istypeanothertype}
 
 The two other basic forms of \D{is} return true if \DD{Type} can be implicitly converted to (is derived from) \DD{AnotherType} and if \DD{Type} is exactly \DD{AnotherType}, respectively.  I find them most interesting in their more complex form, with a list of template parameters afterwards. In this case, the template parameters act a bit as type variables in an equation. Let me explain:
