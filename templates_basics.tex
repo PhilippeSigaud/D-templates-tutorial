@@ -35,7 +35,7 @@ They can be integral values (\D{int}, \D{ulong}, \ldots), enum-based, strings, c
 
 \item[Template parameters tuples:]\index{template!parameters!tuple} 
 
-Template parameters tuples will capture un\-der one id\-en\-ti\-fier an en\-ti\-re list of tem\-plate pa\-ra\-me\-ters (types, names, literals, \ldots). Tuples will store any template argument you will throw at them. If no argument is passed, you will just get a zero-length tuple. Really, as they can deal with types as well as symbols, these tuples are a bit of a mongrel type but they are wonderfully powerful and easy to use, as you will see in section \ref{tuples}. The syntax is \DD{identifier...} (yes, three dots) and tuples must be the last parameter of a template. 
+Template parameters tuples will capture un\-der one id\-en\-ti\-fier an en\-ti\-re list of tem\-plate pa\-ra\-me\-ters (types, names, literals, \ldots). Tuples will store any template argument you will throw at them. If no argument is passed, you will just get a zero-length tuple. Really, as they can deal with types as well as symbols, these tuples are a bit of a mongrel type but they are wonderfully powerful and easy to use, as you will see in section \ref{tuples}. The syntax is \DD{identifier...} (yes, three dots) and the tuple must be the last parameter of a template. 
 \end{description}
 
 Of those, types and aliases are the most common, while floating point values are fairly rare (their use as arguments for compile-time calculations have been superseded by D's Compile-Time Function Evaluation, aka CTFE\index{Compile-Time Function Evaluation|see{CTFE}}\index{CTFE}, described in section \ref{ctfe}). You'll see different uses of these parameters in this document.
@@ -45,7 +45,7 @@ Note that pointers, arrays, objects (instantiated classes), structs or functions
 \aparte{Aliases, Symbols and Names}{There is big difference between built-in types (like \D{int} or \D{double}\DD{[3]}) and user-defined types. A user-defined type, say a class called \DD{MyClass}, is a type name. So, it's \emph{both} a type (the class \DD{MyClass}, accepted by type templates arguments) and a name (\DD{MyClass}, accepted by \D{alias} template parameters). On the other hand, \D{int}, being a D keyword is not a symbol nor a name. It's just a type. You cannot pass it to an alias template parameter.}
 The template body can contain any standard D declarations: variable, function, class, interface, other templates, alias declarations,\ldots The only exception I can think of is declaring a \D{module}\index{module}, as this is done at the top-level scope\index{scope!top-level}. 
 
-\aparte{Syntax and Semantics} {And then there is a catch: code inside a \D{template} declaration must only by syntactically correct D code (that is: code that looks like D code). The semantics is checked only during instantiation. That means you can code happily, writing templates upon templates and the compiler won't bat an eye if you do not exercise your templates by instantiating them.}
+\aparte{Syntax and Semantics} {And then there is a catch: code inside a \D{template} declaration must only be syntactically correct D code (that is: code that looks like D code). The semantics are not checked until instantiation. That means you can code happily, writing templates upon templates and the compiler won't bat an eye if you do not exercise your templates by instantiating them.}
 
 Inside the template body, the parameters are all accessible as placeholders for the future arguments. Also, the template's own name refers to its current instantiation when the code is generated. This is mostly used in struct (see section \ref{structtemplates}) and class (\ref{classtemplates}) templates.
 
@@ -94,7 +94,7 @@ template Multiple(T,U)   { ... } // Two args,
 template Multiple(T,U,V) { ... } // and three.
 \end{dcode}
 
-The real syntax for template declarations is slightly more complex, I'll introduce more of it in the next sections (You'll see for example type restrictions in section \ref{specializations}, default values in section \ref{default}, instantiation constraints in \ref{constraints} and more on tuples in section \ref{tuples}).
+The real syntax for template declarations is slightly more complex, I'll introduce more of it in the next sections (You'll see for example type restrictions in section \ref{specializations}, default values in section \ref{default}, instantiation constraints in \ref{constraints}, and more on tuples in section \ref{tuples}).
 
 There is a limitation that's interesting to keep in mind: templates can be declared in almost any scope\index{scope}, except inside a (standard) function.
 
@@ -189,7 +189,7 @@ alias Transformer!(string,int)    StoI;
 // Now we can use three different functions and three different classes.
 \end{dcode}
 
-\aparte{\D{void}}{Note that \D{void}\index{void@\D{void}!as a template parameter}\index{template!parameters!void@\D{void}} is a D type and, as such, a possible template argument for a type parameter. Just be careful because many templates make no sense when \D{void} is used as a type. In the following sections and in the appendix, you'll see ways to restrict arguments to some types.}
+\aparte{\D{void}}{Note that \D{void}\index{void@\D{void}!as a template parameter}\index{template!parameters!void@\D{void}} is a D type and, as such, a possible template argument for a type parameter. Take care: many templates make no sense when \D{void} is used as a type. In the following sections and in the appendix, you'll see ways to restrict arguments to only certain types.}
 
 \section{Templates Building Blocks}\label{buildingblocks}
 
@@ -219,13 +219,13 @@ auto s1 = NameOf!(foo); // s1 is "foo"
 auto s2 = NameOf!(NameOf)
 \end{dcode}
 
-A limitation is that the eponymous trick works \emph{only} if you define one (and only one) symbol. Even if the other symbols are private and such, they will break the eponymous substitution. This may change at a latter time, as the D developers have shown interest for changing this, but for the time being, you cannot do:
+A limitation is that the eponymous trick works \emph{only} if you define one (and only one) symbol. Even if the other symbols are private, they will break the eponymous substitution. This may change at a latter time, as the D developers have shown interest for changing this, but for the time being, you cannot do:
 
 \begin{dcode}
 template ManyAlias(T, U)
     T[] firstArray;
     U[] secondArray;
-    T[U] ManyAlias; // Halas, ET substitution doesn't work here
+    T[U] ManyAlias; // Alas, ET substitution doesn't work here
 }
 
 // Hoping for ManyAlias!(int,string).ManyAlias
@@ -234,7 +234,7 @@ ManyAlias!(int, string) = ["abc":0, "def":1];
 ManyAlias!(int, string).firstArray = [0,1,2,3];
 \end{dcode}
 
-But, will you ask, what if I want client code to be clean and readable by using the eponymous trick, when at the same time I need to internally create many symbols in my template? In that case, create a secondary template with as many symbols as you need, and expose its final result through a (for example) \DD{result} symbol. The first template can instantiate the second one, and refer only to the \DD{.result} name:
+But, you will ask, what if I want client code to be clean and readable by using the eponymous trick, when at the same time I need to internally create many symbols in my template? In that case, create a secondary template with as many symbols as you need, and expose its final result through a (for example) \DD{result} symbol. The first template can instantiate the second one, and refer only to the \DD{.result} name:
 \index{secondary template}
 \begin{dcode}
 /* your code */
@@ -282,7 +282,7 @@ template AllArraysOf(T)
 }
 \end{dcode}
 
-\aparte{Exposing Template Parameters}{Though they are part of a template's name, its parameters are \emph{not} directly accessible externally. Keep in mind that a template name is just a scope name\index{scope}. Once it's instantiated, all the \DD{T}s and \DD{U}s and such do not exist anymore. If you need them externally, expose them through a template member, as is done with \DD{AllArraysOf.Element}. You will find other examples of this in section \ref{structtemplates} on structs templates and section \ref{classtemplates} on class templates.}
+\aparte{Exposing Template Parameters}{Though they are part of a template's name, its parameters are \emph{not} directly accessible externally. Keep in mind that a template name is just a scope name\index{scope}. Once it's instantiated, all the \DD{T}s and \DD{U}s and such do not exist anymore. If you need them externally, expose them through a template member, as is done with \DD{AllArraysOf.Element}. You will find other examples of this in section \ref{structtemplates} on struct templates and section \ref{classtemplates} on class templates.}
 
 \subsection{\texorpdfstring{\D{static if}}
                            {static if}}
@@ -291,7 +291,7 @@ template AllArraysOf(T)
 \subsubsection{Syntax}
 
 The \D{static if} construct\footnote{ It's \emph{both} an expression and a declaration, so I'll call it a construct.}
-let you decide between two code paths at compile time. It's not specific to templates (you can use it in other part of your code), but it's incredibly useful to have your templates adapt themselves to the arguments. That way, using compile-time-calculated predicates based on the template arguments, you'll generate different code and customize the template to your need.
+lets you decide between two code paths at compile time. It's not specific to templates (you can use it in other part of your code), but it's incredibly useful to have your templates adapt themselves to the arguments. That way, using compile-time-calculated predicates based on the template arguments, you'll generate different code and customize the template to your need.
 
 The syntax is:
 \index{syntax!static if}
@@ -306,7 +306,7 @@ else /* optional */
 }
 \end{dcode}
 
-Something really important here is a bit of compiler magic: once the code path is selected, the resulting code is instantiated in the template body, but without the curly braces. Otherwise that would create a local scope\index{scope!static if@\D{static if}}, hiding what's happening inside to affect the outside and would drastically limit the interest of \D{static if}. So the curly braces are only there to group the statements together. 
+Something really important here is a bit of compiler magic: once the code path is selected, the resulting code is instantiated in the template body, but without the curly braces. Otherwise that would create a local scope\index{scope!static if@\D{static if}}, hiding what's happening inside to affect the outside and would drastically limit the power of \D{static if}. So the curly braces are only there to group the statements together. 
 
 If there is only one statement, you can get rid of the braces entirely, something you'll see frequently in D code. For example, suppose you need a template that `returns' \D{true} if the passed type is a dynamic array and \D{false} otherwise (this kind of predicate template\index{template!predicate templates} is developed a bit more in section \ref{predicates}).
 
@@ -320,7 +320,7 @@ template isDynamicArray(T)
 }
 \end{dcode}
 
-As you can see, no curly braces after \D{static if} and we are also using the eponymous trick\index{eponymous trick} (\DD{isDynamicArray} is the only symbol defined by the template and its type is automatically deduced by the compiler), resulting in a very clean syntax. The \D{is}\DD{()}\index{is expression@\D{is} expression} part is a way to get compile-time introspection\index{compile-time!introspection} which goes hand in hand with \D{static if}. There is a crash course on it at the end of this document (see \autoref{isexpression}).
+As you can see, with no curly braces after \D{static if} and the eponymous trick\index{eponymous trick} (\DD{isDynamicArray} is the only symbol defined by the template and its type is automatically deduced by the compiler), results in a very clean syntax. The \D{is}\DD{()}\index{is expression@\D{is} expression} part is a way to get compile-time introspection\index{compile-time!introspection} which goes hand in hand with \D{static if}. There is a crash course on it at the end of this document (see \autoref{isexpression}).
 
 \subsubsection{Optional Code}
 
@@ -389,7 +389,7 @@ template rank(T)
 }
 \end{dcode}
 
-Line 4 is the most interesting: with some \D{is} magic, \DD{U} has been determined by the compiler and is accessible inside the \D{static if} branch. We use it to peel one level of `\DD{[]}' off the type and recurse\index{recursion} downward, using \DD{U} as a new type for instantiating \DD{rank}. Either \DD{U} is itself an array (in which case the recursion will continue) or it will hit the base case and stop there.
+Line 4 is the most interesting: with some \D{is} magic, \DD{U} has been deduced by the compiler and is accessible inside the \D{static if} branch. We use it to peel one level of `\DD{[]}' off the type and recurse\index{recursion} downward, using \DD{U} as a new type for instantiating \DD{rank}. Either \DD{U} is itself an array (in which case the recursion will continue) or it will hit the base case and stop there.
 
 \begin{dcode}
 static assert(rank!(int)       == 0);
@@ -449,7 +449,7 @@ Line 4 is an example of \D{static assert} stopping compilation if we ever get in
 
 \paragraph{Generating Arrays:}
 
-Now, what about becoming more generative by inversing the process? Given a type \DD{T} and a rank \DD{r} (an \D{int}), we want to obtain \DD{T[][]...[]}, with \DD{r} levels of \DD{[]}'s. A rank of 0 means producing \DD{T} as the result type.
+Now, what about becoming more generative by inverting the process? Given a type \DD{T} and a rank \DD{r} (an \D{int}), we want to obtain \DD{T[][]...[]}, with \DD{r} levels of \DD{[]}'s. A rank of 0 means producing \DD{T} as the result type.
 
 \begin{dcode}
 template NDimArray(T, int r)
@@ -517,7 +517,7 @@ In all three branches of \D{static if}, \DD{power} exposes a \DD{power} member, 
 
 Now, are you beginning to see the power of templates?
 
-\aparte{Curried Templates?}{\index{template!curried templates}No, I do not mean making them spicy, but separating the templates arguments, so as to call them in different places in your code. For \DD{power}, that could mean doing \D{alias }\DD{power!2 square;} somewhere and then using \DD{square!fun1}, \DD{square!fun2} at your leisure: the \DD{exponent} parameter and the \DD{fun} alias are separated. In fact, \DD{power} is already partially curried: \DD{fun} and \DD{exponent} are separated from \DD{Args}. For more on this, see section \ref{templatesintemplates}. 
+\aparte{Curried Templates?}{\index{template!curried templates}No, I do not mean making them spicy, but separating the template's arguments, so as to call them in different places in your code. For \DD{power}, that could mean doing \D{alias }\DD{power!2 square;} somewhere and then using \DD{square!fun1}, \DD{square!fun2} at your leisure: the \DD{exponent} parameter and the \DD{fun} alias are separated. In fact, \DD{power} is already partially curried: \DD{fun} and \DD{exponent} are separated from \DD{Args}. For more on this, see section \ref{templatesintemplates}. 
 
 Given a template \DD{temp}, writing a \DD{curry} template that automatically generates the code for a curried version of \DD{temp} is \emph{also} possible, but outside the scope of this document.\index{scope!outside the scope of this document}}
 
@@ -575,7 +575,7 @@ This idiom\index{idiom!template specialization} is used frequently in C++\index{
 
 \subsection{Default Values}\label{default}
 
-Like functions paramters, templates parameters can have default values. The syntax is the same: \DD{Param = defaultValue}. The default can be anything that makes sense with respect to the parameter kind: a type, a literal value, a symbol or another template parameter.
+Like functions parameters, templates parameters can have default values. The syntax is the same: \DD{Param = defaultValue}. The default can be anything that makes sense with respect to the parameter kind: a type, a literal value, a symbol or another template parameter.
 
 \begin{dcode}
 template Default(T = int, bool flag = false)
@@ -586,7 +586,7 @@ Default!(double, true); // Instantiate Default!(double, true) (Doh!)
 Default!();             // Instantiate Default!(int, false)
 \end{dcode}
 
-A difference with function parameters default values is that, due to specializations (\ref{specializations}) or IFTI (\ref{ifti}), some parameters can be automatically deduced by the compiler. So, default templates parameters are not forced to be the last parameters:
+In contrast to function parameters, thanks to specializations (\ref{specializations}) or IFTI (\ref{ifti}), some template parameters can be automatically deduced by the compiler. So, default template parameters are not required to be the final parameters in the list:
 
 \begin{dcode}
 template Deduced(T : U[], V = U, U)
