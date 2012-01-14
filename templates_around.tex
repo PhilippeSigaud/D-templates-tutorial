@@ -898,7 +898,7 @@ template Overloads(alias a, string member)
 
 The last step is to get this for all members of a given aggregate. It's quite easy:
 
-\begin{dcode}
+\begin{ndcode}
 template GetOverloads(alias a)
 {
     template GetOverloads(string member)
@@ -911,7 +911,7 @@ template AllMembers(alias a)
 {
     alias staticMap!(GetOverloads!(a), __traits(allMembers, a)) AllMembers; 
 }
-\end{dcode}
+\end{ndcode}
 
 The strange \DD{GetOverloads} two-stage construction is just a way to map it more easily on line 11. So, this was quite long to explain, but it works nicely:
 

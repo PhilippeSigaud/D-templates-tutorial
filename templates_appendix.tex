@@ -159,7 +159,7 @@ template isTuple(T)
 But sometimes D channels its inner perl\index{perl!inner perl in D} and, lo! There is more than one way to do it! You can use IFTI\index{IFTI} (see \ref{ifti}) and our good friend the \D{is}\DD{(}\D{typeof}\DD{({...}()))} expression there. You can also use \D{\_\_traits}, depending on you mood, but since this appendix is specifically on \D{is}:
 
 \index{is(typeof())@\D{is}\DD{(}\D{typeof}\DD{())}}
-\begin{dcode}
+\begin{ndcode}
 template isTuple(T)
 {
     static if (is(typeof({
@@ -171,7 +171,7 @@ template isTuple(T)
     else
         enum bool isTuple = false;
 }
-\end{dcode}
+\end{ndcode}
 
 Line 4 defines the function template \DD{tupleTester}, that only accepts \DD{Tuple}s as arguments (even though it does nothing with them). We create something of type \DD{T} on line 5, using the \DD{.init} property inherent in all D types, and try to call \DD{tupleTester} with it. If \DD{T} is indeed a \DD{Tuple} this entire block statement is valid, the resulting delegate call indeed has a type and \D{is} returns \D{true}.
 

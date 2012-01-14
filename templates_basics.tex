@@ -51,7 +51,7 @@ Inside the template body, the parameters are all accessible as placeholders for 
 
 Here are some template declaration examples:\index{template!definition}\label{templatedeclarationexamples}
 
-\begin{dcode}
+\begin{ndcode}
 template ArrayOf(T) // T is a type
 {
     alias T[] ArrayType;
@@ -92,7 +92,7 @@ template ZeroOrMore(Types...) // Types is a tuple.
 template Multiple(T)     { ... } // One arg version.
 template Multiple(T,U)   { ... } // Two args,
 template Multiple(T,U,V) { ... } // and three.
-\end{dcode}
+\end{ndcode}
 
 The real syntax for template declarations is slightly more complex, I'll introduce more of it in the next sections (You'll see for example type restrictions in section \ref{specializations}, default values in section \ref{default}, instantiation constraints in \ref{constraints}, and more on tuples in section \ref{tuples}).
 
@@ -384,7 +384,7 @@ If you need a sort of \D{static switch} construct, see section \ref{examples:sta
 Now, let's use \D{static if} for something a bit more complicated than just dispatching between code paths: recursion\index{recursion}.  What if you know you will receive n-dimensional arrays\index{arrays} (simple arrays, arrays of arrays, arrays of arrays of arrays, \ldots), and want to use the fastest, super-optimized numerical function for the 1-dim array, another one for 2D arrays and yet another one for higher-level arrays. Abstracting this away, we need a template doing some introspection\index{compile-time!introspection} on types, that will return 0 for an element (anything that's not an array), 1 for a 1-dim array (\DD{T[]}, for some \DD{T}), 2 for a 2-dim array (\DD{T[][]}), and so on. Mathematicians call this the \emph{rank}\index{rank} of an array, so we will use that. The definition is perfectly recursive: 
 \index{rank!definition}
 \index{template!recursion}
-\begin{dcode}
+\begin{ndcode}
 template rank(T)
 {
     static if (is(T t == U[], U)) // is T an array of U, for some type U?
@@ -392,7 +392,7 @@ template rank(T)
     else                          // Base case, ending the recursion.
         enum rank = 0; 
 }
-\end{dcode}
+\end{ndcode}
 
 Line 4 is the most interesting: with some \D{is} magic, \DD{U} has been deduced by the compiler and is accessible inside the \D{static if} branch. We use it to peel one level of `\DD{[]}' off the type and recurse\index{recursion} downward, using \DD{U} as a new type for instantiating \DD{rank}. Either \DD{U} is itself an array (in which case the recursion will continue) or it will hit the base case and stop there.
 
@@ -438,7 +438,7 @@ assert(rank!(typeof(c)) == 2); // range of ranges
 
 With \DD{rank}, we now have a way to get the number of \DD{[]}'s in an array type (\DD{T[][][]}) or the level of nesting in a range of ranges. The complementary query would be to get the base element type, \DD{T}, from any array of arrays \ldots of \DD{T} or the equivalent for a range. Here it is:
 
-\begin{dcode}
+\begin{ndcode}
 template BaseElementType(T)
 {
     static if (rank!T == 0)      // not a range
@@ -448,7 +448,7 @@ template BaseElementType(T)
     else                         // at least range of ranges
         alias BaseElementType!(ElementType!(T)) BaseElementType;
 }        
-\end{dcode}
+\end{ndcode}
 
 Line 4 is an example of \D{static assert} stopping compilation if we ever get into a bad code path. Line 8 is an example of a Matrioshka call: a template using another template's call as its parameter.
 
@@ -456,7 +456,7 @@ Line 4 is an example of \D{static assert} stopping compilation if we ever get in
 
 Now, what about becoming more generative by inverting the process? Given a type \DD{T} and a rank \DD{r} (an \D{int}), we want to obtain \DD{T[][]...[]}, with \DD{r} levels of \DD{[]}'s. A rank of 0 means producing \DD{T} as the result type.
 
-\begin{dcode}
+\begin{ndcode}
 template NDimArray(T, int r)
 {
     static if (r < 0)
@@ -466,7 +466,7 @@ template NDimArray(T, int r)
     else // r > 0
         alias NDimArray!(T, r-1)[] NDimArray;
 }
-\end{dcode}
+\end{ndcode}
 
 Here, recursion\index{recursion} is done on line 8: we instantiate \DD{NDimArray!(T,r-1)}, which is a type, then create an array\index{arrays} of them by putting \DD{[]} at the end and expose it through an alias. This is also a nice example of using an integral value\index{template!parameters!integral value} as a template parameter.
 
@@ -501,7 +501,7 @@ assert(power!(makeArray, 3)(1) == [[[1,1],[1,1]],[[1,1],[1,1]]]);
 First, this is a template that `returns' (becomes, rather) a function. It's easy to do with the eponymous trick:\index{eponymous trick} just define inside the template a function with the same name. Secondly, it's clearly recursive in its definition, with two base cases: if the exponent is zero, then we shall produce the identity function and if the exponent is one, we shall just return the input function itself. That being said, \DD{power} writes itself:
 
 \index{function composition}
-\begin{dcode}
+\begin{ndcode}
 template power(alias fun, uint exponent)
 {
     static if (exponent == 0) // degenerate case -> id function
@@ -514,7 +514,7 @@ template power(alias fun, uint exponent)
             return .power!(fun, exponent-1)(fun(args));
         }
 }
-\end{dcode}
+\end{ndcode}
 
 \aparte{.power}{If you are wondering what's with the \DD{.power} syntax on line 10, it's because by defining an eponymous template, we hide the parent template's name. So inside \DD{power(Args...)} it refers to \DD{power(Args...)} and not \DD{power(}\D{alias}\DD{ fun, }\D{uint}\DD{ exponent)}. Here we want a new \DD{power} to be generated so we call on the global \DD{power} template with the `global scope'\index{scope!global scope operator}\index{operator!global scope operator (\DD{.})} operator (\DD{.}).}
 
@@ -1450,7 +1450,7 @@ We want \DD{Flatten} to return elements in this order: \DD{elem11, elem12, \ldot
 \index{struct template}
 \index{range}
 \index{inner member alias}
-\begin{dcode}
+\begin{ndcode}
 struct Flatten(Range)
 {
     alias ElementType!Range    SubRange;
@@ -1480,7 +1480,7 @@ struct Flatten(Range)
         }
     }
 }
-\end{dcode}
+\end{ndcode}
 
 \begin{itemize}
 \item I cheat a little bit with D standard bracing style, because it eats vertical space like there is no tomorrow.
@@ -1490,7 +1490,7 @@ struct Flatten(Range)
 \item The \DD{discardEmptySubRanges} function does what it says on the can: we do not iterate on empty subranges.
 \end{itemize}
 
-Let see if this template works, by creating an infinite range and giving it to \D{flatten}:
+Let see if this template works, by creating an infinite range and giving it to \DD{flatten}:
 
 \begin{dcode}
 import std.range;

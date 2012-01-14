@@ -24,13 +24,22 @@
 % syntax highlighting style
 \usemintedstyle{borland}
 
-% creates the 'dcode' environment
+% dcode environment: highlighting D code
 
-\newminted{d}{linenos, 
+\newminted[dcode]{d}
+             {
               numbersep = 2pt, 
               frame=leftline,
               xleftmargin=-3pt,
-              %xrightmargin=-25pt,
+             }
+
+% ndcode environment: + line numbering
+\newminted[ndcode]{d}
+             {
+              linenos,
+              numbersep = 2pt, 
+              frame=leftline,
+              xleftmargin=-3pt,
              }
 
 %%%% Formatting commands %%%%%%%%%%%%%%%%%%%%%%%%%%%

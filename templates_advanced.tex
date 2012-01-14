@@ -585,24 +585,26 @@ Let's begin with something more simple: given a type and a type tuple, eliminate
 \index{type tuple!eliminating occurence of a type}
 \index{recursion}
 \index{is expression@\D{is} expression}
-\begin{dcode}
+\begin{ndcode}
 template Eliminate(Type, TargetTuple...)
 {
     static if (TargetTuple.length == 0) // Tuple exhausted,
-        alias TargetTuple Eliminate;    // job done.
+        alias TargetTuple 
+              Eliminate;    // job done.
     else static if (is(TargetTuple[0] : Type))
-        alias Eliminate!(Type, TargetTuple[1..$]) Eliminate;
+        alias Eliminate!(Type, TargetTuple[1..$]) 
+              Eliminate;
     else
-        alias 
-TypeTuple!(TargetTuple[0], Eliminate!(Type, TargetTuple[1..$])) Eliminate;
+        alias TypeTuple!(TargetTuple[0], Eliminate!(Type, TargetTuple[1..$])) 
+              Eliminate;
 }
 
 alias TypeTuple!(int,double,int,string) Target;
 alias Eliminate!(int, Target) NoInts;
 static assert(is( NoInts == TypeTuple!(double, string) ));
-\end{dcode}
+\end{ndcode}
 
-The only difficulty is on line 9: if the first type is not a \DD{Type}, we have to keep it and continue the recursion:
+The only difficulty is on line 10: if the first type is not a \DD{Type}, we have to keep it and continue the recursion:
 
 \begin{dcode}
 Eliminate!(Type,  Type0, Type1, Type2, ...)
@@ -1036,7 +1038,7 @@ In that case, using \DD{With} inside \DD{Compare} let the code be quite easy to 
 
 Going back to \DD{MyTemp}, using it is slightly more complicated:
 
-\begin{dcode}
+\begin{ndcode}
 // Yes:
 alias MyTemp!(int, double, string) MyTemp1;
 MyTemp1!(char, void);
@@ -1045,7 +1047,7 @@ MyTemp1!(char, void);
 MyTemp!(int, double, string)!(char, void);
 // No :
 MyTemp!(int, double, string).!(char, void);
-\end{dcode}
+\end{ndcode}
 
 The D grammar does not authorize multiple template calls like the ones on lines 6 and 8. You must use an alias for the intermediate stage. It's not that drastic a limitation, because if you created the template as a multi-step construction, it's most probably because you wanted to do a multi-step invocation\ldots
 
