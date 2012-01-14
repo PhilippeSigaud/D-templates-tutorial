@@ -94,9 +94,9 @@ template Multiple(T,U)   { ... } // Two args,
 template Multiple(T,U,V) { ... } // and three.
 \end{ndcode}
 
-The real syntax for template declarations is slightly more complex, I'll introduce more of it in the next sections (You'll see for example type restrictions in section \ref{specializations}, default values in section \ref{default}, instantiation constraints in \ref{constraints}, and more on tuples in section \ref{tuples}).
+The real syntax for template declarations is slightly more complex, I'll introduce more of it in the next sections (you'll see for example type restrictions in section \ref{specializations}, default values in section \ref{default}, instantiation constraints in \ref{constraints}, and more on tuples in section \ref{tuples}).
 
-There is a limitation that's interesting to keep in mind: templates can be declared in almost any scope\index{scope}, except inside a (standard) function.
+There is a limitation that's interesting to keep in mind: templates can be declared in almost any scope\index{scope}, except inside a (regular) function.
 
 \aparte{\D{enum}}{In the previous code, see line 23? It defines a \D{string} called \DD{name} as a member of \DD{nameOf}. The \D{enum} placed right before means \DD{name} is a compile-time constant.\index{compile-time!constant (\D{enum})} You can see it as a kind of storage class,\index{storage class!enum as a kind of@\D{enum} as a kind of} in the line of \D{immutable} or \D{const}, one that means the value is totally defined and fixed at runtime. You'll see numerous examples of \D{enum} in this document.}
 
@@ -193,7 +193,7 @@ alias Transformer!(string,int)    StoI;
 
 \section{Templates Building Blocks}\label{buildingblocks}
 
-Up to now, templates must seem not that interesting to you, even with a simple declaration and instantiation syntax. But wait! D introduced a few nifty tricks that both simplify and greatly expand templates use. This section will introduce you to your future best friends, the foundations on which your templates will be built.
+Up to now, templates may not seem that interesting to you, even with a simple declaration and instantiation syntax. But wait! D introduced a few nifty tricks that both simplify and greatly expand templates use. This section will introduce you to your future best friends, the foundations on which your templates will be built.
 
 \subsection{The Eponymous Trick}\label{eponymous}
 \index{eponymous trick}
@@ -295,7 +295,7 @@ template AllArraysOf(T)
 
 \subsubsection{Syntax}
 
-The \D{static if} construct\footnote{ It's \emph{both} an expression and a declaration, so I'll call it a construct.}
+The \D{static if} construct\footnote{ It's \emph{both} an statement and a declaration, so I'll call it a construct.}
 lets you decide between two code paths at compile time. It's not specific to templates (you can use it in other part of your code), but it's incredibly useful to have your templates adapt themselves to the arguments. That way, using compile-time-calculated predicates based on the template arguments, you'll generate different code and customize the template to your need.
 
 The syntax is:
