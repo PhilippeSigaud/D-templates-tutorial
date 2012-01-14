@@ -28,7 +28,6 @@
 
 \newminted[dcode]{d}
              {
-              numbersep = 2pt, 
               frame=leftline,
               xleftmargin=-3pt,
              }
@@ -39,7 +38,7 @@
               linenos,
               numbersep = 2pt, 
               frame=leftline,
-              xleftmargin=-3pt,
+              %xleftmargin=0pt,
              }
 
 %%%% Formatting commands %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,21 +56,24 @@
 
 \newcommand{\stdanchor}[2]{\href{http://www.dlang.org/phobos/std_#1.html\##2}{\DD{std.\-#1.\-#2}}\index{Phobos}\index{std@\DD{std}!#1@\DD{#1}!#2@\DD{#2}}}
 
-
+\setlength\fboxsep{8pt} 
 \newcommand{\aparte}[2]
 {
-\begin{framed}
+\vspace{10pt}
+\noindent
+\fbox{
+\begin{minipage}[c]{0.9\textwidth}
 {\large\textbf{ #1}}\vspace{6pt}\newline
 #2
-\end{framed}
+\end{minipage}
+}
+\vspace{10pt}
+\newline
 }
 
 \newcommand{\unfinished}[1]
 {{\color{red}
-\begin{framed}
-\textsc{This section is still a Work In Progress:\ }\newline
-#1
-\end{framed}
+\aparte{This section is still a Work In Progress:}{#1}
 }}
 
 %%%%%%%% Hyperlinks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
