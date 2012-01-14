@@ -14,8 +14,16 @@ Zachary Lund
 Jacob Carlborg
 Timon Gehr
 Simen Kjaeraas
+Andrei Alexandrescu
 
+* Define more LaTeX environments (invisible-D, D-in-main, D-module-scope)
 
-==
+* Define unnumbered environments
 
+== Templates to show
+
+* juxtapose functions
+* compile-time writefln
+* mapping n ranges in parallel
+* heterogeneous tree
 * Generating random values, whatever the type.
