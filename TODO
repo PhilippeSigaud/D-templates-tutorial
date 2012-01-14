@@ -5,6 +5,17 @@ http://ddili.org/ders/d.en/templates.html
 also:
 http://prowiki.org/wiki4d/wiki.cgi?D__Tutorial/D2Templates
 
+* Add a 'Thanks' section, with a list of people who helped me.
+At least:
+
+Andrej Mitrovic
+jwhear
+Zachary Lund
+Jacob Carlborg
+Timon Gehr
+Simen Kjaeraas
+
+
 ==
 
 * Generating random values, whatever the type.
