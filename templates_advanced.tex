@@ -516,11 +516,14 @@ template nameOf(T)
 
 template nameOf(alias a)
 {
-    Enum string nameOf = to!string(a);
+    enum string nameOf = a.stringof;
 }
 
 static assert(nameOf!(double[]) == "double[]");
-static assert(nameOf!(nameOf) == "nameOf");
+
+int i;
+
+static assert(nameOf!(i) == "i");
 \end{dcode}
 
 Since tuples can accept both types and alias, you can use them to simplify your code a bit:

@@ -595,10 +595,10 @@ These can all be quite useful in your code, but I'll shy away from them since th
 
 \DD{identifier} gives you a symbol's name as a string. This is quite interesting, since some symbols are what I'd call \emph{active}: for example, if \DD{foo} is a function, \DD{foo.stringof} will try to first call \DD{foo} and the \DD{.stringof} will fail. Also, \DD{.stringof}, though eminently useful, sometimes returns strangely formatted strings. \DD{identifier} is much more well-behaved.
 
-Let's get back to one of the very first template in this doc, \DD{NameOf} on page \pageref{templatedeclarationexamples}. Initially, it was coded like this:
+Let's get back to one of the very first template in this doc, \DD{nameOf} on page \pageref{templatedeclarationexamples}. Initially, it was coded like this:
 
 \begin{dcode}
-template NameOf(alias a)
+template nameOf(alias a)
 {
     enum string name = a.stringof; // enum: manifest constant
                                    // determined at compile-time
@@ -610,7 +610,7 @@ But, this fail for functions:
 \begin{dcode}
 int foo(int i, int j) { return i+j;}
 
-auto name = NameOf!foo; // Error, 'foo' must be called with 2 arguments
+auto name = nameOf!foo; // Error, 'foo' must be called with 2 arguments
 \end{dcode}
 
 It's much better to use \D{\_\_traits} (also, the eponymous trick (\ref{eponymous}):
@@ -633,7 +633,7 @@ auto
 \begin{dcode}
 import std.typecons;
 
-enum name2 = nameOf!(nameOf); // "nameOf"
+enum name2 = nameOf!(nameOf); // "nameOf(alias a)"
 enum name3 = nameOf!(std.typecons); //"typecons"
 \end{dcode}
 
