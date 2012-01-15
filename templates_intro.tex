@@ -7,7 +7,7 @@ Templates are a central feature of D, giving you powerful compile-time code gene
 
 This document aims to be a kind of tutorial on D templates, to show the beginning D coder what can be achieved with them. When I was doing C++\index{C++}, I remember \emph{never} using templates for more than \emph{containers-of-T} stuff, and considered Boost-level\footnote{ The \href{http://www.boost.org}{Boost}\index{Boost} C++ library collection makes heavy use of templates.} metaprogramming the kind of code I could never understand, never mind produce. Well, D's sane syntax for templates and nifty features such as \D{static if}, \D{alias} or tuples cured me of that impression. I hope this document will help you, too.
 
-\section*{What's in This Document}
+\section*{What's in This Document}\label{content}
 \addcontentsline{toc}{section}{What's in This Document}
 
 \autoref{basics} deals with the very basics: how to declare and instantiate a template, the standard `building blocks' you'll use in almost all your templates, along with function (\ref{functiontemplates}), struct (\ref{structtemplates}) and class (\ref{classtemplates}) templates. Throughout the text, examples will present applications of these concepts. 
@@ -20,21 +20,22 @@ This document aims to be a kind of tutorial on D templates, to show the beginnin
 
 Finally, an appendix (\autoref{isexpression}) on the ubiquitous \D{is} expression  completes this document.
 
-\section*{Conventions}
+\section*{Conventions}\label{conventions}
 \addcontentsline{toc}{section}{Conventions}
 
-In this doc:
+To make this document more easily readable, I'll use standard coding books conventions, by highlighting parts of the text. Mainly, in this doc:
 
 \begin{itemize}
 \item D keywords will be marked like this: \D{int}, \D{static if}, \D{\_\_traits}.
 \item Symbols and names used in code samples and cited in the text will be written like this: \DD{myFunc}, \DD{flatten}.
 \item internal links will be in red, like this (\ref{basics}).
 \item external links will be in blue, like \href{http://www.dlang.org}{this}.
+\item Syntax-highlighted code samples are shown like this:
 \end{itemize}
 
-Syntax-highlighted code samples are shown like this:
-
 \begin{ndcode}
+module intro;
+
 import std.stdio;
 
 // This is a comment
@@ -48,15 +49,17 @@ I'll use numbered lines only when necessary. The code lines may be wider than th
 
 For those of you interested by \LaTeX, this document uses the \href{http://code.google.com/p/minted/}{minted}\index{minted (LaTex package)@\DD{minted} (\LaTeX\ package)} package for the code samples. 
 
-I will sometimes make a little aparte, discussing a small piece of info too small to be in its own section. These will be marked so:
+I will sometimes make a little explanatory detour, discussing a small piece of info too small to be in its own section but of interest to the reader nonetheless. These will be marked so:
 
-\aparte{What's with all that red and blue?}{What, don't you like having red boxes and blue keywords in your text? Even links will be colored!}
+\aparte{What's with all that red and blue?}{What, don't you like having red boxes and blue keywords in your text? Even links will be colored! This way, people reading this on screen can easily know if something is a hyperlink.}
 
-Finally, some sections in this doc are not finished yet. The sections I consider unfinished will begin with a friendly frame:
+Finally, some sections in this doc are not finished yet. The sections I consider unfinished will begin with a friendly red frame:
 
-\unfinished{That's also true for this very intro. I should have a 'Thanks' subsection where I list people that contributed to this text.}
+\unfinished{Hey, now I've added a Thanks section. But as long as I'm adding new parts in the document, new appendices, and new section, this intro will not be finished.}
 
-\section*{How to Get This Document}
+I probably forgot some `unfinished' tags, do not hesitate to tell me so.
+
+\section*{How to Get This Document}\label{howtoget}
 \addcontentsline{toc}{section}{How to Get This Document}
 
 This doc is just a bunch of \LaTeX documents \href{http://github.com/PhilippeSigaud/D-templates-tutorial}{hosted on GitHub}. Don't hesitate to fork it or (even better for me) to make pull requests! For those of you reading this on paper, the address is:
@@ -64,3 +67,12 @@ This doc is just a bunch of \LaTeX documents \href{http://github.com/PhilippeSig
 \vspace{8pt}
 \url{http://github.com/PhilippeSigaud/D-templates-tutorial}
 
+\section*{Thanks}\label{thanks}
+\addcontentsline{toc}{section}{Thanks}
+
+As soon as I publicly released this document, D community members gave me help, suggestions, corrections, and code samples. This is cool to see a D network emerge and people participating in common projects. The following people helped me:
+
+Andrej Mitrovic, Justin Whear, Zachary Lund, Jacob Carlborg, Timon Gehr, Simen Kj\ae r\r{a}s, Andrei Alexandrescu.
+
+\vspace{8pt}
+Thanks guys! 
