@@ -2,6 +2,7 @@
 \part*{Appendices}
 \addcontentsline{toc}{part}{Appendices}
 \appendix
+
 \section{
 \texorpdfstring{A Crash Course on the \D{is}\DD{(...)} Expression}
                {A Crash Course on the is(...) expression}}
@@ -244,3 +245,88 @@ assert(equal(structRange, [new C(0), new C(1), new C(2), new C(3)]));
 \end{dcode}
 
 You can find another example of this kind of \D{is} in section \ref{classtemplates}, with the \DD{duplicator} template.
+
+\section{Resources and Further Reading}
+\label{resources}
+
+\unfinished{Any new resource welcome!}
+
+Being a relatively young language, D doesn't have dozens of books or online sites dedicated to its learning. Still, there are a few resources on the Internet that pertains to D templates and associated subjects.
+
+\subsection{D Templates}
+
+Here are some resources on D templates.
+
+\subsubsection{D Reference}
+
+Your first stop should be the \href{http://dlang.org}{dlang.org} pages on templates. They are quite easy to read, don't hesitate to peruse them and bother the authors if anything is unclear or blatantly false. The \DD{dlang.org} website is also a github project, \href{https://github.com/D-Programming-Language/d-programming-language.org}{here}. Table \ref{table:dlangpages} lists the pages dealing with templates.
+
+\begin{table}[htb]
+\centering
+\begin{tabular}[l]{|p{19em}|p{15em}|}
+\hline
+URL                  & Subject         \\ \hline \hline
+\url{http://dlang.org/template.html} & The general page on templates\\ \hline
+\url{http://dang.org/templates-revisited.html} & An article on D templates and the difference with C++ ones\\ \hline
+\url{http://dlang.org/tuple.html} & An article on tuples\\ \hline
+\url{http://dlang.org/variadic-function-templates.html} & Another article dealing with template tuple parameters\\ \hline
+\url{http://dlang.org/concepts.html} & Template Constraints\\ \hline
+\url{http://dlang.org/template-mixin.html} & Mixin Templates\\ \hline
+\url{http://dlang.org/mixin.html} & A small article on string mixins \\ \hline
+\url{http://dlang.org/version.html#staticif}  & \D{static if}\\ \hline
+\url{http://dlang.org/expression.html#IsExpression} & \D{is}\\ \hline
+\url{http://dlang.org/declaration.html#alias} & Type Aliasing\\ \hline
+\url{http://dlang.org/operatoroverloading.html} & Operator Overloading\\ \hline
+\end{tabular}
+\caption{\url{dlang.org} pages dealing with templates}
+\label{table:dlangpages}
+\end{table}
+
+\subsubsection{The D Programming Language}
+
+The main D book as of this writing is of course \textsc{The D Programming Language} (also known as \textsc{TDPL}), by Andrei Alexandrescu. It's a very good reference book, and fun to read too. TDPL has a very interesting approach to templates: Andrei first introduces them as a natural extension of functions, classes, and structs syntax, to get parametrized code. It's only afterwards that templates-as-scopes are introduced. Table \ref{table:tdplchapters} lists the chapters that deals with templates. 
+
+\begin{table}[htb]
+\centering
+\begin{tabular}[c]{|l|l|}
+\hline
+Chapter                  & Subject         \\ \hline \hline
+5.3, 5.4, 5.10, and 5.12 & functions \\ \hline
+6.14                     & classes \\ \hline
+7.1.10                   & structs \\ \hline
+7.4                      & alias \\ \hline
+7.5                      & templates themselves \\ \hline
+7.6                      & mixin templates \\ \hline
+12                       & operator overloading  \\ \hline
+\end{tabular}
+\caption{TDPL Chapters Dealing With Templates}
+\label{table:tdplchapters}
+\end{table}
+
+\subsubsection{Programming in D}
+
+Another quite interesting book is the translation from Turkish of Ali \c{C}ehreli's book \textsc{Programming in D}, which you can find for free here: \url{http://ddili.org/ders/d.en/index.html}. More precisely, as far as this document is concerned, the chapter on templates is already translated and can be found at \url{http://ddili.org/ders/d.en/templates.html}. Ali's book aims to be a gentle introduction to D, so the rhythm is less gung ho than TDPL. If you do not want to read the present document,\footnote{ It's probably too late. Should I link to Ali's book earlier?} the previously linked chapter is your best bet as a template tutorial.
+
+\subsubsection{The D Wiki}
+
+Apart from books, the D wiki has a tutorial on templates that can be found at \url{http://prowiki.org/wiki4d/wiki.cgi?D__Tutorial/D2Templates}, that explains \stdanchor{functional}{unaryFun} very thoroughly, dealing in passing with various subjects such as templates, string mixins, and instantiation scope. I found it a very pleasant read and a nice explanation of a difficult part of Phobos.
+
+\subsection{D Metaprogramming}
+
+I found Nick Sabalausky's article at \url{http://www.semitwist.com/articles/EfficientAndFlexible/SinglePage/} to be a very good read, and full of nifty ideas. In particular, Nick shows how to use compile-time information to craft code such that runtime arguments can then be used to ``influence'' compile-time values. Yes you read that right, and my description does not do it justice: \href{http://www.semitwist.com/articles/EfficientAndFlexible/SinglePage/#part6-3}{read on}, and see for yourselves. I definitely \emph{must} put a section somewhere in this doc on this.
+
+The code shown in the article can be found in a github project, at \url{https://github.com/Abscissa/efficientAndFlexible}
+
+\subsection{Templates in Other Languages}
+
+\unfinished{C++ templates, obviously. Articles, online books, and such. A small text on Boost. Also, maybe Java and C\# generics.}
+
+\subsection{Genericity in Other Languages}
+
+\unfinished{Haskell and ML concerning types. In general, any type trick that Haskellers live by: encoding information in types, using types to forbid unwanted states and so on.}
+
+\subsection{Metaprogramming in Other Languages}
+
+\unfinished{Maybe Lisp / Scheme / Clojure macros. Nemerle macros too.}
+
+
