@@ -329,20 +329,20 @@ As you can see, with no curly braces after \D{static if} and the eponymous trick
 
 \subsubsection{Optional Code}
 
-A common use of \D{static if} is to enable or disable code: a single \D{static if} without an \D{else} clause will generate code only when the condition is true. You can find many examples of this idiom\index{idiom!enabling/disabling code} in \std{range}\index{range!higher-level ranges} where higher-level ranges (ranges wrapping other ranges) will activate some functionality only if the wrapped range can support it, like this:\index{enabling/disabling code}\index{optional code}
+A common use of \D{static if} is to enable or disable code: a single \D{static if} without an \D{else} clause will generate code only when the condition is true. You can find many examples of this idiom\index{idiom!enabling/disabling code} in \std{range}\index{range!higher-level ranges} where higher-level ranges (ranges wrapping other ranges) will activate some functionality if and only if the wrapped range can support it, like this:\index{enabling/disabling code}\index{optional code}
 
 
 \begin{dcode}
-/* We are inside a MyRange templated struct, wrapping an R. */
+/* We are inside a MyRange templated struct, wrapping a R. */
 
     R innerRange;
 
-/* some code that exist in all instantiations of MyRange */
+/* Code that exists in all instantiations of MyRange */
 (...)
 
 /* optional code */
-static if (hasLength!R) // does innerRange has a .length() method?
-    auto length()       // then MyRange has one also
+static if (hasLength!R) // does innerRange have a .length() method?
+    auto length()       // Then MyRange has one also.
     {
         return innerRange.length;
     }
