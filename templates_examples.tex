@@ -1172,51 +1172,77 @@ template fieldsOfImpl (T, size_t i)
 
 \section{Extending an enum}
 
-From Simen Kj\ae r\r{a}s (posted on the D newsgroup).
+This code comes from Simen Kj\ae r\r{a}s.  It generates an enum definition as a string, by taking all the members of the old enum, and adding those passed in string parameters, and mixing it in.
 
 \begin{dcode}
-string EnumDefAsString(T)() if (is(T == enum)) {
-    string result = "";
-    foreach (e; __traits(allMembers, T))
-        result ~= e ~ " = T." ~ e ~ ",";
-    return result;
-}
-
-template ExtendEnum(T, string s) 
-    if (is(T == enum) &&
-        is(typeof({mixin("enum a{"~s~"}");}))) 
+string EnumDefAsString(T)() 
+if (is(T == enum)) 
 {
-mixin(
-    "enum ExtendEnum {"
-   ~ EnumDefAsString!T() ~ s
+   string result = "";
+   foreach (e; __traits(allMembers, T))
+       result ~= e ~ " = T." ~ e ~ ",";
+   return result;
+}
+\end{dcode}
+
+This piece of code iterates over all members of the passed \D{enum}\DD{ T},
+generating a string containing all members and their values. For
+this enum:
+
+\begin{dcode}
+enum bar
+{
+    a, b, c
+}
+\end{dcode}
+
+The generated string looks like this (if you want to check this,
+feel free to call \DD{EnumDefAsString} at run-time and print its result):
+
+\begin{dcode}
+"a = bar.a,b = bar.b,c = bar.c"
+\end{dcode}
+
+As we can see, this is a valid body for an enum. That means we can use
+\D{mixin}\DD{()} to generate this exact same enum. But wait - there's more:
+
+\begin{dcode}
+template ExtendEnum(T, string s)
+   if (is(T == enum) &&
+   is(typeof({mixin("enum a{"~s~"}");})))
+{
+   mixin(
+   "enum ExtendEnum {"
+   ~ EnumDefAsString!T()
+   ~ s
    ~ "}");
 }
-
-enum bar 
-{
-    a = 1,
-    b = 7,
-    c = 19
-}
-
-import std.typetuple;
-
-alias ExtendEnum!(bar, q{ // Usage example here.
-      d = 25
-    }) bar2;
-
-foreach (i, e; __traits(allMembers, bar2)) {
-    static assert( e == TypeTuple!("a", "b", "c", "d")[i] );
-}
-
-assert( bar2.a == bar.a );
-assert( bar2.b == bar.b );
-assert( bar2.c == bar.c );
-assert( bar2.d == 25 );
-
-static assert(!is(typeof( ExtendEnum!(int, "a"))));
-static assert(!is(typeof( ExtendEnum!(bar, "25"))));
 \end{dcode}
+
+This code concatenates the string generated from the previous function
+with the one passed to the function as parameter \DD{s}. So with \DD{bar} previously defined, and this instantiation:
+
+\begin{dcode}
+ExtendEnum!(bar, "d=25")
+\end{dcode}
+
+The body of the function will look like this (after string expansion):
+
+\begin{dcode}
+mixin(
+   "enum ExtendEnum {"
+   ~ "a = bar.a,b = bar.b,c = bar.c"
+   ~ "d=25"
+   ~ "}");
+\end{dcode}
+
+Concatenating those strings, we see that we have a valid enum definition:
+
+\begin{dcode}
+enum ExtendEnum {a = bar.a,b = bar.b,c = bar.c,d=25}
+\end{dcode}
+
+The mixin then pastes it in, and it is compiled as regular D code.
 
 \section{Static Switching} \label{examples:staticswitch}
 
