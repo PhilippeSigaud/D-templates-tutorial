@@ -678,7 +678,7 @@ auto morph(T, U, alias f)(U arg)
 }
 \end{dcode}
 
-\aparte{\D{auto ref}}{ A function template can have an \D{auto ref} return type. That means that for templates where the returned values are rvalues, the template will get the \D{ref}ed version. And the non-\D{ref} version if not.}
+\aparte{\D{auto ref}}{ A function template can have an \D{auto ref} return type. That means that for templates where the returned values are lvalues, the template will get the \D{ref}ed version. And the non-\D{ref} version if not.}
 
 \subsection{IFTI}\label{ifti}
 
