@@ -21,5 +21,10 @@ Templates to show
 Misc.
 -----
 
+
 * __LINE__ and __FILE__ are described on dlang.org. Link it.
 * Index Appendix B.
+
+"You can't use methods (delegates) for template parameters, because they need a context, which is not known at compile-time."
+
+"If exactly one of two equally good matched functions is a templated one, the other one is chosen. Now that you have templated the second function, both are an equally good match and both are templated."
