@@ -1313,7 +1313,7 @@ Transparent!T transparent(T)(T t)
 }
 \end{dcode}
 
-This defines \DD{Transparent}, a small struct holding a lone value of type \DD{T}. If a \DD{Transparent!T} is asked to do something for which it has no method nor the correct type (that is to say, almost every action you can imagine!), \DD{alias this} activates and uses \DD{value} in lieu of \DD{Transparent!T}. This gives us a very transparent wrapper:
+This defines \DD{Transparent}, a small struct holding a lone value of type \DD{T}. If a \DD{Transparent!T} is asked to do something for which it has no method nor the correct type (that is to say, almost every action you can imagine!), \D{alias this} activates and uses \DD{value} in lieu of \DD{Transparent!T}. This gives us a very transparent wrapper:
 
 \begin{dcode}
 auto i = transparent(10);
@@ -1357,9 +1357,6 @@ struct Thin(T)
 Thin!T thin(T)(T t)
 {
     return Thin!T(t);
-}Transparent!T transparent(T)(T t)
-{
-    return Transparent!T(t);
 }
 
 auto t = thin(i); // Works.
@@ -1370,11 +1367,32 @@ assert(is(typeof(t) == Thin!(Transparent!int)));
 
 What's the use of such an invisible wrapper? First, it's a perfect subtype, which is the very goal of \D{alias }\DD{X }\D{this}. You can add functionalities to your type: new methods, etc. Looks a bit like class inheritance, isn't it? Except that \DD{Transparent} can wrap around (ie: become the subtype of) any type it's aimed at. If you are interested in multiple ways to subtype a type, see section \ref{typedef}, showing Trass3r's library typedef.
 
-Note that this is subtly different from the idea shown in section \ref{wrappertemplates}. In section \ref{wrappertemplates}, use of \DD{opDispatch} lets the wrapper intercept calls \emph{before} dispatching them. That way, you can add logging to a type, for instance. This is something you cannot do with \D{alias this}. On the other hand, \D{alias this} is automatically done by the compiler, no need to write intercepting code.
+Note that this is subtly different from the idea shown in section \ref{wrappertemplates}. In section \ref{wrappertemplates}, use of \DD{opDispatch} lets the wrapper intercept calls \emph{before} dispatching them. That way, you can add logging to a type, for instance. This is something you cannot do with \D{alias this}. On the other hand, \D{alias this} dispatching is automatically done by the compiler, no need to write intercepting code.
 
-For example, let's expand \DD{Transparent} a little bit 
+For example, here is another wrapper that gives the description of the held type:
 
-One day, D will get multiple \D{alias this}, since it's described in TDPL (\ref{TDPL}). This will open the possibility of a type being subtype to many other types at the same type, literally acting as a chameleon depending on circumstances. We will be able to group disparate types and functionalities in one place. I wait for it with increasing interest.\footnote{this was written in January 2012, let see when we get multiple \D{alias this}.}
+\begin{dcode}
+struct Descriptor(T)
+{
+    T value;
+    alias value this;
+    
+    string description() @property
+    {
+        import std.conv;
+        
+        return "Descriptor holding a " ~ T.stringof
+             ~ " of value " ~ to!string(value) ~ ".\n"
+             ~ "(sizeof: " ~ to!string(T.sizeof) ~ " bytes)";
+    }
+}
+
+Descriptor!double d = 1.0;
+writeln(d.description); // "Descriptor holding a double of value 1
+                        //  (sizeof: 8 bytes)"
+\end{dcode}
+
+One day, D will get multiple \D{alias this}, since it's described in TDPL (\ref{TDPL}). This will open the possibility of a type being subtype to many other types at the same time, literally acting as a chameleon depending on circumstances. We will be able to group disparate types and functionalities in one place. I wait for it with increasing interest.\footnote{this was written in January 2012, let see when we get multiple \D{alias this}.}
 
 However, as far as I'm concerned, the main interest of this subtyping is not so much the possibility to add `parallel' functionality as encoding information in the type itself. See the next section:
 
@@ -1404,7 +1422,7 @@ struct MinMax(T)
 }
 \end{dcode}
 
-In this case, \DD{MinMax} means the wrapped value is between \DD{min} and \DD{max} (the enforcing code would be in the factory function, for example.
+In this case, \DD{MinMax} means the wrapped value is between \DD{min} and \DD{max} (the enforcing code would be in the factory function, for example).
         
 Things get interesting when using multiple wrappers inside one another. Imagine we have three wrappers, for numerical ranges with an ordering operation:
 
