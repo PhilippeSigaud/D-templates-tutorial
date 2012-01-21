@@ -978,6 +978,8 @@ But, templates can come to the rescue, with a bit of \DD{opDispatch} magic.
 - opDispatch? Test if wrapped.foo() is legal. If yes, call
 
 
+See also section \ref{transparenttypes}, on \D{alias }\DD{X }\D{this}.
+
 \section{Templates in Templates}\label{templatesintemplates}
 
 Sometimes, you know users of your code will send to your template a first list (of indefinite length) of parameters, followed by a second list. Seeing that, you may want to write code like the following:
@@ -1293,9 +1295,92 @@ Behind the scene, \DD{octal} reads its \D{string} or \D{int} argument and conver
 
 \unfinished{Also, DSL in strings in D, see Statically-Checked Writeln in \ref{staticallycheckedwriteln}, encoding informations in types (\ref{encodinginformationwithtypes}) and annotating types (\ref{annotatingtypes}).}
 
+\section{Transparent Types}\label{transparenttypes}
+
+Let us define a small wrapper type:
+
+\begin{dcode}
+struct Transparent(T)
+{
+    T value;
+    alias value this;
+}
+
+// factory function
+Transparent!T transparent(T)(T t)
+{
+    return Transparent!T(t);
+}
+\end{dcode}
+
+This defines \DD{Transparent}, a small struct holding a lone value of type \DD{T}. If a \DD{Transparent!T} is asked to do something for which it has no method nor the correct type (that is to say, almost every action you can imagine!), \DD{alias this} activates and uses \DD{value} in lieu of \DD{Transparent!T}. This gives us a very transparent wrapper:
+
+\begin{dcode}
+auto i = transparent(10);
+assert(i == 10); // equality testing
+
+i = 1; // Assignment from an int
+
+++i; // ++ acts on i.value
+assert(i == 2); 
+
+// int-accepting function
+int foo(int ii) { return ii+1;}
+
+assert(foo(i) == 3); // function calls
+
+int trueInt = i; // transmits its value
+
+assert(trueInt == 2);
+assert(i == 2);
+assert(i == trueInt);
+
+// Successive calls all collapse into one Transparent.
+i = transparent(transparent(i));
+\end{dcode}
+
+As you can see, \DD{Transparent} behaves very gracefully: in almost all circumstances where an \D{int} could fit, \DD{Tranparent!}\D{int} will act as a real \D{int}. Of course, its type is still OK:
+
+\begin{dcode}
+assert(is(typeof(i) == Transparent!int));
+\end{dcode}
+
+Another wrapper can be added:
+
+\begin{dcode}
+struct Thin(T)
+{
+    T value;
+    alias value this;
+}
+
+Thin!T thin(T)(T t)
+{
+    return Thin!T(t);
+}Transparent!T transparent(T)(T t)
+{
+    return Transparent!T(t);
+}
+
+auto t = thin(i); // Works.
+assert(t == 2); // Yep, value was transmitted correctly.
+
+assert(is(typeof(t) == Thin!(Transparent!int)));
+\end{dcode}
+
+What's the use of such an invisible wrapper? First, it's a perfect subtype, which is the very goal of \D{alias }\DD{X }\D{this}. You can add functionalities to your type: new methods, etc. Looks a bit like class inheritance, isn't it? Except that \DD{Transparent} can wrap around (ie: become the subtype of) any type it's aimed at. If you are interested in multiple ways to subtype a type, see section \ref{typedef}, showing Trass3r's library typedef.
+
+Note that this is subtly different from the idea shown in section \ref{wrappertemplates}. In section \ref{wrappertemplates}, use of \DD{opDispatch} lets the wrapper intercept calls \emph{before} dispatching them. That way, you can add logging to a type, for instance. This is something you cannot do with \D{alias this}. On the other hand, \D{alias this} is automatically done by the compiler, no need to write intercepting code.
+
+For example, let's expand \DD{Transparent} a little bit 
+
+One day, D will get multiple \D{alias this}, since it's described in TDPL (\ref{TDPL}). This will open the possibility of a type being subtype to many other types at the same type, literally acting as a chameleon depending on circumstances. We will be able to group disparate types and functionalities in one place. I wait for it with increasing interest.\footnote{this was written in January 2012, let see when we get multiple \D{alias this}.}
+
+However, as far as I'm concerned, the main interest of this subtyping is not so much the possibility to add `parallel' functionality as encoding information in the type itself. See the next section:
+
 \section{Encoding Information With Types} \label{encodinginformationwithtypes}
 
-This is an extension of the previous section's idea, that you can find for example in \stdanchor{range}{assumeSorted} and \stdanchor{range}{SortedRange}. These Phobos constructs encode some information in a type (in this case, the fact than the range is sorted, with an associated predicate). That way, subsequent operations acting on a range can use better algorithm if they know it's sorted.
+This is an extension of the previous two sections' idea, that you can find for example in \stdanchor{range}{assumeSorted} and \stdanchor{range}{SortedRange}. These Phobos constructs encode some information in a type (in this case, the fact than the range is sorted, with an associated predicate). That way, subsequent operations acting on a range can use better algorithm if they know it's sorted.
 
 This kind of encoding can be used for many different schemes:
 
@@ -1305,3 +1390,53 @@ This kind of encoding can be used for many different schemes:
 \item A units library (as in, $kg.m/s^{2}$, not unit-testing) is mainly a bunch of \D{double} (or complex) values wrapped in a multi-checked type that allows only some operations, depending on types. \DD{meter(5) + kilo(gram(10))} is a no-no, but \DD{meter(5)*kilo(gram(10))} is OK.
 \end{itemize}
 
+\section{Library Typedef}\label{typedef}
+
+From Trass3r:
+
+\unfinished{This asks for some explanatory text.}
+
+\begin{dcode}
+enum Type
+{
+    Independent,
+    Super,
+    Sub,
+    Parallel,
+}
+
+struct Typedef( T, 
+                Type type = Type.Sub, 
+                T init = T.init, 
+                string _f = __FILE__,
+                int _l = __LINE__ )
+{
+    T payload = init;
+
+    static if ( type != Type.Independent )
+        this( T value )
+        {
+            payload = value;
+        }
+
+    static if ( type == Type.Sub)
+        // typedef int foo; foo f;
+        // f.opCast!(t)() == cast(t) f
+        T opCast(T)()
+        {
+            return payload;
+        }
+
+    static if ( type == Type.Sub || type == Type.Parallel )
+        alias payload this;
+
+    static if ( type == Type.Super )
+        typeof( this ) opAssign( T value )
+        {
+            payload = value;
+            return this;
+        }
+    else static if ( type == Type.Sub )
+        @disable void opAssign( T value );
+}
+\end{dcode}
