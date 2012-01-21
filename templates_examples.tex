@@ -916,54 +916,6 @@ auto theCs2 = map!makeC(zip([0,1,2,3,4],
                             [4,3,2,1,0]));
 \end{dcode}
 
-\section{Library Typedef}
-
-From Trass3r:
-
-\begin{dcode}
-enum Type
-{
-    Independent,
-    Super,
-    Sub,
-    Parallel,
-}
-
-struct Typedef( T, 
-                Type type = Type.Sub, 
-                T init = T.init, 
-                string _f = __FILE__,
-                int _l = __LINE__ )
-{
-    T payload = init;
-
-    static if ( type != Type.Independent )
-        this( T value )
-        {
-            payload = value;
-        }
-
-    static if ( type == Type.Sub)
-        // typedef int foo; foo f;
-        // f.opCast!(t)() == cast(t) f
-        T opCast(T)()
-        {
-            return payload;
-        }
-
-    static if ( type == Type.Sub || type == Type.Parallel )
-        alias payload this;
-
-    static if ( type == Type.Super )
-        typeof( this ) opAssign( T value )
-        {
-            payload = value;
-            return this;
-        }
-    else static if ( type == Type.Sub )
-        @disable void opAssign( T value );
-}
-\end{dcode}
 
 \section{Emitting Events}
 
