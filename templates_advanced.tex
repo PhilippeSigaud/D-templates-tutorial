@@ -1390,6 +1390,46 @@ This kind of encoding can be used for many different schemes:
 \item A units library (as in, $kg.m/s^{2}$, not unit-testing) is mainly a bunch of \D{double} (or complex) values wrapped in a multi-checked type that allows only some operations, depending on types. \DD{meter(5) + kilo(gram(10))} is a no-no, but \DD{meter(5)*kilo(gram(10))} is OK.
 \end{itemize}
 
+Moreover, it's easy to provide additional information:
+
+\begin{dcode}
+struct MinMax(T)
+{
+    T min;
+    T max;
+    
+    T value;
+    
+    alias value this;
+}
+\end{dcode}
+
+In this case, \DD{MinMax} means the wrapped value is between \DD{min} and \DD{max} (the enforcing code would be in the factory function, for example.
+        
+Things get interesting when using multiple wrappers inside one another. Imagine we have three wrappers, for numerical ranges with an ordering operation:
+
+\begin{itemize}
+\item \DD{minmaxed}, which ascertains (well, at least transmits the message) that the wrapped value is between to extrema.
+\item \DD{periodic}, which encodes the idea the range has a period, accessible through the \DD{.period} member.
+\item \DD{derivative}, which says successive elements' difference is no more than a \DD{.slope} number (in absolute).
+\end{itemize}
+
+\begin{dcode}
+import std.range: cycle;
+
+auto range = cycle([0,1,2,3,4,3,2,1]);
+auto withMetadata = minmaxed( 
+                              periodic( 
+                                       derivative( range
+                                                 , 1)
+                                      , 8
+                            , 0, 10);
+
+assert(withMetadata.period == 8); // propagated all the way up.
+\end{dcode}
+
+So, in the previous sample, \DD{withMetadata}'s elements are at the same time limited in variation, limited in value and periodic. The trouble is when we want to shift metadata around, comparing types with metadata ordered in a different way: obviously for us humans, a range with suprema and periodic is \emph{also} periodic and with suprema. But as far as D is concerned a \DD{minmaxed(periodic())} and a \DD{periodic(minmaxed())} do not have the same type. For more on this notion, see section \ref{annotatingtypes} on annotating types.
+
 \section{Library Typedef}\label{typedef}
 
 From Trass3r:
