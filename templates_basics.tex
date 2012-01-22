@@ -8,7 +8,8 @@ A template is a recipe, a blueprint that will generate code at your command and 
 Here is the syntax for a template declaration:
 
 \index{template!declaration}
-\index{syntax!template declaration}\begin{dcode}
+\index{syntax!template declaration}
+\begin{dcode}
 template templateName(list, of, parameters)
 {
   // Some syntactically correct declarations here
@@ -52,23 +53,27 @@ Inside the template body, the parameters are all accessible as placeholders for 
 Here are some template declaration examples:\index{template!definition}\label{templatedeclarationexamples}
 
 \begin{ndcode}
+module declaration;
+
 template ArrayOf(T) // T is a type
 {
     alias T[] ArrayType;
     alias T ElementType;
-    immutable T t; // storage class
-
 }
 
 template Transformer(From, To) // From and To are types, too
 {
-    To transform(From from) { /* some code that returns a To*/}
+    To transform(From from) 
+    { 
+        import std.conv;
+        return to!(To)(from);
+    }
 
     class Modificator
     {
         From f;
         To t;
-        this(From f) { ... }
+        this(From f) { /*...*/ }
     }
 }
 
@@ -84,14 +89,14 @@ template ComplicatedOne(T, string s, alias a, bool b, int i)
 template Minimalist() {} // Zero-parameter template declaration.
 
 template OneOrMore(FirstType, Rest...) // Rest is a tuple.
-{ ... }
+{ /*...*/ }
 
 template ZeroOrMore(Types...) // Types is a tuple.
-{ ... }
+{ /*...*/ }
 
-template Multiple(T)     { ... } // One arg version.
-template Multiple(T,U)   { ... } // Two args,
-template Multiple(T,U,V) { ... } // and three.
+template Multiple(T)     { /*...*/ } // One arg version.
+template Multiple(T,U)   { /*...*/ } // Two args,
+template Multiple(T,U,V) { /*...*/ } // and three.
 \end{ndcode}
 
 The real syntax for template declarations is slightly more complex, I'll introduce more of it in the next sections (you'll see for example type restrictions in section \ref{specializations}, default values in section \ref{default}, instantiation constraints in \ref{constraints}, and more on tuples in section \ref{tuples}).
@@ -125,64 +130,89 @@ The compiler will have a look at the declarations (if more than one template wer
 When you instantiate a template, the global effect is that a new named scope\index{scope!named} is created in the template declaration scope\index{scope!template declaration}. The name of this new scope is the template name with its argument list: \DD{templateName!(args)}. Inside the scope, the parameters are now 'replaced' with the corresponding arguments (storage classes get applied, variables are initialized, \ldots). Here's what possible instantiations of the templates declared in section \ref{declarations} might look like:
 \index{template!instantiation}
 \begin{dcode}
-ArrayOf!int
+module instantiation;
+import declaration;
 
-Transformer!(double,int) // From is an alias for the type double
-                         // To for the type int
+void main()
+{
+    ArrayOf!(int).ArrayType myArray;
 
-struct MyStruct { ... }
-nameOf!(MyStruct) // "MyStruct" is a identifier -> captured by alias
+	 // From is an alias for the type double
+	 // To for the type int
+    alias Transformer!(double,int) transfo; 
 
-ComplicatedOne!( int[]   // a type
-               , "Hello" // a string literal
-               , ArrayOf // a name (here the ArrayOf template)
-               , true    // a boolean literal
-               , 1+2     // calculated to be the integral '3'.
-               )
+    struct MyStruct { /*...*/ }
+    
+    // "MyStruct" is a identifier -> captured by alias
+    auto name = nameOf!(MyStruct).name; 
+    
+    alias   
+    ComplicatedOne!( int[]   // a type
+                   , "Hello" // a string literal
+                   , ArrayOf // a name (here the ArrayOf template)
+                   , true    // a boolean literal
+                   , 1+2     // calculated to be the integral '3'.
+                   ) complicatedExample;
 
-Minimalist!()
-// or even:
-Minimalist
+    alias Minimalist!() min1;
 
-OneOrMore!( int                   // FirstType is int.
-          , double, string, "abc" // Rest is (double,string,"abc")
-          )
+    alias
+    OneOrMore!( int                   // FirstType is int.
+              , double, string, "abc" // Rest is (double,string,"abc")
+              ) oneOrMore;
 
-ZeroOrMore!(int)               // Types is a 1-element tuple: (int)
-ZeroOrMore!(int,double,string) // Types is (int,double,string)
-ZeroOrMore!()                  // Types is the empty tuple: ()
+    alias ZeroOrMore!(int) zero1; // Types is a 1-element tuple: (int)
+    alias ZeroOrMore!(int,double,string) zero2; // Types is (int,double,string)
+    alias ZeroOrMore!() zero3;                  // Types is the empty tuple: ()
 
-Multiple!(int)               // Selects the one-arg version
-Multiple!(int,double,string) // The three args version.
-Multiple!()                  // Error! No 0-arg version
+    alias Multiple!(int) mult1;               // Selects the one-arg version
+    alias Multiple!(int,double,string) mult2; // The three args version.
+    //alias Multiple!() mult3;                // Error! No 0-arg version
+}
 \end{dcode}
 
 Outside the scope\index{scope!template instantiation} (that is, where you put the template instantiation in your own code), the internal declarations are accessible by fully qualifying them:
 
 \begin{dcode}
+module internaldeclarations1;
+import declaration;
+
 // ArrayType is accessible (it's int[])
 // array is a completly standard dynamic array of ints.
 ArrayOf!(int).ArrayType array; 
 ArrayOf!(int).ElementType element; // the same, element is an int.
 
-// the transform function is accessible. Instantiated like this, 
-// it's a function from string to double. 
-auto d = Transformer!(string,double).transform("abc"); // d is a double
+void main()
+{
+    // the transform function is accessible. Instantiated like this, 
+    // it's a function from double to string.
+    auto s = Transformer!(double,string).transform(3.14159);
+    assert(is(typeof(s) == string)); // s is a string
+}
 \end{dcode}
 
 Obviously, using templates like this, with their full name, is a pain. The nifty D \D{alias} declaration is your friend:
 
 \begin{dcode}
-alias Transformer!(string,double) StoD;
+module internaldeclarations2;
+import declaration;
 
-auto d = StoD.transform("abc");
-auto m = new StoD.Modificator("abc"); // StoD.Modificator is a class
-                                      // storing a string and a double.
+alias Transformer!(double, string) StoD;
+
+void main()
+{
+    auto s = StoD.transform(3.14159);
+    auto m = new StoD.Modificator(1.618); // StoD.Modificator is a class
+                                          // storing a double and a string.
+}
 \end{dcode}
 
 You must keep in mind that instantiating a template means generating code. Using different arguments at different places in your code will instantiate \emph{as many differently named scopes}\index{scope!multiple templates instantiations}. This is a major difference with \emph{generics}\index{generics} in languages like Java\index{Java} or C\#\index{C\#}, where generic code is created only once and type erasure is used to link all this together. On the other hand, trying to instantiate many times the `same' template (ie: with the same arguments) will only create one piece of code.
 
 \begin{dcode}
+module differentinstantiations;
+import declaration;
+
 alias Transformer!(string,double) StoD;
 alias Transformer!(double,string) DtoS;
 alias Transformer!(string,int)    StoI;
@@ -200,6 +230,8 @@ Up to now, templates may not seem that interesting to you, even with a simple de
 
 If a template declares only one symbol with the same name (greek: \emph{epo-nymous}) as the enclosing template, that symbol is assumed to be referred to when the template is instantiated. This one is pretty good to clean your code:
 \begin{dcode}
+module pair;
+
 template pair(T)
 {
     T[] pair(T t) { return [t,t];} // declares only pair
@@ -209,63 +241,79 @@ auto array = pair!(int)(1);  // no need to do pair!(int).pair(1)
 \end{dcode}
 
 \begin{dcode}
+module nameof1;
+
 template nameOf(alias name)
 {
     enum string nameOf = name.stringof;
 }
 
 struct Example { int i;}
-Example example;
 
-auto s1 = nameOf!(Example);
-auto s2 = nameOf!(example);
+void main()
+{
+    Example example;
 
-assert(s1 == "Example");
-assert(s2 == "example");
+    auto s1 = nameOf!(Example);
+    auto s2 = nameOf!(example);
+
+    assert(s1 == "Example");
+    assert(s2 == "example");
+}
 \end{dcode}
 
 A limitation is that the eponymous trick works \emph{only} if you define one (and only one) symbol. Even if the other symbols are private, they will break the eponymous substitution. This may change at a latter time, as the D developers have shown interest for changing this, but for the time being, you cannot do:
 
 \begin{dcode}
+module manyalias_error;
+
 template ManyAlias(T, U)
     T[] firstArray;
     U[] secondArray;
     T[U] ManyAlias; // Alas, ET substitution doesn't work here
 }
 
-// Hoping for ManyAlias!(int,string).ManyAlias
-ManyAlias!(int, string) = ["abc":0, "def":1]; 
+void main()
+{
+    // Error: Hoping for ManyAlias!(int,string).ManyAlias
+    ManyAlias!(int, string) = ["abc":0, "def":1]; 
 
-ManyAlias!(int, string).firstArray = [0,1,2,3];
+    ManyAlias!(int, string).firstArray = [0,1,2,3];
+}
 \end{dcode}
 
 But, you will ask, what if I want client code to be clean and readable by using the eponymous trick, when at the same time I need to internally create many symbols in my template? In that case, create a secondary template with as many symbols as you need, and expose its final result through a (for example) \DD{result} symbol. The first template can instantiate the second one, and refer only to the \DD{.result} name:
+
 \index{secondary template}
 \begin{dcode}
-/* your code */
+module record;
 
 // primary template
-template MyTemplate(T, U, V)
+template Record(T, U, V)
 {
     // eponymous trick activated!     
-    enum MyTemplate = MyTemplateImpl!(T,U,V).result;
+    alias RecordImpl!(T,U,V).result Record;
 }
 
 // secondary (hidden) template
-template MyTemplateImpl(T, U, V)
+template RecordImpl(T, U, V)
 {
+    import std.typecons: Tuple, tuple;
+    
     // The real work is done here 
     // Use as many symbols as you need.
-    alias symbol1 ...
-    enum otherName = ...
-    enum result = ...
+    alias Tuple!(T,U) Pair;
+    alias Pair[V] AssocArray;
+    alias AssocArray[] result;
 }
 \end{dcode}
 
 \begin{dcode}
-/* client code */
-MyTemplate!(int,string,double[]) someValue;
-(...)
+module usingrecord;
+import record;
+
+Record!(int,string,double[]) recordslist;
+/* ... */
 \end{dcode}
 
 You can find an example of this two-templates idiom\index{idiom!two templates} in Phobos, for example in \stdanchor{functional}{unaryFun} or \stdanchor{functional}{binaryFun}.
