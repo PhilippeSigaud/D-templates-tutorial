@@ -21,6 +21,7 @@ void main(string[] args)
         string accumulator;
         int anonymous;
         string moduleName;
+        string[] allSamples;
         
         foreach(line; file.byLine) // KeepTerminator.yes doesn't work?
         {
@@ -44,20 +45,7 @@ void main(string[] args)
                     auto sampleFile = File(sampleName, "w");
                     sampleFile.write(accumulator);
                     sampleFile.close();
-                    
-                    auto s = system("rdmd " ~ sampleName);
-                    if (s != 0) s = system("rdmd --main " ~ sampleName);
-                    
-                    if (s == 0)
-                        compilationResults.write(sampleName ~ ": OK\n");
-                    else
-                    {
-                        if (moduleName.endsWith("_error"))
-                            compilationResults.write(sampleName ~ ": OK (fail as expected).\n");
-                        else
-                            compilationResults.write(sampleName ~ ": ERROR!\n");
-                        
-                    }
+                    allSamples ~= sampleName;
                 }
                 else
                 {
@@ -72,6 +60,27 @@ void main(string[] args)
             if (inCode) accumulator ~= line ~ "\n";
         }
         
+        // Now we have all samples extracted from the current file. Let's compile them.
+          
+        foreach(sampleName; allSamples)
+        {
+            auto s = system("rdmd " ~ sampleName);
+            
+            // If that didn't work, insert a stub main.
+            if (s != 0) s = system("rdmd --main " ~ sampleName);
+            
+            if (s == 0)
+                compilationResults.write(sampleName ~ ": OK\n");
+            else
+            {
+                if (sampleName.endsWith("_error.d"))
+                    compilationResults.write(sampleName ~ ": OK (fail as expected).\n");
+                else
+                    compilationResults.write(sampleName ~ ": ERROR!\n");
+                
+            }
+        }
+
         compilationResults.write("\n");
         compilationResults.write("Found " ~ to!string(anonymous) ~ " anonymous samples (no compilation attempted).\n");
         compilationResults.write("********************************************************\n\n");
