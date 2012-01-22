@@ -50,13 +50,18 @@ void main()
 }
 \end{ndcode}
 
-I'll use numbered lines only when necessary. The code lines may be wider than the main text, but that's to get about 80-chars-long lines. For the time being I'll just respect the standard \LaTeX\ text width, unless many people complain about it.
+Numbered lines will be used only when necessary. The code lines may be wider than the main text, but that's to get about 80-chars-long lines. For the time being I'll just respect the standard \LaTeX\ text width, unless many people complain about it.
 
 For those of you interested by \LaTeX, this document uses the \href{http://code.google.com/p/minted/}{minted}\index{minted (LaTex package)@\DD{minted} (\LaTeX\ package)} package for the code samples. 
 
 I will sometimes make a little explanatory detour, discussing a small piece of info too small to be in its own section but of interest to the reader nonetheless. These will be marked so:
 
-\aparte{What's with all that red and blue?}{What, don't you like having red boxes and blue keywords in your text? Even links will be colored! This way, people reading this on screen can easily know if something is a hyperlink.}
+\aparte{Literate Programming}
+{Most code samples presented in this document will compile with a reasonably recent D compiler. In the \DD{utils} directory, there is a small D script called \DD{codesamples.d} that extracts code samples from the \LaTeX\ files.
+
+Samples with a \D{module }\DD{name;} declaration will be extracted and a file called \DD{name.d} will be created and compiled. The previous code sample creates a file called \DD{intro.d} and so on. The compilation results are put in a file called \DD{result.txt}. Samples that depends on other samples just import them (yeah for D modularity, no need for specific mark-up to weave code together). Samples with a name ending in \DD{\_error} will \emph{not} compile, as expected: they are there to show errors, mistakes and gotchas. Anonymous samples are not extracted: I use them to show small snippets not intended to stand by themselves, or just to show D-ish pseudocode.
+
+All in all, you can consider this entire document as a gigantic D package, describing hundreds of small modules.}
 
 Finally, some sections in this doc are not finished yet. The sections I consider unfinished will begin with a friendly red frame:
 
