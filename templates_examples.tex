@@ -688,7 +688,19 @@ Tuple!(FilterTupleTypes!(pred, tup)) filterTuple(alias pred, alias tup)()
 
 \section{Fun With Functions}\label{funwithfunctions}
 
-This section will present some templated wrappers around functions, to provide some additional usefulness. It's not part of \autoref{functiontemplates} because it uses struct templates and it's not part of \autoref{structtemplates} because the wrapper struct is not the main focus of attention.
+This section will present some templates acting on functions or templated wrappers around functions, to expand them. It's not part of \autoref{functiontemplates} because it uses struct templates and it's not part of \autoref{structtemplates} because the wrapper struct is not the main focus of attention.
+
+\subsection{Determining a Function's Number of Arguments}\label{arity}
+
+\unfinished{This is old code, see if anything changed about that in the past two years.}
+
+\begin{dcode}
+template arity(alias fun) 
+if (isFunction!fun)
+{
+    enum size_t arity = ParameterTypeTuple!(fun).length;
+}
+\end{dcode}
 
 \subsection{Memoizing a Function} \label{memoizing}
 
@@ -987,7 +999,7 @@ auto curry(alias fun)()
 
 \unfinished{The idea is to glue functions together, to map on many ranges in parallel and create another multiple-value range afterwards.}
 
-The functions are juxptaposed, that is, given:
+The functions are juxtaposed, that is, given:
 
 \begin{dcode}
 int foo(int i, int j) { return i+j;}
@@ -1000,7 +1012,7 @@ Then \DD{juxtapose!(foo,bar,baz)} is a function accepting two \D{int}s and a \D{
 \begin{dcode}
 template juxtapose(Funs...)
 {
-    Tuple!(StaticFilter!(isNotVoid, ReturnTypes!Funs)) juxtapose(ParameterTypeTuples!Funs params) {
+    Tuple!(staticFilter!(isNotVoid, ReturnTypes!Funs)) juxtapose(ParameterTypeTuples!Funs params) {
         typeof(return) result;
         alias SumOfArities!Funs arities;
         alias SumOfReturns!Funs returns;
