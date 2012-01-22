@@ -1012,11 +1012,14 @@ Then \DD{juxtapose!(foo,bar,baz)} is a function accepting two \D{int}s and a \D{
 \begin{dcode}
 template juxtapose(Funs...)
 {
-    Tuple!(staticFilter!(isNotVoid, ReturnTypes!Funs)) juxtapose(ParameterTypeTuples!Funs params) {
+    Tuple!(staticFilter!(isNotVoid, ReturnTypes!Funs))
+    juxtapose(ParameterTypeTuples!Funs params) 
+    {
         typeof(return) result;
         alias SumOfArities!Funs arities;
         alias SumOfReturns!Funs returns;
-        foreach(i, Fun; Funs) {
+        foreach(i, Fun; Funs) 
+        {
             enum firstParam = arities[i];
             enum lastParam = firstParam + arity!(Fun);
             static if (returns[i] != returns[i+1])
@@ -1035,13 +1038,19 @@ template isNotVoid(T)
     enum bool isNotVoid = !is(T == void);
 }
 
-/// Given a bunch of functions names, gives the typetuple of their return types. Used by juxtapose.
+/** 
+ * Given a bunch of functions names, gives the typetuple of their return types.
+ * Used by juxtapose.
+ */
 template ReturnTypes(Funs...)
 {
     alias MapOnAlias!(ReturnType, Funs) ReturnTypes;
 }
 
-/// Given a bunch of functions names, gives the (flattened) typetuple of their return values. Used by juxtapose.
+/**
+ * Given a bunch of functions names, gives the (flattened) typetuple
+ * of their return values. Used by juxtapose.
+ */
 template ParameterTypeTuples(alias fun, Rest...)
 {
     alias MapOnAlias!(ParameterTypeTuple, fun, Rest) ParameterTypeTuples;
@@ -1075,8 +1084,8 @@ Should I also add these?
 
 \begin{dcode}
 /**
-Maps the Mapper template on the alias list.
-*/
+ * Maps the Mapper template on the alias list.
+ */
 template MapOnAlias(alias Mapper, alias current, Rest...)
 {
     static if (Rest.length)
