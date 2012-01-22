@@ -19,7 +19,7 @@ void main(string[] args)
         
         bool inCode;
         string accumulator;
-        int anonymous;
+        int anonymous, named;
         string moduleName;
         string[] allSamples;
         
@@ -35,6 +35,7 @@ void main(string[] args)
             {
                 auto m = match(line, modName);
                 moduleName = to!string(m.captures[1]);
+                ++named;
             }
                        
             if (inCode && (line.startsWith("\\end{dcode}") || line.startsWith("\\end{ndcode}")) )
@@ -61,13 +62,14 @@ void main(string[] args)
         }
         
         // Now we have all samples extracted from the current file. Let's compile them.
-          
+        compilationResults.write("Found " ~ to!string(named) ~ " named samples.\n");
+        
         foreach(sampleName; allSamples)
         {
-            auto s = system("rdmd " ~ sampleName);
+            auto s = system("rdmd -w -unittest " ~ sampleName);
             
             // If that didn't work, insert a stub main.
-            if (s != 0) s = system("rdmd --main " ~ sampleName);
+            if (s != 0) s = system("rdmd --main -w -unittest " ~ sampleName);
             
             if (s == 0)
                 compilationResults.write(sampleName ~ ": OK\n");
@@ -76,15 +78,17 @@ void main(string[] args)
                 if (sampleName.endsWith("_error.d"))
                     compilationResults.write(sampleName ~ ": OK (fail as expected).\n");
                 else
-                    compilationResults.write(sampleName ~ ": ERROR!\n");
+                    compilationResults.write(sampleName ~ ":  *** ERROR! ***\n");
                 
             }
         }
 
         compilationResults.write("\n");
         compilationResults.write("Found " ~ to!string(anonymous) ~ " anonymous samples (no compilation attempted).\n");
+        compilationResults.write("Total of " ~ to!string(anonymous+named) ~ " samples found.\n");
         compilationResults.write("********************************************************\n\n");
         anonymous = 0;
+        named = 0;
     }
     
     system("rm *.deps");
