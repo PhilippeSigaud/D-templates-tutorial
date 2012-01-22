@@ -486,9 +486,8 @@ template rank(T)
 {
     static if (isInputRange!T)                // is T a range?
         enum rank = 1 + rank!(ElementType!T); // if yes, recurse
-
-    else                                      // base case, stop there
-        enum rank = 0; 
+    else                                      
+        enum rank = 0;                        // base case, stop there
 }
 
 void main()
@@ -670,23 +669,35 @@ This idiom\index{idiom!template specialization} is used frequently in C++\index{
 Like functions parameters, templates parameters can have default values. The syntax is the same: \DD{Param = defaultValue}. The default can be anything that makes sense with respect to the parameter kind: a type, a literal value, a symbol or another template parameter.
 
 \begin{dcode}
-template Default(T = int, bool flag = false)
-{ ... }
+module def;
 
-Default!(double);       // Instantiate Default!(double, false)
-Default!(double, true); // Instantiate Default!(double, true) (Doh!)
-Default!();             // Instantiate Default!(int, false)
+template Default(T = int, bool flag = false)
+{
+    static if (flag)
+        alias T Default;
+    else
+        alias void Default;
+}
+
+alias Default!(double) D1;       // Instantiate Default!(double, false)
+alias Default!(double, true) D2; // Instantiate Default!(double, true) (Doh!)
+alias Default!() D3;             // Instantiate Default!(int, false)
 \end{dcode}
 
 In contrast to function parameters, thanks to specializations (\ref{specializations}) or IFTI (\ref{ifti}), some template parameters can be automatically deduced by the compiler. So, default template parameters are not required to be the final parameters in the list:
 
 \begin{dcode}
-template Deduced(T : U[], V = U, U)
-{ ... }
+module deduced;
 
-Deduced!(int[], double); // U deduced to be int. Force V to be a double.
-Deduced!(int[]); // U deduced to be int. V is int, too.
-Deduced!(); // Error, T is not some array.
+import std.typecons: Tuple;
+
+template Deduced(T : U[], V = T, U)
+{
+    alias Tuple!(T,U,V) Deduced;
+}
+
+alias Deduced!(int[], double) D1; // U deduced to be int. Force V to be a double.
+alias Deduced!(int[]) D2; // U deduced to be int. V is int, too.
 \end{dcode}
 
 
@@ -708,16 +719,23 @@ As we have seen in section \ref{eponymous}, if you define a function inside a te
 
 \index{syntax!function templates}
 \begin{dcode}
+module function_declaration1;
+
+import std.conv : to;
+
 // declaration:
 template myFunc(T, int n)
 {
     auto myFunc(T t) { return to!int(t) * n;}
 }
 
-// call:
-auto result = myFunc!(double,3)(3.1415);
+void main()
+{
+    // call:
+    auto result = myFunc!(double,3)(3.1415);
 
-assert(result = to!int(3.1415)*3);
+    assert(result == to!int(3.1415)*3);
+}
 \end{dcode}
 
 Well, the full story is even better. First, D has a simple way to declare a function template: just put a template parameter list before the argument list:
@@ -725,6 +743,10 @@ Well, the full story is even better. First, D has a simple way to declare a func
 \index{syntax!function templates}
 \index{function template}
 \begin{dcode}
+module function_declaration2;
+
+import std.conv:to;
+
 string concatenate(A,B)(A a, B b)
 {
     return to!string(a) ~ to!string(b);
@@ -752,16 +774,17 @@ Since you can select among code paths, the function return type can vary widely,
 
 \index{auto return@\D{auto} return}
 \begin{dcode}
-auto morph(T, U, alias f)(U arg)
+module morph;
+
+// What morph will return will heavily depend on T and U
+auto morph(alias f, T, U)(U arg)
 {
-    static if (is(U == int) && is(T == class))
-    {
+    static if (is(T == class))
         return new T(f(arg));
-    }
-    else static if (is(T == function))
-    {} // void-returning function
-    else static if (...)
-    (...)
+    else static if (is(T == struct))
+        return T(f(arg));
+    else
+        return; // void-returning function.    
 }
 \end{dcode}
 
@@ -772,15 +795,20 @@ auto morph(T, U, alias f)(U arg)
 Even better is Implicit Function Template Instantiation (IFTI)\index{IFTI}\index{Implicit Function Template Instantiation|see{IFTI}}, which means that the compiler will generally be able to automatically determine a template's parameters\index{template!parameters!IFTI} by studying the function arguments. If some template arguments are pure compile-time parameters, just provide them directly:
 
 \begin{dcode}
-/* suppose the previous concatenate(A,B) function */
-string res1 = concatenate(1, 3.14); // A is int and B is double
+module using_concatenate;
+
+import function_declaration2;
 
 struct Foo {}
-string res2 = concatenate("abc", Foo()); // A is string, B is Foo
 
-/* suppose the previous select(string how = "max", Arg) function */
-auto res3 = select(3,4); // how is "max", Arg is int.
-auto res4 = select!"min"(3.1416, 2.718); // how is "min", Arg is double.
+void main()
+{
+    string res1 = concatenate(1, 3.14); // A is int and B is double
+    string res2 = concatenate("abc", Foo()); // A is string, B is Foo
+
+    auto res3 = select(3,4); // how is "max", Arg is int.
+    auto res4 = select!"min"(3.1416, 2.718); // how is "min", Arg is double.
+}
 \end{dcode}
 
 As you can see, this results in very simple calling code. So we can both declare function templates and call them with a very clean syntax. The same can be done with structs or classes and such, as you will see in the next sections. In fact, the syntax is so clean that, if you are like me, you may forget from time to time that you are \emph{not} manipulating a function (or a struct, etc.): you are manipulating a template, a parameterized piece of code. 
@@ -794,26 +822,34 @@ We may encounter The Mantra again in this tutorial.
 Let's use what we have just seen in a concrete way. In D, you can manipulate 2D and 3D arrays\index{arrays}, but sometimes need to process them linearly. As of this writing, neither \std{algorithm} nor \std{range} provide a \DD{flatten} function. Beginning with simple arrays, here is what we want:
 
 \begin{dcode}
-assert( flatten([[0,1],[2,3],[4]]) == [0,1,2,3,4] );
-assert( flatten([[0,1]]) == [0,1] );
-assert( flatten([0,1]) == [0,1] );
-assert( flatten(0) == 0 );
+module using_flatten1;
 
-assert( flatten([[[0,1],[]], [[2]], [[3], [4,5]], [[]], [[6,7,8]]])
-             == [0,1,2,3,4,5,6,7,8] );
+import flatten1;
 
-assert( flatten([[[[[]]]]]) == [] ); // void[][][][][] -> void[]
+unittest
+{
+    assert( flatten([[0,1],[2,3],[4]]) == [0,1,2,3,4] );
+    assert( flatten([[0,1]]) == [0,1] );
+    assert( flatten([0,1]) == [0,1] );
+    assert( flatten(0) == 0 );
+
+    assert( flatten([[[0,1],[]], [[2]], [[3], [4,5]], [[]], [[6,7,8]]])
+            == [0,1,2,3,4,5,6,7,8] );
+}
 \end{dcode}
 
-So, studying the examples, we want a non-array or a simple array to be unaffected by \DD{flatten}: it just returns them. For arrays of rank\index{rank} 2 or higher, it collapses the elements down to a rank-1 array. It's classically recursive:\index{recursion} we will aply \DD{flatten} on all subarrays with \stdanchor{algorithm}{map} and concatenate the elements with \stdanchor{algorithm}{reduce}:
+So, studying the examples, we want a simple array (rank == 1) or a non-array (rank == 0) to be unaffected by \DD{flatten}: it just returns them. For arrays of rank\index{rank} 2 or higher, it collapses the elements down to a rank-1 array. It's classically recursive:\index{recursion} we will apply \DD{flatten} on all sub-arrays with \stdanchor{algorithm}{map} and concatenate the elements with \stdanchor{algorithm}{reduce}:
 
 \begin{dcode}
+module flatten1;
+
 import std.algorithm;
+import rank2;
 
 auto flatten(Arr)(Arr array)
 {
-    static if (rank!Arr == 0)
-        return [array];
+    static if (rank!Arr <= 1)
+        return array;
     else
     {
         auto children = map!(.flatten)(array);
@@ -844,35 +880,45 @@ flatten!(-1)([[[0,1],[]], [[2]], [[3], [4,5]], [[]], [[6,7,8]]]);
 In D, you can define anonymous functions\index{anonymous!functions} (delegates even, that is: closures):
 
 \begin{dcode}
+module anonymous_function1;
+
 auto adder(int a)
 {
     return (int b) { return a+b;};
 }
 
-auto add1 = adder(1); // add1 is an int delegate(int)
-assert(add1(2) == 3);
+unittest
+{
+    auto add1 = adder(1); // add1 is an int delegate(int)
+    assert(add1(2) == 3);
+}
 \end{dcode}
 
 In the previous code, \DD{adder} returns an anonymous delegate. Could \DD{Adder} be templated? Ha! Remember The Mantra (page \pageref{mantra}):\index{mantra} function templates are templates and cannot be returned. For this particular problem, there are two possible solutions. Either you do not need any new type and just use \DD{T}:
 
 \index{returning a function}
 \begin{dcode}
+module anonymous_function2;
+
 auto adder(T)(T a)
 {
     return (T b) { return a+b;};
 }
 
-auto add1f = adder(1.0) // add1f is an float delegate(float)
-assert(add1f(2.0) == 3.0);
+unittest
+{
+    auto add1f = adder(1.0); // add1f is an float delegate(float)
+    assert(add1f(2.0) == 3.0);
 
-import std.bigint;
+    import std.bigint;
 
-// addBigOne accepts a BigInt and returns a BigInt
-auto addBigOne = adder(BigInt("1000000000000000");
-assert(addBigOne(BigInt("1") == BigInt("1000000000000001");
+    // addBigOne accepts a BigInt and returns a BigInt
+    auto addBigOne = adder(BigInt("1000000000000000"));
+    assert(addBigOne(BigInt("1")) == BigInt("1000000000000001"));
 
-// But:
-auto error = add1(3.14); // Error! Waiting for an int, getting a double.
+    // But:
+    // auto error = add1(3.14); // Error! Waiting for an int, getting a double.
+}
 \end{dcode}
 
 In the previous example, the returned anonymous delegate\index{anonymous!delegates} is \emph{not} templated. It just happens to use \DD{T}, which is perfectly defined once instantiation is done. If you really need to return something that can be called with any type, use an inner struct (see section \ref{innerstructs}).
@@ -893,6 +939,8 @@ alias (a){ return a;} Id; // Error
 So what good are they? You can use them with template alias parameters, when these stand for functions and function templates:
 
 \begin{dcode}
+module calltwice;
+
 template callTwice(alias fun)
 {
     auto callTwice(T)(T t)
@@ -901,19 +949,26 @@ template callTwice(alias fun)
     }
 }
 
-alias callTwice!( (a){ return a+1;}) addTwo;
-
-assert(addTwo(2) == 4);
+unittest
+{
+    alias callTwice!( (a){ return a+1;}) addTwo;
+    assert(addTwo(2) == 4);
+}
 \end{dcode}
 
 Since they are delegates, they can capture local symbols:
 
 \begin{dcode}
-enum b = 3; // Manifest constant, initialized to 3
+module using_calltwice;
 
-alias callTwice!( (a){ return a+b;}) addTwoB;
+import calltwice;
 
-assert(addTwoB(2) == 2 + 3 + 3);
+unittest
+{
+    enum b = 3; // Manifest constant, initialized to 3
+    alias callTwice!( (a){ return a+b;}) addTwoB;
+    assert(addTwoB(2) == 2 + 3 + 3);
+}
 \end{dcode}
 
 \subsection{Closures are a Poor Man's Objects}\label{closuresareapoormansobjects}
@@ -921,6 +976,11 @@ assert(addTwoB(2) == 2 + 3 + 3);
 D closures can wrap runtime environment and keep them near their hot little hearts. We can of course create them with a template. To obtain the equivalent of an object, let's create a function that returns a tuple (a \stdanchor{typecons}{Tuple}) with named arguments.
 
 \begin{dcode}
+module makecounter;
+
+import std.traits;
+import std.typecons;
+
 auto makeCounter(T)(T _counter = T.init) if (isNumeric!T)
 {
     bool sense = true;
@@ -941,16 +1001,23 @@ The \D{if} part after the argument list is just sanity-check template constraint
 Here is how it's used:
 
 \begin{dcode}
-auto c = makeCounter(0); // T is int.
-auto c2 = makeCounter!int; // The very same.
+module using_makecounter;
 
-c.inc(5);
-assert(c.counter() == 5);
-c.inc(10);
-assert(c.counter() == 15);
-c.changeSense(); // now each increment will in fact decrement
-c.inc(5);
-assert(c.counter() == 10);
+import makecounter;
+
+void main()
+{
+    auto c = makeCounter(0); // T is int.
+    auto c2 = makeCounter!int; // The very same.
+
+    c.inc(5);
+    assert(c.counter() == 5);
+    c.inc(10);
+    assert(c.counter() == 15);
+    c.changeSense(); // now each increment will in fact decrement
+    c.inc(5);
+    assert(c.counter() == 10);
+}
 \end{dcode}
 
 \subsection{Function Overloading}\label{functionsoverloading}
@@ -963,14 +1030,19 @@ As seen in section \ref{instantiating}, storage classes get applied to types dur
 
 \index{storage class!function parameters}
 \begin{dcode}
+module storage;
+
 void init(T)(ref T t)
 { 
     t = T.init;
 }
 
-int i = 10;
-init(i);
-assert(i == 0);
+unittest
+{
+    int i = 10;
+    init(i);
+    assert(i == 0);
+}
 \end{dcode}
 
 Should the need arise, this means you can customize your storage classes according to template arguments. There is no built-in syntax for that, so you'll have to resort to our good friend \D{static if}\index{static if@\D{static if}!functions storage classes} and the eponymous trick:\index{eponymous trick!functions storage classes}
@@ -980,6 +1052,8 @@ Should the need arise, this means you can customize your storage classes accordi
 \index{static if@\D{static if}!nested}
 \begin{dcode}
 // Has anyone a better example?
+module init;
+
 template init(T)
 {
     static if (is(T == immutable) || is(T == const))
@@ -1018,9 +1092,11 @@ The \D{in} and \D{out} clauses for a function are given full access to a templat
 \index{in and out clauses@\D{in} and \D{out} clauses}
 \index{static if@\D{static if}!enabling/disabling code}
 \begin{dcode}
+module inoutclauses;
+
 import std.complex, std.math, std.traits;
 
-auto squareRoot(N n) if (isNumeric!N || isComplex!N)
+auto squareRoot(N)(N n) if (isNumeric!N || isComplex!N)
 in 
 {
     static if (isNumeric!N)
@@ -1052,6 +1128,8 @@ This section will show you how to use wrapper templates to add new functionaliti
 
 
 \begin{dcode}
+module acceptingtuple;
+
 template tuplify(alias fun)
 {
     auto tuplify(T...)(Tuple!T tup)
@@ -1066,6 +1144,12 @@ Another interesting (and much more complicated) example is \DD{juxtapose}.
 \subsubsection{Mapping n ranges in parallel}\label{parallelmapping}
 
 \begin{dcode}
+module nmap;
+
+import std.algorithm;
+import std.typetuple: allSatisfy;
+import acceptingtuple;
+
 // Very easy to do, now:
 auto nmap(alias fun, R...)(R ranges) if (allSatisfy!(isInputRange,R))
 {
@@ -1078,10 +1162,10 @@ Here we can extend \DD{nmap} to accept $n$ functions in parallel too. There is a
 
 \begin{dcode}
 auto nmap(fun..., R...)(R ranges) if (allSatisfy!(isInputRange, R))
-{ ...  }  ^^^^^^^^^^^^^ Uh?
+{ ... }   ^^^^^^^^^^^^ Uh?
 \end{dcode}
 
-See the problem? Tuples must be the last parameter of a template: there can be only one. Double-stage templates (\autoref{templatesintemplates}) come to the rescue:
+See the problem? Tuples must be the last parameter of a template: there can be only one. Double-stage templates (see section \ref{templatesintemplates}) come to the rescue:
 
 \begin{dcode}
 template nmap(fun...) if (fun.length >= 1)
@@ -1091,9 +1175,18 @@ template nmap(fun...) if (fun.length >= 1)
 }
 \end{dcode}
 
-Final code:
+Now the two parts are well separated. Which gives us the final code:
 
 \begin{dcode}
+module nmap2;
+
+import std.algorithm;
+import std.functional : adjoin;
+import std.range;
+import std.typetuple : allSatisfy;
+
+import acceptingtuple; // tuplify
+
 template nmap(fun...) if (fun.length >= 1)
 {
     auto nmap(R...)(R ranges) if (allSatisfy!(isInputRange, R))
@@ -1109,6 +1202,14 @@ Give an example with \DD{max}, it works!
 And here is the $n$-ranges version of \stdanchor{algorithm}{filter}:
 
 \begin{dcode}
+module nfilter;
+
+import std.algorithm;
+import std.range;
+import std.typetuple : allSatisfy;
+
+import acceptingtuple; // tuplify
+
 auto nfilter(alias fun, R...)(R ranges) if (allSatisfy!(isInputRange, R))
 {
     return filter!(tuplify!fun)(zip(ranges));
@@ -1123,6 +1224,8 @@ As you might have guessed, declaring a struct template is done like this:
 \index{syntax!struct templates}
 \index{struct template}
 \begin{dcode}
+module tree;
+
 struct Tree(T)
 {
     T value;
