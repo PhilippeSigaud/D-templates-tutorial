@@ -1,58 +1,82 @@
 import std.algorithm, std.array, std.conv,
 std.exception, std.file, std.format,
-std.path, std.process, std.stdio;
+std.path, std.process, std.stdio, std.regex;
 
 immutable string samplesDir = "code";
+enum modName = ctRegex!("module (.+?);");
 
 void main(string[] args)
 {
     //if (!exists(samplesDir)) mkdir(samplesDir);
     auto compilationResults = File("results.txt", "w");
     
-    auto texFiles = filter!`endsWith(a.name,".tex")`(dirEntries(".",SpanMode.shallow)); 
+    auto texFiles = filter!`endsWith(a.name,".tex")`(dirEntries("..",SpanMode.shallow)); 
     foreach(entry; texFiles)
     {
         auto name = baseName(entry.name);
-        writeln("Found ", name);
-        auto file = File(name, "r");
+        compilationResults.write("\n************", name, " **************************\n");
+        auto file = File("../" ~ name, "r");
+        
         bool inCode;
         string accumulator;
-        int num;
-        bool firstLine;
+        int anonymous;
+        string moduleName;
         
         foreach(line; file.byLine) // KeepTerminator.yes doesn't work?
         {
             if (line.startsWith("\\begin{dcode}") || line.startsWith("\\begin{ndcode}")) 
             {
                 inCode = true;
-                ++num;
-                writeln(num);
-                firstLine = true;
+                continue;
             }
-            
-            if (line.startsWith("\\end{dcode}") || line.startsWith("\\end{ndcode}")) 
+
+            if (inCode && line.startsWith("module "))
             {
+                auto m = match(line, modName);
+                moduleName = to!string(m.captures[1]);
+            }
+                       
+            if (inCode && (line.startsWith("\\end{dcode}") || line.startsWith("\\end{ndcode}")) )
+            {
+                if (moduleName.length) // name -> compilation. No name, no compilation.
+                {
+                    auto sampleName = moduleName ~ ".d";
+                    auto sampleFile = File(sampleName, "w");
+                    sampleFile.write(accumulator);
+                    sampleFile.close();
+                    
+                    auto s = system("rdmd " ~ sampleName);
+                    if (s != 0) s = system("rdmd --main " ~ sampleName);
+                    
+                    if (s == 0)
+                        compilationResults.write(sampleName ~ ": OK\n");
+                    else
+                    {
+                        if (moduleName.endsWith("_error"))
+                            compilationResults.write(sampleName ~ ": OK (fail as expected).\n");
+                        else
+                            compilationResults.write(sampleName ~ ": ERROR!\n");
+                        
+                    }
+                }
+                else
+                {
+                    ++anonymous;
+                }
+
                 inCode = false;
-                //auto path = buildNormalizedPath(getcwd(), samplesDir, name[0..$-4]~"_sample"~to!string(num)~".d");
-                auto sampleName = name[0..$-4]~"_sample"~to!string(num)~".d";
-                auto sampleFile = File(sampleName, "w");//, "w");
-                sampleFile.write(accumulator);
-                sampleFile.write("void main() {}\n");
-                sampleFile.close();
                 accumulator = "";
-                //chdir(getcwd());
-                
-                auto s = system("dmd -run " ~ sampleName);
-                compilationResults.write(sampleName ~ ": " ~ to!string(s==0) ~ "\n");
+                moduleName = "";
             }
             
-            if (inCode && !firstLine) accumulator ~= line ~ "\n";
-            if (firstLine) firstLine = false;
+            if (inCode) accumulator ~= line ~ "\n";
         }
+        
+        compilationResults.write("\n");
+        compilationResults.write("Found " ~ to!string(anonymous) ~ " anonymous samples (no compilation attempted).\n");
+        compilationResults.write("********************************************************\n\n");
+        anonymous = 0;
     }
     
-    system("rm *.o");
-    system("rm *_sample*.d");
-
-    //if (startsWith(line, "\\begin{D}", "\\begin{D-invisible}"))
+    system("rm *.deps");
 }    
