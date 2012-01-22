@@ -413,7 +413,6 @@ static if (isInfinite!R)     // Is innerRange an infinite range?
 \index{static if@\D{static if}!nested}
 \begin{dcode}
 module selector;
-
 import std.traits: isIntegral, isFloatingPoint;
 
 template selector(T, alias intFoo, alias floatFoo, alias defaultFoo)
@@ -445,8 +444,8 @@ template rank(T)
 {
     static if (is(T t == U[], U)) // is T an array of U, for some type U?
         enum rank = 1 + rank!(U); // then let's recurse down.
-    else                          // Base case, ending the recursion.
-        enum rank = 0; 
+    else                          
+        enum rank = 0;            // Base case, ending the recursion.
 }
 \end{ndcode}
 
@@ -479,7 +478,6 @@ D has an interesting sequence concept that's called \emph{range}\index{range} an
 \index{rank!for ranges}
 \begin{dcode}
 module rank2;
-
 import std.range;
 
 template rank(T)
@@ -490,7 +488,7 @@ template rank(T)
         enum rank = 0;                        // base case, stop there
 }
 
-void main()
+unittest
 {
     auto c = cycle([[0,1],[2,3]]); // == [[0,1],[2,3],[0,1],[2,3],[0,1]...
     assert(rank!(typeof(c)) == 2); // range of ranges
@@ -597,7 +595,7 @@ template power(alias fun, uint exponent)
 
 \aparte{.power}{If you are wondering what's with the \DD{.power} syntax on line 12, it's because by defining an eponymous template, we hide the parent template's name. So inside \DD{power(Args...)} it refers to \DD{power(Args...)} and not \DD{power(}\D{alias}\DD{ fun, }\D{uint}\DD{ exponent)}. Here we want a new \DD{power} to be generated so we call on the global \DD{power} template with the `global scope'\index{scope!global scope operator}\index{operator!global scope operator (\DD{.})} operator (\DD{.}).}
 
-In all three branches of \D{static if}, \DD{power} exposes a \DD{power} member, activating the eponymous template trick\index{eponymous trick} and allowing for an easy use by the client. Note that this template will work not only for unary (one argument) functions but also for n-args functions\footnote{ Except for the degenerate, $n = 0$ case, since the identity function defined above accepts only one arg. A more than one argument version is possible, but would need to return a tuple.}, for delegates and for structs or classes that define the \DD{()}(ie, \D{opCall}) operator\index{operator!opCall, ()@\DD{opCall}, \DD{()}} and for function templates\ldots\footnote{ I cheated a little bit there, because the resulting function accepts any number of arguments of any type, though the standard function parameters checks will stop anything untowards to happen. A cleaner (but longer, and for template functions, more complicated) implementation would propagate the initial function parameter typetuple.}
+In all three branches of \D{static if}, \DD{power} exposes a \DD{power} member, activating the eponymous template trick\index{eponymous trick} and allowing for an easy use by the client. Note that this template will work not only for unary (one argument) functions but also for n-args functions\footnote{ Except for the degenerate, $n = 0$ case, since the identity function defined above accepts only one arg. A version with more than one argument is possible, but would need to return a tuple.}, for delegates and for structs or classes that define the \DD{()}(ie, \D{opCall}) operator\index{operator!opCall, ()@\DD{opCall}, \DD{()}} and for function templates\ldots\footnote{ I cheated a little bit there, because the resulting function accepts any number of arguments of any type, though the standard function parameters checks will stop anything untowards to happen. A cleaner (but longer, and for template functions, more complicated) implementation would propagate the initial function parameter typetuple.}
 
 Now, are you beginning to see the power of templates?
 
@@ -688,7 +686,6 @@ In contrast to function parameters, thanks to specializations (\ref{specializati
 
 \begin{dcode}
 module deduced;
-
 import std.typecons: Tuple;
 
 template Deduced(T : U[], V = T, U)
@@ -720,7 +717,6 @@ As we have seen in section \ref{eponymous}, if you define a function inside a te
 \index{syntax!function templates}
 \begin{dcode}
 module function_declaration1;
-
 import std.conv : to;
 
 // declaration:
@@ -744,7 +740,6 @@ Well, the full story is even better. First, D has a simple way to declare a func
 \index{function template}
 \begin{dcode}
 module function_declaration2;
-
 import std.conv:to;
 
 string concatenate(A,B)(A a, B b)
@@ -795,8 +790,7 @@ auto morph(alias f, T, U)(U arg)
 Even better is Implicit Function Template Instantiation (IFTI)\index{IFTI}\index{Implicit Function Template Instantiation|see{IFTI}}, which means that the compiler will generally be able to automatically determine a template's parameters\index{template!parameters!IFTI} by studying the function arguments. If some template arguments are pure compile-time parameters, just provide them directly:
 
 \begin{dcode}
-module using_concatenate;
-
+module ifti;
 import function_declaration2;
 
 struct Foo {}
@@ -823,10 +817,9 @@ Let's use what we have just seen in a concrete way. In D, you can manipulate 2D 
 
 \begin{dcode}
 module using_flatten1;
-
 import flatten1;
 
-unittest
+void main()
 {
     assert( flatten([[0,1],[2,3],[4]]) == [0,1,2,3,4] );
     assert( flatten([[0,1]]) == [0,1] );
@@ -842,7 +835,6 @@ So, studying the examples, we want a simple array (rank == 1) or a non-array (ra
 
 \begin{dcode}
 module flatten1;
-
 import std.algorithm;
 import rank2;
 
@@ -960,7 +952,6 @@ Since they are delegates, they can capture local symbols:
 
 \begin{dcode}
 module using_calltwice;
-
 import calltwice;
 
 unittest
@@ -977,7 +968,6 @@ D closures can wrap runtime environment and keep them near their hot little hear
 
 \begin{dcode}
 module makecounter;
-
 import std.traits;
 import std.typecons;
 
@@ -996,13 +986,12 @@ auto makeCounter(T)(T _counter = T.init) if (isNumeric!T)
 }
 \end{dcode}
 
-The \D{if} part after the argument list is just sanity-check template constraint (they are described in \autoref{constraints}). The returned \DD{Tuple} is a bit heavy for my taste, but using named tuple fields gives us a nice object-like call syntax. Otherwise, a simple \D{return }\DD{tuple(changeSense, inc, dec, counter);} could have been used but then the inner closures would have to be accessed by their index and not a name.
+The \D{if} part after the argument list is just sanity-check template constraint (they are described in \autoref{constraints}). The returned \DD{Tuple} is a bit heavy for my taste, but using named tuple fields gives us a nice object-like call syntax.\footnote{ See the example in section \ref{namedfieldstuples} for a way to extend Phobos' \DD{tuple}.} Otherwise, a simple \D{return }\DD{tuple(changeSense, inc, dec, counter);} could have been used but then the inner closures would have to be accessed by their index and not a name.
 
 Here is how it's used:
 
 \begin{dcode}
 module using_makecounter;
-
 import makecounter;
 
 void main()
@@ -1077,8 +1066,8 @@ In D, a function can have the following properties:
 
 \begin{itemize}
 \item A function can be tagged with the \D{pure} property, which means it does not have side-effects: the value you get back is the only thing that matters. 
-\item They can also be tagged with \D{@safe}, \D{@trusted} and \D{@system}. \D{@safe} means a function cannot corrupt memory. A \D{@trusted} function can call \D{@safe} ones, but offers no other guaranty concerning memory. And a \D{@system} function may do what it pleases and makes no guarantees.
-\item The last property is \D{nothrow} which means you guarantee the function will not throw any exceptions.
+\item They can also be tagged with \D{@safe}, \D{@trusted} and \D{@system}. \D{@safe} means a function cannot corrupt memory. A \D{@trusted} function can call \D{@safe} ones, but offers no other guaranty concerning memory. And a \D{@system} function may do whatever it wants.
+\item The last property is \D{nothrow} which means the function will not throw any exceptions.
 \end{itemize}
 
 As the compiler gets complete access to a function template code, it can analyze it and automatically deduce properties for you. This feature is still quite new as of this writing, but it seems to work. So, \emph{all} of your function templates will get a smattering of properties when they are instantiated (these properties will of course vary with the template parameters).
@@ -1093,15 +1082,15 @@ The \D{in} and \D{out} clauses for a function are given full access to a templat
 \index{static if@\D{static if}!enabling/disabling code}
 \begin{dcode}
 module inoutclauses;
-
 import std.complex, std.math, std.traits;
 
 auto squareRoot(N)(N n) if (isNumeric!N || isComplex!N)
 in 
 {
+    // no need to do that for a complex.
     static if (isNumeric!N)
         enforce(n > 0);
-    // no need to do that for a complex.
+    
 }
 body
 {
@@ -1139,13 +1128,12 @@ template tuplify(alias fun)
 }
 \end{dcode}
 
-Another interesting (and much more complicated) example is \DD{juxtapose}.
+Another interesting (and much more complicated) example is \DD{juxtapose} (see section \ref{juxtapose}).
 
 \subsubsection{Mapping n ranges in parallel}\label{parallelmapping}
 
 \begin{dcode}
 module nmap;
-
 import std.algorithm;
 import std.typetuple: allSatisfy;
 import acceptingtuple;
@@ -1165,7 +1153,7 @@ auto nmap(fun..., R...)(R ranges) if (allSatisfy!(isInputRange, R))
 { ... }   ^^^^^^^^^^^^ Uh?
 \end{dcode}
 
-See the problem? Tuples must be the last parameter of a template: there can be only one. Double-stage templates (see section \ref{templatesintemplates}) come to the rescue:
+See the problem? We need both a variable list of functions and a variable list of ranges. But template parameters tuples must be the last parameter of a template: there can be only one. Double-stage templates (see section \ref{templatesintemplates}) come to the rescue:
 
 \begin{dcode}
 template nmap(fun...) if (fun.length >= 1)
@@ -1179,12 +1167,10 @@ Now the two parts are well separated. Which gives us the final code:
 
 \begin{dcode}
 module nmap2;
-
 import std.algorithm;
 import std.functional : adjoin;
 import std.range;
 import std.typetuple : allSatisfy;
-
 import acceptingtuple; // tuplify
 
 template nmap(fun...) if (fun.length >= 1)
@@ -1197,13 +1183,12 @@ template nmap(fun...) if (fun.length >= 1)
 }
 \end{dcode}
 
-Give an example with \DD{max}, it works!
+\TODO{Give an example with \DD{max}, it works!}
 
 And here is the $n$-ranges version of \stdanchor{algorithm}{filter}:
 
 \begin{dcode}
 module nfilter;
-
 import std.algorithm;
 import std.range;
 import std.typetuple : allSatisfy;
@@ -1215,6 +1200,8 @@ auto nfilter(alias fun, R...)(R ranges) if (allSatisfy!(isInputRange, R))
     return filter!(tuplify!fun)(zip(ranges));
 }
 \end{dcode}
+
+\TODO{Examples, lots of examples.}
 
 \section{Struct Templates}\label{structtemplates}
 \subsection{Syntax}\label{structsyntax}
