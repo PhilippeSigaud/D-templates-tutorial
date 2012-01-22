@@ -1,90 +1,76 @@
-templates_basics_sample0.d: true
-templates_basics_sample1.d: false
-templates_basics_sample2.d: false
-templates_basics_sample3.d: false
-templates_basics_sample4.d: false
-templates_basics_sample5.d: false
-templates_basics_sample6.d: false
-templates_basics_sample7.d: false
-templates_basics_sample8.d: true
-templates_basics_sample9.d: false
-templates_basics_sample10.d: false
-templates_basics_sample11.d: false
-templates_basics_sample12.d: false
-templates_basics_sample13.d: true
-templates_basics_sample14.d: false
-templates_basics_sample15.d: true
-templates_basics_sample16.d: false
-templates_basics_sample17.d: true
-templates_basics_sample18.d: true
-templates_basics_sample19.d: false
-templates_basics_sample20.d: false
-templates_basics_sample21.d: true
-templates_basics_sample22.d: true
-templates_basics_sample23.d: false
-templates_basics_sample24.d: false
-templates_basics_sample25.d: true
-templates_basics_sample26.d: false
-templates_basics_sample27.d: false
-templates_basics_sample28.d: false
-templates_basics_sample29.d: false
-templates_basics_sample30.d: false
-templates_basics_sample31.d: true
-templates_basics_sample32.d: false
-templates_basics_sample33.d: false
-templates_basics_sample34.d: false
-templates_basics_sample35.d: true
-templates_basics_sample36.d: false
-templates_basics_sample37.d: false
-templates_basics_sample38.d: false
-templates_basics_sample39.d: false
-templates_basics_sample40.d: false
-templates_basics_sample41.d: false
-templates_basics_sample42.d: false
-templates_basics_sample43.d: true
-templates_basics_sample44.d: false
-templates_basics_sample45.d: false
-templates_basics_sample46.d: true
-templates_basics_sample47.d: false
-templates_basics_sample48.d: true
-templates_basics_sample49.d: true
-templates_basics_sample50.d: false
-templates_basics_sample51.d: false
-templates_basics_sample52.d: true
-templates_basics_sample53.d: true
-templates_basics_sample54.d: true
-templates_basics_sample55.d: false
-templates_basics_sample56.d: false
-templates_basics_sample57.d: false
-templates_basics_sample58.d: false
-templates_basics_sample59.d: false
-templates_basics_sample60.d: true
-templates_basics_sample61.d: false
-templates_basics_sample62.d: true
-templates_basics_sample63.d: false
-templates_basics_sample64.d: false
-templates_basics_sample65.d: false
-templates_basics_sample66.d: false
-templates_basics_sample67.d: false
-templates_basics_sample68.d: false
-templates_basics_sample69.d: false
-templates_basics_sample70.d: false
-templates_basics_sample71.d: false
-templates_basics_sample72.d: false
-templates_basics_sample73.d: false
-templates_basics_sample74.d: false
-templates_basics_sample75.d: true
-templates_basics_sample76.d: false
-templates_basics_sample77.d: false
-templates_basics_sample78.d: false
-templates_basics_sample79.d: true
-templates_basics_sample80.d: false
-templates_basics_sample81.d: false
-templates_basics_sample82.d: false
-templates_basics_sample83.d: false
-templates_basics_sample84.d: false
-templates_basics_sample85.d: false
-templates_basics_sample86.d: false
-templates_basics_sample87.d: true
-templates_basics_sample88.d: true
-templates_basics_sample89.d: true
+
+************templates_intro.tex **************************
+intro.d: OK
+
+Found 0 anonymous samples (no compilation attempted).
+********************************************************
+
+
+************templates_advanced.tex **************************
+thefile.d: ERROR!
+
+Found 68 anonymous samples (no compilation attempted).
+********************************************************
+
+
+************dtemplates.tex **************************
+
+Found 0 anonymous samples (no compilation attempted).
+********************************************************
+
+
+************templates_basics.tex **************************
+declaration.d: OK
+instantiation.d: OK
+internaldeclarations1.d: OK
+internaldeclarations2.d: OK
+differentinstantiations.d: OK
+pair.d: OK
+nameof1.d: OK
+manyalias_error.d: OK (fail as expected).
+record.d: OK
+using_record.d: OK
+allarrays.d: OK
+isdynamicarray.d: OK
+selector.d: OK
+rank1.d: OK
+using_rank1.d: OK
+rank2.d: OK
+baseelementtype.d: OK
+ndim.d: OK
+using_ndim.d: OK
+using_power.d: OK
+repeated_comp.d: OK
+specialization1.d: OK
+specialization2.d: OK
+
+Found 67 anonymous samples (no compilation attempted).
+********************************************************
+
+
+************templates_examples.tex **************************
+
+Found 69 anonymous samples (no compilation attempted).
+********************************************************
+
+
+************templates_around.tex **************************
+mine.d: OK
+utils.d: OK
+utils.d: OK
+mine.d: OK
+utils.d: OK
+a.d: OK
+b.d: ERROR!
+test.d: ERROR!
+test.d: ERROR!
+
+Found 35 anonymous samples (no compilation attempted).
+********************************************************
+
+
+************templates_appendix.tex **************************
+
+Found 12 anonymous samples (no compilation attempted).
+********************************************************
+
