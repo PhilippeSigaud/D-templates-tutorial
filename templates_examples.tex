@@ -1107,9 +1107,10 @@ Inspiration for this example comes from \href{http://david.rothlis.net/d/templat
 \TODO{I have the code somewhre. What it should do: extracting from a tuple: project, select. Also, natural/inner/outer join, cartesian product. And intersection/union/difference. rename!( "oldField", "newField"). Databases are just dynamic arrays of tuples.}.
 
 \begin{dcode}
-struct Entry(Data...) if ( (Data.length % 2 == 0)
-                        && (allSatisfy!(isStringLiteral, Half!Data))
-                        && (allSatisfy!(isType, Half!(Data[1..$], void))))
+struct Entry(Data...) 
+if ( (Data.length % 2 == 0)
+  && (allSatisfy!(isStringLiteral, Half!Data))
+  && (allSatisfy!(isType, Half!(Data[1..$], void))))
 {
     alias Half!Data Headers;
     alias Half!(Data[1..$], void) Values;
@@ -1125,14 +1126,17 @@ struct Entry(Data...) if ( (Data.length % 2 == 0)
     string toString() @property
     {
         string s = "[";
-        foreach(i, Unused; Values) s ~= Headers[i] ~ ":" ~ to!string(data[i]) ~ ", ";
+        foreach(i, Unused; Values) 
+            s ~= Headers[i] ~ ":" ~ to!string(data[i]) ~ ", ";
         return s[0..$-2] ~ "]";
     }
 }
 
-template entry(Headers...) if (allSatisfy!(isStringLiteral, Headers))
+template entry(Headers...) 
+if (allSatisfy!(isStringLiteral, Headers))
 {
-    Entry!(Interleave!(Headers, Values)) entry(Values...)(Values values) if (Values.length == Headers.length)
+    Entry!(Interleave!(Headers, Values)) entry(Values...)(Values values) 
+    if (Values.length == Headers.length)
     {
         return typeof(return)(values);
     }
@@ -1140,19 +1144,28 @@ template entry(Headers...) if (allSatisfy!(isStringLiteral, Headers))
 
 template isEntry(E)
 {
-    enum isEntry = __traits(compiles, { void fun(T...)(Entry!T e) {}; fun(E.init);});
+    enum isEntry = __traits(compiles, 
+                     { 
+                          void fun(T...)(Entry!T e) {};
+                          fun(E.init);
+                     });
 }
 
-auto rename(string from, string to, E)(E e) if (isEntry!E)
+auto rename(string from, string to, E)(E e) 
+if (isEntry!E)
 {
     enum index = staticIndexOf!(from, E.Headers);
     static if (index == -1)
-        static assert(false, "Bad index in rename: no header called " ~ from ~ " in " ~ E.Headers.stringof);
+        static assert(false, "Bad index in rename: no header called " 
+                             ~ from ~ " in " ~ E.Headers.stringof);
     else
-        return entry!(E.Headers[0..index], to, E.Headers[index+1..$])(e.data.expand);
+        return entry!(E.Headers[0..index], 
+                      to, 
+                      E.Headers[index+1..$])(e.data.expand);
 }
 
-auto rename(string from, string to, D)(D db) if (isDatabase!D)
+auto rename(string from, string to, D)(D db) 
+if (isDatabase!D)
 {
     ReturnType!(rename!(from, to, ElementType!D))[] result;
     foreach(i, elem; db)
@@ -1169,7 +1182,8 @@ template isDatabase(D)
         enum bool isDatabase = false;
 }
 
-template isSomeHeader(E) if (isEntry!E)
+template isSomeHeader(E) 
+if (isEntry!E)
 {
     template isSomeHeader(string s)
     {
@@ -1180,31 +1194,40 @@ template isSomeHeader(E) if (isEntry!E)
     }
 }
 
-template HeaderValue(E) if (isEntry!E)
+template HeaderValue(E) 
+if (isEntry!E)
 {
-    template HeaderValue(string header) if (staticIndexOf!(header, E.Headers) != -1)
+    template HeaderValue(string header) 
+    if (staticIndexOf!(header, E.Headers) != -1)
     {
-        alias TypeTuple!(header, E.Values[staticIndexOf!(header, E.Headers)]) HeaderValue;
+        alias TypeTuple!(header, E.Values[staticIndexOf!(header, E.Headers)])
+              HeaderValue;
     }
 }
 
-template project(Headers...) if (Headers.length > 0)
+template project(Headers...) 
+if (Headers.length > 0)
 {
     auto project(E)(E e)
     {
         static if (isEntry!E && allSatisfy!(isSomeHeader!E, Headers))
         {
-            alias staticMap!(HeaderValue!E, Headers) HeadersAndValues;
+            alias staticMap!(HeaderValue!E, Headers) 
+                  HeadersAndValues;
             Entry!(HeadersAndValues) result;
             foreach(i, Unused; Headers)
                 mixin("result." ~ Headers[i] ~ " = e." ~ Headers[i] ~ ";");
             return result;
         }
-        else static if (isDatabase!E && allSatisfy!(isSomeHeader!(ElementType!E), Headers))
+        else static if (isDatabase!E 
+                     && allSatisfy!(isSomeHeader!(ElementType!E), Headers))
         {
-            alias staticMap!(HeaderValue!(ElementType!E), Headers) HeadersAndValues;
+            alias staticMap!(HeaderValue!(ElementType!E), Headers)
+                  HeadersAndValues;
+                  
             Entry!(HeadersAndValues)[] result;
             Entry!(HeadersAndValues)   elem;
+            
             foreach(i,Unused; e)
             {
                 foreach(j, Unused2; Headers)
@@ -1214,10 +1237,13 @@ template project(Headers...) if (Headers.length > 0)
             return result;
         }
         else
-            static assert(0, "Cannot project on " ~ Headers.stringof[5..$] ~ " for type " ~ E.stringof);
+            static assert(0, "Cannot project on " ~ Headers.stringof[5..$] 
+                           ~ " for type " ~ E.stringof);
     }
 }
 \end{dcode}
+
+\TODO{I need to add code for \DD{Half}.}
 
 Which gives us:
 
