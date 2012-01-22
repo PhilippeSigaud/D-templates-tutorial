@@ -429,9 +429,29 @@ If you do not like sorting types alphabetically by name, you can resort to other
 \aparte{What about non-types?}{As was said at the very beginning of the section (\ref{andnontypes}, on page \pageref{andnontypes}), the templates presented here work most of the time for other template parameters: pure numbers, strings, aliases, \ldots Here you'd have to change \DD{AddToSorted} second parameter to accept non-types. Or, another way to do it would be to first map a stringifier on the tuple's elements and \emph{then} sort the resulting strings.}
 
 
-\subsection{Zipping Types, Interleaving Types, Crossing Types}
+\subsection{Scanning Types, Interleaving Types, Crossing Types}
 
 \TODO{Determine if this subsection is really useful. Is there any short and telling example?}
+
+\subsubsection{Static Scan}
+
+A \emph{scan} is a sort of \DD{reduce}/\DD{fold} operation (see \ref{staticreduce}), but giving the intermediary results. It's used by the \DD{juxtapose} template in \ref{juxtapose}.
+
+\begin{dcode}
+/**
+Gives the TypeTuple resulting from the successive applications of F to reduce
+the T list.
+*/
+template StaticScan(alias F, T...)
+{
+    static if (T.length == 0)
+        alias TypeTuple!() StaticScan; // This case should never happen with normal use
+    static if (T.length == 1)
+        alias TypeTuple!(T[0]) StaticScan;
+    else
+        alias TypeTuple!(T[0], StaticScan!(F, F!(T[0], T[1]), T[2..$])) StaticScan;
+}
+\end{dcode}
 
 \subsubsection{Interleaving Types}\label{interleavingtypes}
 
@@ -1003,13 +1023,13 @@ template isNotVoid(T)
     enum bool isNotVoid = !is(T == void);
 }
 
-/// Given a bunch of functions names, gives the typetuple of their return types. Used by $(M juxtapose).
+/// Given a bunch of functions names, gives the typetuple of their return types. Used by juxtapose.
 template ReturnTypes(Funs...)
 {
     alias MapOnAlias!(ReturnType, Funs) ReturnTypes;
 }
 
-/// Given a bunch of functions names, gives the (flattened) typetuple of their return values. Used by $(M juxtapose).
+/// Given a bunch of functions names, gives the (flattened) typetuple of their return values. Used by juxtapose.
 template ParameterTypeTuples(alias fun, Rest...)
 {
     alias MapOnAlias!(ParameterTypeTuple, fun, Rest) ParameterTypeTuples;
@@ -1036,6 +1056,26 @@ template SumOfReturn(size_t zero, alias fun)
 template SumOfReturns(Funs...)
 {
     alias StaticScan!(SumOfReturn, 0, Funs) SumOfReturns;
+}
+\end{dcode}
+
+Should I also add these?
+
+\begin{dcode}
+/**
+Maps the Mapper template on the alias list.
+*/
+template MapOnAlias(alias Mapper, alias current, Rest...)
+{
+    static if (Rest.length)
+        alias TypeTuple!(Mapper!current, MapOnAlias!(Mapper, Rest)) MapOnAlias;
+    else
+        alias Mapper!current MapOnAlias;
+}
+
+template MapOnAlias(alias Mapper)
+{
+    alias TypeTuple!() MapOnAlias;
 }
 \end{dcode}
 
