@@ -34,14 +34,19 @@ To make this document more easily readable, I'll use standard coding books conve
 \end{itemize}
 
 \begin{ndcode}
+/**
+ * This is a doc comment.
+ */
 module intro;
 
 import std.stdio;
 
-// This is a comment
-void hello(uint times)
+void main()
 {
-    foreach(i; 0..times) writeln("Hello, Word!");
+    int times = 10;
+    // This is a comment
+    foreach(i; 0..times) 
+        writeln("Hello, Word!");
 }
 \end{ndcode}
 
