@@ -309,7 +309,7 @@ template RecordImpl(T, U, V)
 \end{dcode}
 
 \begin{dcode}
-module usingrecord;
+module using_record;
 import record;
 
 Record!(int,string,double[]) recordslist;
@@ -325,6 +325,8 @@ You can find an example of this two-templates idiom\index{idiom!two templates} i
 A common use for templates is to do some type magics: deducing types, assembling them in new way, etc. Types are not first-class entities in D (there is no `\D{type}' type), but they can easily be manipulated as any other symbol, by aliasing them. So, when a template has to expose a type, it's done by aliasing it to a new name.
 \index{exposing a type through an alias}
 \begin{dcode}
+module allarrays;
+
 template AllArraysOf(T)
 {
     alias T    Element;
@@ -364,6 +366,8 @@ Something really important here is a bit of compiler magic: once the code path i
 If there is only one statement, you can get rid of the braces entirely, something you'll see frequently in D code. For example, suppose you need a template that `returns' \D{true} if the passed type is a dynamic array and \D{false} otherwise (this kind of predicate template\index{template!predicate templates} is developed a bit more in section \ref{predicates}).
 
 \begin{dcode}
+module isdynamicarray;
+
 template isDynamicArray(T)
 {
     static if (is(T t == U[], U))
@@ -408,6 +412,8 @@ static if (isInfinite!R)     // Is innerRange an infinite range?
 \index{syntax!nested \D{static if}s}
 \index{static if@\D{static if}!nested}
 \begin{dcode}
+module selector;
+
 import std.traits: isIntegral, isFloatingPoint;
 
 template selector(T, alias intFoo, alias floatFoo, alias defaultFoo)
@@ -433,6 +439,8 @@ Now, let's use \D{static if} for something a bit more complicated than just disp
 \index{rank!definition}
 \index{template!recursion}
 \begin{ndcode}
+module rank1;
+
 template rank(T)
 {
     static if (is(T t == U[], U)) // is T an array of U, for some type U?
@@ -442,9 +450,12 @@ template rank(T)
 }
 \end{ndcode}
 
-Line 4 is the most interesting: with some \D{is} magic, \DD{U} has been deduced by the compiler and is accessible inside the \D{static if} branch. We use it to peel one level of `\DD{[]}' off the type and recurse\index{recursion} downward, using \DD{U} as a new type for instantiating \DD{rank}. Either \DD{U} is itself an array (in which case the recursion will continue) or it will hit the base case and stop there.
+Line 6 is the most interesting: with some \D{is} magic, \DD{U} has been deduced by the compiler and is accessible inside the \D{static if} branch. We use it to peel one level of `\DD{[]}' off the type and recurse\index{recursion} downward, using \DD{U} as a new type for instantiating \DD{rank}. Either \DD{U} is itself an array (in which case the recursion will continue) or it will hit the base case and stop there.
 
 \begin{dcode}
+module using_rank1;
+import rank1;
+
 static assert(rank!(int)       == 0);
 static assert(rank!(int[])     == 1);
 static assert(rank!(int[][])   == 2);
@@ -467,6 +478,8 @@ D has an interesting sequence concept that's called \emph{range}\index{range} an
 
 \index{rank!for ranges}
 \begin{dcode}
+module rank2;
+
 import std.range;
 
 template rank(T)
@@ -478,8 +491,11 @@ template rank(T)
         enum rank = 0; 
 }
 
-auto c = cycle([[0,1],[2,3]]); // == [[0,1],[2,3],[0,1],[2,3],[0,1]...
-assert(rank!(typeof(c)) == 2); // range of ranges 
+void main()
+{
+    auto c = cycle([[0,1],[2,3]]); // == [[0,1],[2,3],[0,1],[2,3],[0,1]...
+    assert(rank!(typeof(c)) == 2); // range of ranges
+}
 \end{dcode}
 
 \paragraph{Base Element Type:}\index{array!base element type}\index{range!base element type}
@@ -487,6 +503,10 @@ assert(rank!(typeof(c)) == 2); // range of ranges
 With \DD{rank}, we now have a way to get the number of \DD{[]}'s in an array type (\DD{T[][][]}) or the level of nesting in a range of ranges. The complementary query would be to get the base element type, \DD{T}, from any array of arrays \ldots of \DD{T} or the equivalent for a range. Here it is:
 
 \begin{ndcode}
+module baseelementtype;
+import std.range;
+import rank2;
+
 template BaseElementType(T)
 {
     static if (rank!T == 0)      // not a range
@@ -498,13 +518,15 @@ template BaseElementType(T)
 }        
 \end{ndcode}
 
-Line 4 is an example of \D{static assert} stopping compilation if we ever get into a bad code path. Line 8 is an example of a Matrioshka call: a template using another template's call as its parameter.
+Line 8 is an example of \D{static assert} stopping compilation if we ever get into a bad code path. Line 12 is an example of a Matrioshka call: a template using another template's call as its parameter.
 
 \paragraph{Generating Arrays:}
 
 Now, what about becoming more generative by inverting the process? Given a type \DD{T} and a rank \DD{r} (an \D{int}), we want to obtain \DD{T[][]...[]}, with \DD{r} levels of \DD{[]}'s. A rank of 0 means producing \DD{T} as the result type.
 
 \begin{ndcode}
+module ndim;
+
 template NDimArray(T, int r)
 {
     static if (r < 0)
@@ -519,6 +541,9 @@ template NDimArray(T, int r)
 Here, recursion\index{recursion} is done on line 8: we instantiate \DD{NDimArray!(T,r-1)}, which is a type, then create an array\index{arrays} of them by putting \DD{[]} at the end and expose it through an alias. This is also a nice example of using an integral value\index{template!parameters!integral value} as a template parameter.
 
 \begin{dcode}
+module using_ndim;
+import ndim;
+
 alias NDimArray!(double, 8) Level8;
 static assert(is(Level8 == double[][][][][][][][]));
 static assert(is(NDimArray!(double, 0) == double));
@@ -529,27 +554,34 @@ static assert(is(NDimArray!(double, 0) == double));
 As a last example, we will use an alias template parameter\index{template!parameters!alias} in conjunction with some \D{static if} recursion\index{recursion}\index{static if@\D{static if}} to define a template that creates the `exponentiation' of a function, its repeated composition. Here is what I mean by this:
 
 \begin{dcode}
+module using_power;
+import repeated_comp;
+
 string foo(string s) { return s ~ s;}
-
-// power!(foo, n) is a function.
-assert(power!(foo, 0)("a") == "a");                // identity function
-assert(power!(foo, 1)("a") == foo("a"));           // "aa"
-assert(power!(foo, 2)("a") == foo(foo("a")));      // "aaaa"
-assert(power!(foo, 3)("a") == foo(foo(foo("a")))); // "aaaaaaaa"
-
-// It's even better with function templates:
 Arr[] makeArray(Arr)(Arr array) { return [array,array];}
 
-assert(power!(makeArray, 0)(1) == 1);
-assert(power!(makeArray, 1)(1) == [1,1]);
-assert(power!(makeArray, 2)(1) == [[1,1],[1,1]]);
-assert(power!(makeArray, 3)(1) == [[[1,1],[1,1]],[[1,1],[1,1]]]);
+void main()
+{
+   // power!(foo, n) is a function.
+   assert(power!(foo, 0)("a") == "a");                // identity function
+   assert(power!(foo, 1)("a") == foo("a"));           // "aa"
+   assert(power!(foo, 2)("a") == foo(foo("a")));      // "aaaa"
+   assert(power!(foo, 3)("a") == foo(foo(foo("a")))); // "aaaaaaaa"
+	
+   // It's even better with function templates:
+   assert(power!(makeArray, 0)(1) == 1);
+   assert(power!(makeArray, 1)(1) == [1,1]);
+   assert(power!(makeArray, 2)(1) == [[1,1],[1,1]]);
+   assert(power!(makeArray, 3)(1) == [[[1,1],[1,1]],[[1,1],[1,1]]]);
+}
 \end{dcode}
 
 First, this is a template that `returns' (becomes, rather) a function. It's easy to do with the eponymous trick:\index{eponymous trick} just define inside the template a function with the same name. Secondly, it's clearly recursive in its definition, with two base cases: if the exponent is zero, then we shall produce the identity function and if the exponent is one, we shall just return the input function itself. That being said, \DD{power} writes itself:
 
 \index{function composition}
 \begin{ndcode}
+module repeated_comp;
+
 template power(alias fun, uint exponent)
 {
     static if (exponent == 0) // degenerate case -> id function
@@ -564,7 +596,7 @@ template power(alias fun, uint exponent)
 }
 \end{ndcode}
 
-\aparte{.power}{If you are wondering what's with the \DD{.power} syntax on line 10, it's because by defining an eponymous template, we hide the parent template's name. So inside \DD{power(Args...)} it refers to \DD{power(Args...)} and not \DD{power(}\D{alias}\DD{ fun, }\D{uint}\DD{ exponent)}. Here we want a new \DD{power} to be generated so we call on the global \DD{power} template with the `global scope'\index{scope!global scope operator}\index{operator!global scope operator (\DD{.})} operator (\DD{.}).}
+\aparte{.power}{If you are wondering what's with the \DD{.power} syntax on line 12, it's because by defining an eponymous template, we hide the parent template's name. So inside \DD{power(Args...)} it refers to \DD{power(Args...)} and not \DD{power(}\D{alias}\DD{ fun, }\D{uint}\DD{ exponent)}. Here we want a new \DD{power} to be generated so we call on the global \DD{power} template with the `global scope'\index{scope!global scope operator}\index{operator!global scope operator (\DD{.})} operator (\DD{.}).}
 
 In all three branches of \D{static if}, \DD{power} exposes a \DD{power} member, activating the eponymous template trick\index{eponymous trick} and allowing for an easy use by the client. Note that this template will work not only for unary (one argument) functions but also for n-args functions\footnote{ Except for the degenerate, $n = 0$ case, since the identity function defined above accepts only one arg. A more than one argument version is possible, but would need to return a tuple.}, for delegates and for structs or classes that define the \DD{()}(ie, \D{opCall}) operator\index{operator!opCall, ()@\DD{opCall}, \DD{()}} and for function templates\ldots\footnote{ I cheated a little bit there, because the resulting function accepts any number of arguments of any type, though the standard function parameters checks will stop anything untowards to happen. A cleaner (but longer, and for template functions, more complicated) implementation would propagate the initial function parameter typetuple.}
 
@@ -574,52 +606,59 @@ Now, are you beginning to see the power of templates?
 
 Given a template \DD{temp}, writing a \DD{curry} template that automatically generates the code for a curried version of \DD{temp} is \emph{also} possible, but outside the scope of this document.\index{scope!outside the scope of this document}}
 
-
 \subsection{Templates Specializations}\label{specializations}
 
 \index{template!specialization}
 Up to now, when we write a \DD{T} in a template parameter list, there is no constraint on the type that \DD{T} can become during instantiation. Template specialization is a small `subsyntax', restricting templates instantiations to a subset of all possible types and directing the compiler into instantiating a particular version of a template instead of another. If you've read \autoref{isexpression} on the \D{is} expression, you already know how to write them. If you didn't, please do it now, as it's really the same syntax. These specializations are a direct inheritance from C++\index{C++} templates, up to the way they are written and they existed in D from the very beginning, long before \D{static if} or templates constraints were added. 
 
-The specializations are added in the template parameter list, the \DD{(T, U, V)} part of the template definition. \index{syntax!templates specialization}\DD{Type : OtherType} restricts \DD{Type} to be implicitly convertible into \DD{OtherType} and \DD{Type == OtherType} restricts \DD{Type} to be exactly \DD{OtherType}. 
+The specializations are added in the template parameter list, the \DD{(T, U, V)} part of the template definition. \index{syntax!templates specialization}\DD{Type : OtherType} restricts \DD{Type} to be implicitly convertible into \DD{OtherType}. 
 
 \index{template!specialization}
 \begin{dcode}
-template ElementType(T == U[], U) // can only be instantiated with arrays
+module specialization1;
+
+template ElementType(T : U[], U) // can only be instantiated with arrays
 {
     alias U ElementType;
 }
 
-template ElementType(T == U[n], U, size_t n) // only with static arrays
+template ElementType(T : U[n], U, size_t n) // only with static arrays
 {
     alias U ElementType;
 }
 
-// Say Array is a class, which has an ElementType type alias defined.
+class Array { alias int ElementType;}
+
 template ElementType(T : Array) 
 {
     alias Array.ElementType ElementType;
 }
 \end{dcode}
 
-Now, the \DD{Type == AnotherType} syntax may seem strange to you: if you know you want to restrict \DD{Type} to be \emph{exactly} \DD{AnotherType}, why make it a template parameter? It's because of templates specializations' main use: you can write different implementations of a template (with the same name, obviously) and when asked to instantiate one of them, the compiler will automatically decide which one to use based the `most adapted' to the provided arguments. `Most adapted' obeys some complicated rules you can find on the D Programming Language web site, but they act in a natural way most of the time. The neat thing is that you can define the most general template \emph{and} some specialization. The specialized ones will be chosen when it's possible. For 
+Now, the idea may seem strange to you: if you know you want to restrict \DD{Type} to be \DD{AnotherType}, why make it a template parameter? It's because of templates specializations' main use: you can write different implementations of a template (with the same name, obviously), and when asked to instantiate one of them, the compiler will automatically decide which one to use, taking the `most adapted' to the provided arguments. `Most adapted' obeys some complicated rules you can find on the D Programming Language website, but they act in a natural way most of the time. The neat thing is that you can define the most general template \emph{and} some specialization. The specialized ones will be chosen when it's possible. For 
 
 \index{template!specialization}
 \begin{dcode}
+module specialization2;
+
 template InnerType(T : U*, U) // Specialization for pointers
 {
     alias U InnerType;
 }
 
 template InnerType(T : U[], U) // Specialization for dyn. arrays
-{ ... }
+{ /*...*/ }
 
 template InnerType(T) // Standard, default case
-{ ... }
+{ /*...*/ }
 
-int* p;
-int i; 
-alias InnerType!(typeof(p)) Pointer; // pointer spec. selected
-alias InnerType!(typeof(i)) Default; // standard template selected
+void main()
+{
+    int* p;
+    int i; 
+    alias InnerType!(typeof(p)) Pointer; // pointer spec. selected
+    alias InnerType!(typeof(i)) Default; // standard template selected
+}
 \end{dcode}
 
 This idiom\index{idiom!template specialization} is used frequently in C++\index{C++}, where there is no (built-in) \D{static if} construct or template constraints. Oldish D templates used it a lot, too, but since other ways have been around for some years, recent D code seems to be more constraint-oriented: have a look at heavily templated Phobos modules, for example \std{algorithm} or \std{range}.
