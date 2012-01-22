@@ -1,25 +1,32 @@
 
 ************templates_intro.tex **************************
+Found 1 named samples.
 intro.d: OK
 
 Found 0 anonymous samples (no compilation attempted).
+Total of 1 samples found.
 ********************************************************
 
 
 ************templates_advanced.tex **************************
-thefile.d: ERROR!
+Found 1 named samples.
+thefile.d:  *** ERROR! ***
 
 Found 68 anonymous samples (no compilation attempted).
+Total of 69 samples found.
 ********************************************************
 
 
 ************dtemplates.tex **************************
+Found 0 named samples.
 
 Found 0 anonymous samples (no compilation attempted).
+Total of 0 samples found.
 ********************************************************
 
 
 ************templates_basics.tex **************************
+Found 45 named samples.
 declaration.d: OK
 instantiation.d: OK
 internaldeclarations1.d: OK
@@ -43,34 +50,63 @@ using_power.d: OK
 repeated_comp.d: OK
 specialization1.d: OK
 specialization2.d: OK
+def.d: OK
+deduced.d: OK
+function_declaration1.d: OK
+function_declaration2.d: OK
+morph.d: OK
+using_concatenate.d: OK
+using_flatten1.d: OK
+flatten1.d: OK
+anonymous_function1.d: OK
+anonymous_function2.d: OK
+calltwice.d: OK
+using_calltwice.d: OK
+makecounter.d: OK
+using_makecounter.d: OK
+storage.d: OK
+init.d: OK
+inoutclauses.d: OK
+acceptingtuple.d: OK
+nmap.d: OK
+nmap2.d: OK
+nfilter.d: OK
+tree.d: OK
 
-Found 67 anonymous samples (no compilation attempted).
+Found 45 anonymous samples (no compilation attempted).
+Total of 90 samples found.
 ********************************************************
 
 
 ************templates_examples.tex **************************
+Found 0 named samples.
 
 Found 69 anonymous samples (no compilation attempted).
+Total of 69 samples found.
 ********************************************************
 
 
 ************templates_around.tex **************************
+Found 9 named samples.
 mine.d: OK
 utils.d: OK
 utils.d: OK
 mine.d: OK
 utils.d: OK
 a.d: OK
-b.d: ERROR!
-test.d: ERROR!
-test.d: ERROR!
+b.d:  *** ERROR! ***
+test.d:  *** ERROR! ***
+test.d:  *** ERROR! ***
 
 Found 35 anonymous samples (no compilation attempted).
+Total of 44 samples found.
 ********************************************************
 
 
 ************templates_appendix.tex **************************
+Found 0 named samples.
 
 Found 12 anonymous samples (no compilation attempted).
+Total of 12 samples found.
 ********************************************************
 
