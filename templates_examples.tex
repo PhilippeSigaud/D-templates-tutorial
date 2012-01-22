@@ -965,9 +965,81 @@ auto curry(alias fun)()
 
 \subsection{Juxtaposing functions}\label{juxtapose}
 
-\TODO{See where the code is. It used heavy-duty type manipulation IIRC.}
+\unfinished{The idea is to glue functions together, to map on many ranges in parallel and create another multiple-value range afterwards.}
 
-\section{Relational Algebra}
+The functions are juxptaposed, that is, given:
+
+\begin{dcode}
+int foo(int i, int j) { return i+j;}
+string bar() { return "Hello, World";}
+double baz(double d) { return d*d;}
+\end{dcode}
+
+Then \DD{juxtapose!(foo,bar,baz)} is a function accepting two \D{int}s and a \D{double} as arguments and returning a tuple holding an \D{int}, a \D{string} and a \D{double}.
+
+\begin{dcode}
+template juxtapose(Funs...)
+{
+    Tuple!(StaticFilter!(isNotVoid, ReturnTypes!Funs)) juxtapose(ParameterTypeTuples!Funs params) {
+        typeof(return) result;
+        alias SumOfArities!Funs arities;
+        alias SumOfReturns!Funs returns;
+        foreach(i, Fun; Funs) {
+            enum firstParam = arities[i];
+            enum lastParam = firstParam + arity!(Fun);
+            static if (returns[i] != returns[i+1])
+                result.field[returns[i]] = Fun(params[firstParam..lastParam]);
+        }
+        return result;
+    }
+}
+\end{dcode}
+
+Necessary scaffolding:
+
+\begin{dcode}
+template isNotVoid(T)
+{
+    enum bool isNotVoid = !is(T == void);
+}
+
+/// Given a bunch of functions names, gives the typetuple of their return types. Used by $(M juxtapose).
+template ReturnTypes(Funs...)
+{
+    alias MapOnAlias!(ReturnType, Funs) ReturnTypes;
+}
+
+/// Given a bunch of functions names, gives the (flattened) typetuple of their return values. Used by $(M juxtapose).
+template ParameterTypeTuples(alias fun, Rest...)
+{
+    alias MapOnAlias!(ParameterTypeTuple, fun, Rest) ParameterTypeTuples;
+}
+
+template SumOfArity(size_t zero, alias fun)
+{
+    enum size_t SumOfArity = zero + arity!fun;
+}
+
+template SumOfArities(F...)
+{
+    alias StaticScan!(SumOfArity, 0, F) SumOfArities;
+}
+
+template SumOfReturn(size_t zero, alias fun)
+{
+    static if (is(ReturnType!fun == void))
+        enum size_t SumOfReturn = zero;
+    else
+        enum size_t SumOfReturn = zero + 1;
+}
+
+template SumOfReturns(Funs...)
+{
+    alias StaticScan!(SumOfReturn, 0, Funs) SumOfReturns;
+}
+\end{dcode}
+
+\section{Relational Algebra}\label{relationalalgebra}
 
 Inspiration for this example comes from \href{http://david.rothlis.net/d/templates}{This blog article}.
 
