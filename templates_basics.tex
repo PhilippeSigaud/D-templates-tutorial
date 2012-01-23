@@ -1442,20 +1442,20 @@ struct Tree(T)
 
     bool isLeaf() @property { return children.empty;}
 
-	 auto fold(alias ifLeaf, alias ifBranch = ifLeaf, S)(S seed)
-	 {
-	     if (isLeaf)
-	     {
-	         return ifLeaf(value, seed);
-	     }
-	     else
-	     {
-	         typeof(Tree.init.fold!(ifLeaf, ifBranch)(seed))[] foldedChildren;
-	         foreach(child; children) 
-	             foldedChildren ~= child.fold!(ifLeaf, ifBranch)(seed);
-	         return ifBranch(value, foldedChildren);
-	     }
-	 }
+    auto fold(alias ifLeaf, alias ifBranch = ifLeaf, S)(S seed)
+    {
+        if (isLeaf)
+        {
+            return ifLeaf(value, seed);
+        }
+        else
+        {
+            typeof(Tree.init.fold!(ifLeaf, ifBranch)(seed))[] foldedChildren;
+            foreach(child; children) 
+                foldedChildren ~= child.fold!(ifLeaf, ifBranch)(seed);
+            return ifBranch(value, foldedChildren);
+        }
+    }
 }
 \end{dcode}
 
@@ -1503,7 +1503,7 @@ T[] inOrderL(T, S)(T value, S seed)
 
 T[] inOrderB(T)(T value, T[][] inOrderChildren)
 {
-    return [value]  ~  reduce!"a~b"(inOrderChildren);
+    return [value] ~ reduce!"a~b"(inOrderChildren);
 }
 
 void main()
@@ -1670,8 +1670,6 @@ auto outer(O)(O o) { return Outer!(O)(o);}
     
 void main()
 {
-
- 
     auto o = outer(1); // o is an Outer!int;
     auto i = o.inner("abc"); // Outer.Outer!(int).Inner.Inner!(string)
 }
@@ -1695,14 +1693,14 @@ We will use what we've learned about struct templates to create a lazy range\ind
 If you look at the ranges defined in \std{range}, you will see that most (if not all) of them are structs. That's the basic way to get laziness in D: the struct holds the iteration state and exposes the basic range primitives. At the very least to be an \emph{input range}---the simplest kind of range---a type must have the following members\index{range!members} (be they properties, member functions or manifest constants):
 
 \begin{description}
-\item[front:] Which returns the range's first element.
-\item[popFront:] Which discards the first element and advances the range by one step.
-\item[empty:] Which returns \D{true} if the range has no more elements, \D{false} otherwise.
+\item[front:] returns the range's first element.
+\item[popFront:] discards the first element and advances the range by one step.
+\item[empty:] returns \D{true} if the range has no more elements, \D{false} otherwise.
 \end{description}
 
 From this simple basis, powerful algorithms can be designed that act on ranges. D defines more refined range concepts by adding other constraints. A \emph{forward range} adds the \DD{save} member that's used to store a range internal state and allows an algorithm to start again from a saved position. A \emph{bidirectional range} also has the \DD{back} and \DD{popBack} primitives for accessing the end of the range, and so on.
 
-Here we will begin by creating a simple input range\index{range} that takes a range of ranges\index{range!of ranges} and iterate on the inner elements. Let's begin with the very basics:
+Here we will begin by creating a simple input range\index{range} that takes a range of ranges\index{range!of ranges} and iterates on the inner elements. Let's begin with the very basics:
 
 \index{range}
 \index{struct template}
@@ -1740,7 +1738,7 @@ A range of ranges\index{range!of ranges} can be represented like this:
 , ... ]
 \end{dcode}
 
-We want \DD{Flatten} to return elements in this order: \DD{elem11, elem12, \ldots  elem21, elem22, \ldots}. Note that for ranges of rank higher than 2, the \DD{elemxy}s are themselves ranges. At any given time, \DD{Flatten} is working on a sub-range, iterating on its elements and discarding it when it's empty. The iteration will stop when the last subrange has been consumed, that is when \DD{range} itself is empty.
+We want \DD{Flatten} to return elements in this order: \DD{elem11}, \DD{elem12}, \ldots  \DD{elem21}, \DD{elem22}, \ldots Note that for ranges of rank higher than 2, the \DD{elemxy}s are themselves ranges. At any given time, \DD{Flatten} is working on a sub-range, iterating on its elements and discarding it when it's empty. The iteration will stop when the last subrange has been consumed, that is when \DD{range} itself is empty.
 
 \index{struct template}
 \index{range}
@@ -1780,10 +1778,9 @@ struct Flatten(Range)
 
 \begin{itemize}
 \item I cheat a little bit with D standard bracing style, because it eats vertical space like there is no tomorrow.
-\item We begin on line 3 and 4 by defining some new types used by the methods. They are not strictly necessary but make the code easier to understand and expose these types to the outer world, if they are needed.
-\item A constructor is now necessary to correctly initialize the struct.
+\item We begin on line 8 and 9 by defining some new types used by the methods. They are not strictly necessary but make the code easier to understand and expose these types to the outer world, if they are needed.
+\item A constructor is now necessary to initialize the struct.
 \item \DD{front} returns a subrange element.
-\item The \DD{discardEmptySubRanges} function does what it says on the can: we do not iterate on empty subranges.
 \end{itemize}
 
 But then, this only works for ranges of ranges\index{rank!of ranges} (of rank $\leq$ 2). We want something that flattens ranges of any rank down to a linear range. This is easily done, we just add recursion\index{recursion} in the factory function:\index{factory function}
@@ -1823,10 +1820,10 @@ import flatten4;
 
 void main()
 {
-    auto rank3 = [[[0,1,2],[3,4,5],[6]]
+    auto rank3 = [[[0,1,2],[3,4,5],[6] ]
                  ,[[7],[],[8,9],[10,11]]
-                 ,[[],[12]]
-                 ,[[13]]  ];
+                 ,[[],[12]             ]
+                 ,[[13]                ]];
 
     auto rank1 = flatten(rank3);
     assert(rank!(typeof(rank1)) == 1); // Yup, it's a linear range
