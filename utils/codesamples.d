@@ -1,6 +1,6 @@
 import std.algorithm, std.array, std.conv,
 std.exception, std.file, std.format,
-std.path, std.process, std.stdio, std.regex;
+std.path, std.process, std.stdio, std.range, std.regex;
 
 immutable string samplesDir = "code";
 enum modName = ctRegex!("module (.+?);");
@@ -21,7 +21,9 @@ void main(string[] args)
         string accumulator;
         int anonymous, named;
         string moduleName;
+        bool gotMain;
         string[] allSamples;
+        bool[] allMains;
         
         foreach(line; file.byLine) // KeepTerminator.yes doesn't work?
         {
@@ -37,16 +39,19 @@ void main(string[] args)
                 moduleName = to!string(m.captures[1]);
                 ++named;
             }
-                       
+            
+            if (inCode && line.startsWith("void main()") && moduleName != "") gotMain = true;
+            
             if (inCode && (line.startsWith("\\end{dcode}") || line.startsWith("\\end{ndcode}")) )
             {
-                if (moduleName.length) // name -> compilation. No name, no compilation.
+                if (moduleName.length)
                 {
                     auto sampleName = moduleName ~ ".d";
                     auto sampleFile = File(sampleName, "w");
                     sampleFile.write(accumulator);
                     sampleFile.close();
                     allSamples ~= sampleName;
+                    allMains ~= gotMain;
                 }
                 else
                 {
@@ -56,6 +61,7 @@ void main(string[] args)
                 inCode = false;
                 accumulator = "";
                 moduleName = "";
+                gotMain = false;
             }
             
             if (inCode) accumulator ~= line ~ "\n";
@@ -64,14 +70,17 @@ void main(string[] args)
         // Now we have all samples extracted from the current file. Let's compile them.
         compilationResults.write("Found " ~ to!string(named) ~ " named samples.\n");
         
-        foreach(sampleName; allSamples)
+        foreach(sample; zip(allSamples, allMains))
         {
-            auto s = system("rdmd -w -unittest " ~ sampleName);
+            string sampleName = sample[0];
+            int compilationResult;
             
-            // If that didn't work, insert a stub main.
-            if (s != 0) s = system("rdmd --main -w -unittest " ~ sampleName);
+            if (sample[1]) //got main
+                compilationResult = system("rdmd -w -unittest " ~ sampleName);
+            else
+                compilationResult = system("rdmd --main -w -unittest " ~ sampleName);
             
-            if (s == 0)
+            if (compilationResult == 0)
                 compilationResults.write(sampleName ~ ": OK\n");
             else
             {
