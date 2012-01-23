@@ -268,6 +268,7 @@ A limitation is that the eponymous trick works \emph{only} if you define one (an
 module manyalias_error;
 
 template ManyAlias(T, U)
+{
     T[] firstArray;
     U[] secondArray;
     T[U] ManyAlias; // Alas, ET substitution doesn't work here
@@ -552,7 +553,7 @@ As a last example, we will use an alias template parameter\index{template!parame
 
 \begin{dcode}
 module using_power;
-import repeated_comp;
+import repeatedcomposition;
 
 string foo(string s) { return s ~ s;}
 Arr[] makeArray(Arr)(Arr array) { return [array,array];}
@@ -577,7 +578,7 @@ First, this is a template that `returns' (becomes, rather) a function. It's easy
 
 \index{function composition}
 \begin{ndcode}
-module repeated_comp;
+module repeatedcomposition;
 
 template power(alias fun, uint exponent)
 {
@@ -1211,7 +1212,8 @@ As you might have guessed, declaring a struct template is done like this:
 \index{syntax!struct templates}
 \index{struct template}
 \begin{dcode}
-module tree;
+module tree1;
+import std.array;
 
 struct Tree(T)
 {
@@ -1228,15 +1230,23 @@ struct Tree(T)
 This gives us a run-of-the-mill generic tree, which is created like any other template:
 
 \begin{dcode}
-auto t0 = Tree!int(0);
-auto t1 = Tree!int(1, [t0,t0]);
-Tree!int[] children = t1.children;
+module using_tree;
+import tree1;
+
+void main()
+{
+    auto t0 = Tree!int(0);
+    auto t1 = Tree!int(1, [t0,t0]);
+    Tree!int[] children = t1.children;
+}
 \end{dcode}
 
-As with all previous templates, you can parameterize your structs using much more than simple types:
+As with all previous templates, you can parametrize your structs using much more than simple types:
 
 \index{struct template}
 \begin{dcode}
+module heap1;
+
 bool lessThan(T)(T a, T b) { return a<b;}
 
 struct Heap(Type, alias predicate = lessThan, float reshuffle = 0.5f)
@@ -1244,7 +1254,7 @@ struct Heap(Type, alias predicate = lessThan, float reshuffle = 0.5f)
     // predicate governs the internal comparison
     // reshuffle deals with internal re-organizing of the heap
     Type[] values;
-(...)
+/*...*/
 }
 \end{dcode}
 
@@ -1264,17 +1274,23 @@ This is because templated constructors are possible (see \ref{constructortemplat
 
 \index{factory function}
 \begin{dcode}
-auto tree(T)(T value, T[] children = null) 
+module tree2;
+import tree1;
+
+auto tree(T)(T value, Tree!T[] children = null) 
 {
     return Tree!(T)(value, children);
 }
 
-auto t0 = tree(0); // Yes!
-auto t1 = tree(1, [t0,t0]); // Yes!
+void main()
+{
+    auto t0 = tree(0); // Yes!
+    auto t1 = tree(1, [t0,t0]); // Yes!
 
-static assert(is( typeof(t1) == Tree!int ));
+    static assert(is( typeof(t1) == Tree!int ));
 
-auto t2 = tree(t0); // Yes! typeof(t2) == Tree!(Tree!(int)) 
+    auto t2 = tree(t0); // Yes! typeof(t2) == Tree!(Tree!(int))
+}
 \end{dcode}
 
 Once more, have a look at \std{algorithm} and \std{range}, they show numerous examples of this idiom.\index{idiom!factory function}
@@ -1285,6 +1301,9 @@ As was said in section \ref{inneralias}, template arguments are not accessible e
 
 \index{struct template!inner alias parameters}
 \begin{dcode}
+module tree3;
+import std.array;
+
 struct Tree(T)
 {
     alias T Type;
@@ -1294,15 +1313,20 @@ struct Tree(T)
     bool isLeaf() @property { return children.empty;}
 }     
 
-auto t0 = tree("abc");
-alias typeof(t0) T0;
+void main()
+{
+    Tree!string t0 =Tree!string("abc");
+    alias typeof(t0) T0;
 
-static assert(is( T0.Type == string ));
+    static assert(is( T0.Type == string ));
+}
 \end{dcode}
 
 \subsection{Templated Member Functions}\label{membertemplates}
 
 A struct template is a template like any other: you can declare templates inside, even function templates. Which means you can have templated member functions. 
+
+\aparte{Crippled D}{Okay, since I haven't introduce some powerful D features such as mixin templates (\ref{mixintemplates}) and string mixins (\ref{stringmixins}), I'll have to do some code duplication here. Sorry for that, but that's the condition for having all named code sample compile.}
 
 \paragraph{Mapping on a Tree} Let us use that to give our \D{Tree} a mapping ability. For a range,\index{range} you can use \stdanchor{algorithm}{map} to apply a function in turn to each element, thus delivering a transformed range. The same process can be done for a tree, thereby keeping the overall \emph{shape} but modifying the elements.\footnote{ We could easily make that a free function, but this \emph{is} the member function section.}
 
@@ -1314,7 +1338,22 @@ Since this is a recursive template,\index{recursion} we have to help the compile
 
 \index{templated method}
 \begin{dcode}
-/* rest of Tree code */
+module tree4;
+import std.array;
+
+auto tree(T)(T value, Tree!T[] children = null) 
+{
+    return Tree!(T)(value, children);
+}
+
+struct Tree(T)
+{
+    alias T Type;
+    T value;
+    Tree[] children;
+
+    bool isLeaf() @property { return children.empty;}
+
     Tree!(typeof(fun(T.init))) map(alias fun)()
     {
         alias typeof(fun(T.init)) MappedType;
@@ -1323,14 +1362,23 @@ Since this is a recursive template,\index{recursion} we have to help the compile
         foreach(child; children) mappedChildren ~= child.map!(fun);
         return tree(mappedValue, mappedChildren);
     }
+}
 \end{dcode}
 
 Let's use it:
 
 \begin{dcode}
-auto t0 = tree(0);
-auto t1 = tree(1, [t0,t0]);
-auto t2 = tree(2, [t1, t0, tree(3)]);
+module using_tree4;
+import std.conv;
+import tree4;
+
+int addOne(int a) { return a+1;}
+
+void main()
+{
+    auto t0 = tree(0);
+    auto t1 = tree(1, [t0,t0]);
+    auto t2 = tree(2, [t1, t0, tree(3)]);
 
 /* t2 is       2
              / | \
@@ -1339,13 +1387,13 @@ auto t2 = tree(2, [t1, t0, tree(3)]);
           0   0
 */
 
-// t2 is a Tree!(int)
-static assert(is( t2.Type == int ));
+    // t2 is a Tree!(int)
+    static assert(is( t2.Type == int ));
 
-// Adding one to all values
-int addOne(int a) { return a+1;}
-auto t3 = t2.map!(add(1));
-
+    // Adding one to all values
+    
+    auto t3 = t2.map!(addOne);
+    
 /* t3 is       3
              / | \
             2  1  4
@@ -1353,12 +1401,11 @@ auto t3 = t2.map!(add(1));
           1   1
 */
 
-assert(t3.value = 3);
+    assert(t3.value == 3);
 
-// Converting all values to strings
-import std.conv:to;
-auto ts = t2.map!(to!string); // we convert every value into a string;
-
+    // Converting all values to strings
+    auto ts = t2.map!(to!string); // we convert every value into a string;
+    
 /* ts is      "2"
              / | \
            "1""0""3"
@@ -1366,8 +1413,9 @@ auto ts = t2.map!(to!string); // we convert every value into a string;
          "0"  "0"
 */
 
-assert(is( ts.Type == string ));
-assert(ts.value == "2");
+    assert(is( ts.Type == string ));
+    assert(ts.value == "2");
+}
 \end{dcode}
 
 \paragraph{Folding a Tree} You may feel \DD{map} is not really a member function: it does not take any argument. Let's make another transformation on \DD{Tree}s: folding them, that is: collapsing all values into a new one. The range equivalent is \stdanchor{algorithm}{reduce} which collapses an entire (linear) range\index{range} into one value, be it a numerical value, another range or what have you
@@ -1378,26 +1426,46 @@ Taking inspiration from \DD{reduce}, we need an seed value and \emph{two} foldin
 
 \index{templated method}
 \begin{dcode}
-/* rest of Tree code */
-auto fold(alias ifLeaf, alias ifBranch = ifLeaf, S)(S seed)
+module tree5;
+import std.array;
+
+auto tree(T)(T value, Tree!T[] children = null) 
 {
-    if (isLeaf)
-    {
-        return ifLeaf(value, seed);
-    }
-    else
-    {
-        typeof(Tree.init.fold!(ifLeaf, ifBranch)(seed))[] foldedChildren;
-        foreach(child; children) 
-            foldedChildren ~= child.fold!(ifLeaf, ifBranch)(seed);
-        return ifBranch(value, foldedChildren);
-    }
+    return Tree!(T)(value, children);
+}
+
+struct Tree(T)
+{
+    alias T Type;
+    T value;
+    Tree[] children;
+
+    bool isLeaf() @property { return children.empty;}
+
+	 auto fold(alias ifLeaf, alias ifBranch = ifLeaf, S)(S seed)
+	 {
+	     if (isLeaf)
+	     {
+	         return ifLeaf(value, seed);
+	     }
+	     else
+	     {
+	         typeof(Tree.init.fold!(ifLeaf, ifBranch)(seed))[] foldedChildren;
+	         foreach(child; children) 
+	             foldedChildren ~= child.fold!(ifLeaf, ifBranch)(seed);
+	         return ifBranch(value, foldedChildren);
+	     }
+	 }
 }
 \end{dcode}
 
 Let's play a bit with it. First, we want to sum all values of a tree. For leaves, we just return the node's \DD{value} plus \DD{seed}. For branches, we are given \DD{value} and an array containing the sums of values for all children. We need to sum the values of this array, add it to the node's \DD{value} and return that. In that case, we do not about the seed value.
 
 \begin{dcode}
+module summingtree;
+import std.algorithm;
+import tree5;
+
 auto sumLeaf(T, S)(T value, S seed)
 {
     return value + seed;
@@ -1408,13 +1476,26 @@ auto sumBranch(T)(T value, T[] summedChildren)
     return value + reduce!"a+b"(summedChildren);
 }
 
-auto sum = t2.fold!(sumLeaf, sumBranch)(0);
-assert(sum == 2 + (1 + 0 + 0) + 0 + 3);
+import std.stdio;
+
+void main()
+{
+    auto t0 = tree(0);
+    auto t1 = tree(1, [t0,t0]);
+    auto t2 = tree(2, [t1, t0, tree(3)]);
+
+    auto sum = t2.fold!(sumLeaf, sumBranch)(0);
+    assert(sum == 2 + (1 + 0 + 0) + (0) + (3));
+}
 \end{dcode}
 
 In the same family, but a bit more interesting is getting all values for in-order iteration: given a tree node, return an array containing the local value and then the values for all nodes, recursively.
 
 \begin{dcode}
+module inordertree;
+import std.algorithm;
+import tree5;
+
 T[] inOrderL(T, S)(T value, S seed)
 {
     return [value] ~ seed;
@@ -1425,9 +1506,16 @@ T[] inOrderB(T)(T value, T[][] inOrderChildren)
     return [value]  ~  reduce!"a~b"(inOrderChildren);
 }
 
-int[] seed; // empty array
-auto inOrder = t2.fold!(inOrderL, inOrderB)(seed);
-assert(inOrder == [2, 1, 0, 0, 0, 1, 3]);
+void main()
+{
+    auto t0 = tree(0);
+    auto t1 = tree(1, [t0,t0]);
+    auto t2 = tree(2, [t1, t0, tree(3)]);
+
+    int[] seed; // empty array
+    auto inOrder = t2.fold!(inOrderL, inOrderB)(seed);
+    assert(inOrder == [2, 1, 0, 0, 0, 3]);
+}
 \end{dcode}
 
 And as a last use, why not build a tree? 
@@ -1440,12 +1528,17 @@ Struct constructors are member function, so they can be templated too. They need
 
 \index{syntax!templated constructors}
 \begin{dcode}
+module templatedconstructors;
+
 struct S(T)
 {
-    this(U)(U u) { ... }
+    this(U)(U u) { /*...*/ }
 }
 
-auto s = S!string(1); // T is string, U is int.
+void main()
+{
+    auto s = S!string(1); // T is string, U is int.
+}
 \end{dcode}
 
 As you can see, IFTI (\ref{ifti})\index{IFTI!for constructors} works for constructors. \DD{U} is automatically deduced, though you have to indicate \DD{T} in this case. However, this example is drastically limited: you cannot have any value of type \DD{U} in the struct, because \DD{U} does not exist outside the constructor. A bit more useful would be to collect an alias (a function, for example) and use it to initialize the struct. If it's used only for initialization, it can be discarded afterwards. But then, IFTI is not activated by an alias\ldots
@@ -1455,6 +1548,9 @@ The most interesting use I've seen is to make conversions during the struct's co
 \index{templated constructor}
 \index{constructor}
 \begin{dcode}
+module holder;
+import std.conv;
+
 struct Holder(Type)
 {
     Type value;
@@ -1465,8 +1561,11 @@ struct Holder(Type)
     }
 }
 
-Holder!int h = Holder!int(3.14);
-assert(h.value == 3);
+void main()
+{
+    Holder!int h = Holder!int(3.14);
+    assert(h.value == 3);
+}
 \end{dcode}
 
 That way, a \DD{Holder!int} can be constructed with any value, but if the conversion is possible, it will always hold an \D{int}.
@@ -1478,6 +1577,8 @@ You can create and return inner structs and use the local template parameters in
 \index{inner struct}
 \index{template!parameters!alias}
 \begin{dcode}
+module heap2;
+
 auto heap(alias predicate, Type)(Type[] values)
 {
     struct Heap
@@ -1485,7 +1586,7 @@ auto heap(alias predicate, Type)(Type[] values)
         Type[] values;
         this(Type[] _values)
         {
-            /* some code initializing values using predicate
+            /* some code initializing values using predicate */
         }
         /* more heapy code */
     }
@@ -1499,10 +1600,12 @@ In that case, the \DD{Heap} struct is encapsulated inside \DD{heap} and uses the
 By the way, strangely enough, though you cannot declare `pure' templates inside functions, you can declare struct templates. Remember the \DD{adder} function in section \ref{anonymousfunctions}? It didn't need to be templated with one type for each argument, as most of the time when you add numbers, they have more or less the same type. But what about a function that converts its arguments to \D{string}s before concatenating them?
 
 \begin{dcode}
+module anonymous_error;
+
 auto concatenate(A)(A a)
 {
-    /* !! Not legal D code !!
-    return (B)(B b) { return to!string(a) ~ to!string(b);}
+    /* !! Not legal D code !! */
+    return (B)(B b) { return to!string(a) ~ to!string(b);};
 }
 \end{dcode}
 
@@ -1513,13 +1616,16 @@ The previous example is not legal D code.\index{mantra} Of course, there is a so
 \index{opCall, ()@\DD{opCall}, \DD{()}}
 \index{operator!opCall, ()@\DD{opCall}, \DD{()}}
 \begin{dcode}
+module innerconcatenate;
+import std.conv;
+
 auto concatenate(A)(A a)
 {
     struct Concatenator 
     {
         A a;
 
-        auto opCall(B)(B b)
+        auto opCall(B)(B b) @trusted
         {
             return to!string(a) ~ to!string(b);
         }
@@ -1531,9 +1637,12 @@ auto concatenate(A)(A a)
     return c;
 }
 
-auto c = concatenate(3.14);
-auto cc = c("abc");
-assert(cc == "3.14abc");
+void main()
+{
+    auto c = concatenate(3.14);
+    auto cc = c("abc");
+    assert(cc == "3.14abc");
+}
 \end{dcode}
 
 See section \ref{operatoroverloading} for more on operator overloading.
@@ -1542,6 +1651,8 @@ What about templated inner structs inside struct templates? It's perfectly legal
 
 \index{inner struct!templated}
 \begin{dcode}
+module templatedinner;
+
 struct Outer(O)
 {
     O o;
@@ -1556,9 +1667,13 @@ struct Outer(O)
 }
 
 auto outer(O)(O o) { return Outer!(O)(o);}
+    
+void main()
+{
 
-auto o = outer(1); // o is an Outer!int;
-auto i = o.inner("abc"); // Outer.Outer!(int).Inner.Inner!(string)
+ 
+    auto o = outer(1); // o is an Outer!int;
+    auto i = o.inner("abc"); // Outer.Outer!(int).Inner.Inner!(string)
 }
 \end{dcode}
 
@@ -1593,12 +1708,15 @@ Here we will begin by creating a simple input range\index{range} that takes a ra
 \index{struct template}
 \index{factory function}
 \begin{dcode}
+module flatten2;
+
 import std.range;
+import rank2;
 
 struct Flatten(Range)
 {
     Range range;
-    ...
+    /*...*/
 }
 
 auto flatten(Range)(Range range)
@@ -1628,6 +1746,11 @@ We want \DD{Flatten} to return elements in this order: \DD{elem11, elem12, \ldot
 \index{range}
 \index{inner member alias}
 \begin{ndcode}
+module flatten3;
+import std.range;
+
+import rank2;
+
 struct Flatten(Range)
 {
     alias ElementType!Range    SubRange;
@@ -1637,9 +1760,9 @@ struct Flatten(Range)
     SubRange subRange;
 
     this(Range _range) {
-        this.range = range;
-        discardEmptySubRanges();
-    },
+        range = _range;
+        if (!range.empty) subRange = range.front;
+    }
 
     Element front() { return subRange.front;}
 
@@ -1647,10 +1770,6 @@ struct Flatten(Range)
 
     void popFront() {
         if (!subRange.empty) subRange.popFront;
-        discardEmptySubRanges();
-    }
-
-    void discardEmptySubRanges() {
         while(subRange.empty && !range.empty) {
             range.popFront;
             if (!range.empty) subRange = range.front;
@@ -1667,19 +1786,6 @@ struct Flatten(Range)
 \item The \DD{discardEmptySubRanges} function does what it says on the can: we do not iterate on empty subranges.
 \end{itemize}
 
-Let see if this template works, by creating an infinite range and giving it to \DD{flatten}:
-
-\begin{dcode}
-import std.range;
-
-auto cy = cycle(["Hello", "World"); // "Hello","World","Hello","World",...
-auto flattened = flatten(cy);
-assert(flattened.front == 'H');
-
-auto takeTwelve = take(flattened, 12);
-assert(array(takeTwelve) == "HelloWorldHe");
-\end{dcode}
-
 But then, this only works for ranges of ranges\index{rank!of ranges} (of rank $\leq$ 2). We want something that flattens ranges of any rank down to a linear range. This is easily done, we just add recursion\index{recursion} in the factory function:\index{factory function}
 
 \index{factory function}
@@ -1687,6 +1793,10 @@ But then, this only works for ranges of ranges\index{rank!of ranges} (of rank $\
 \index{static if@\D{static if}}
 \index{static if@\D{static if}!nested}
 \begin{dcode}
+module flatten4;
+import rank2;
+public import flatten3;
+
 auto flatten(Range)(Range range)
 { 
     static if      (rank!Range == 0)
@@ -1704,37 +1814,46 @@ And, testing:
 
 \index{IFTI}
 \begin{dcode}
-auto rank3 = [[[0,1,2],[3,4,5],[6]]
-             ,[[7],[],[8,9],[10,11]]
-             ,[[],[]]
-             ,[[12]]  ];
+module using_flatten4;
+import std.algorithm;
+import std.range;
+import std.string;
+import rank2;
+import flatten4;
 
-auto flat = flatten(rank3);
-assert(rank!(typeof(flat)) == 1); // Yup, it's a linear range
-assert(equal( flat, [0,1,2,3,4,5,6,7,8,9,10,11,12] ));
+void main()
+{
+    auto rank3 = [[[0,1,2],[3,4,5],[6]]
+                 ,[[7],[],[8,9],[10,11]]
+                 ,[[],[12]]
+                 ,[[13]]  ];
 
-auto reallyFlat = flatten(flat);
-assert(equal( reallyFlat, flat )); // No need to insist
+    auto rank1 = flatten(rank3);
+    assert(rank!(typeof(rank1)) == 1); // Yup, it's a linear range
+    assert(equal( rank1, [0,1,2,3,4,5,6,7,8,9,10,11,12,13] ));
 
-import std.string, std.algorithm;
+    auto stillRank1 = flatten(rank1);
+    assert(equal( stillRank1, rank1 )); // No need to insist
 
-auto text =
-"Sing, O goddess, the anger of Achilles son of Peleus,
- that brought countless ills upon the Achaeans.
- Many a brave soul did it send hurrying down to Hades,
- and many a hero did it yield a prey to dogs and vultures,
- for so were the counsels of Jove fulfilled
- from the day on which the son of Atreus, king of men,
- and great Achilles, first fell out with one another.";
-auto lines = text.splitLines;   // array of strings
-string[][] words;
-foreach(line; lines) words ~= array(splitter(line, ' '));
-assert( rank!(typeof(words)) == 3); // range of range of strings
-                                    // range of range of array of chars
-auto flat = flatten(words);
+    auto text =
+   "Sing, O goddess, the anger of Achilles son of Peleus,
+    that brought countless ills upon the Achaeans.
+    Many a brave soul did it send hurrying down to Hades,
+    and many a hero did it yield a prey to dogs and vultures,
+    for so were the counsels of Jove fulfilled
+    from the day on which the son of Atreus, king of men,
+    and great Achilles, first fell out with one another.";
 
-assert(equal(take(flat, 50), 
+    auto lines = text.splitLines;   // array of strings
+    string[][] words;
+    foreach(line; lines) words ~= array(splitter(line, ' '));
+    assert( rank!(typeof(words)) == 3); // range of range of strings
+                                        // range of range of array of chars
+    auto flat = flatten(words);
+
+    assert(equal(take(flat, 50), 
              "Sing,Ogoddess,theangerofAchillessonofPeleus,thatbr"));
+}
 \end{dcode}
 
 Here it is. It works and we used a struct template (this section, \ref{structtemplates}), \D{static if} (\ref{staticif}), inner member alias (\ref{inneralias}), factory functions (\ref{factory}) and IFTI (\ref{ifti}).
