@@ -9,10 +9,9 @@ Total of 1 samples found.
 
 
 ************templates_advanced.tex **************************
-Found 1 named samples.
-thefile.d:  *** ERROR! ***
+Found 0 named samples.
 
-Found 68 anonymous samples (no compilation attempted).
+Found 69 anonymous samples (no compilation attempted).
 Total of 69 samples found.
 ********************************************************
 
@@ -26,7 +25,7 @@ Total of 0 samples found.
 
 
 ************templates_basics.tex **************************
-Found 45 named samples.
+Found 64 named samples.
 declaration.d: OK
 instantiation.d: OK
 internaldeclarations1.d: OK
@@ -47,7 +46,7 @@ baseelementtype.d: OK
 ndim.d: OK
 using_ndim.d: OK
 using_power.d: OK
-repeated_comp.d: OK
+repeatedcomposition.d: OK
 specialization1.d: OK
 specialization2.d: OK
 def.d: OK
@@ -55,7 +54,7 @@ deduced.d: OK
 function_declaration1.d: OK
 function_declaration2.d: OK
 morph.d: OK
-using_concatenate.d: OK
+ifti.d: OK
 using_flatten1.d: OK
 flatten1.d: OK
 anonymous_function1.d: OK
@@ -71,10 +70,29 @@ acceptingtuple.d: OK
 nmap.d: OK
 nmap2.d: OK
 nfilter.d: OK
-tree.d: OK
+tree1.d: OK
+using_tree.d: OK
+heap1.d: OK
+tree2.d: OK
+tree3.d: OK
+tree4.d: OK
+using_tree4.d: OK
+tree5.d: OK
+summingtree.d: OK
+inordertree.d: OK
+templatedconstructors.d: OK
+holder.d: OK
+heap2.d: OK
+anonymous_error.d: OK (fail as expected).
+innerconcatenate.d: OK
+templatedinner.d: OK
+flatten2.d: OK
+flatten3.d: OK
+flatten4.d: OK
+using_flatten4.d: OK
 
-Found 45 anonymous samples (no compilation attempted).
-Total of 90 samples found.
+Found 25 anonymous samples (no compilation attempted).
+Total of 89 samples found.
 ********************************************************
 
 
