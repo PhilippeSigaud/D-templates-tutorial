@@ -959,6 +959,8 @@ writeln(gs.gettheString); // "abc"
 
 Nifty, eh? This could be a bit better by dealing with the capitalization of the first letter: \DD{getTheString}, but this is good enough for now. Even better, you could put this code in a mixin template to give this get/set capacity to any struct or class (see section \ref{mixintemplates}).
 
+\section{Wrapping and Subtyping: Expanding Types}\label{expandingtypes}
+
 \subsection{Wrapper Templates}\label{wrappertemplates}
 \index{template!wrapper templates}
 
@@ -977,8 +979,256 @@ But, templates can come to the rescue, with a bit of \DD{opDispatch} magic.
 - call typeof() on this.
 - opDispatch? Test if wrapped.foo() is legal. If yes, call
 
+\subsection{\texorpdfstring{\D{alias this}: Transparent Types}
+                           {alias this: Transparent Types}}
+\label{transparenttypes}
 
-See also section \ref{transparenttypes}, on \D{alias }\DD{X }\D{this}.
+We will play a little bit with \D{alias this}. Let us define a small wrapper type:
+
+\begin{dcode}
+struct Transparent(T)
+{
+    T value;
+    alias value this;
+}
+
+// factory function
+Transparent!T transparent(T)(T t)
+{
+    return Transparent!T(t);
+}
+\end{dcode}
+
+This defines \DD{Transparent}, a small struct holding a lone value of type \DD{T}. If a \DD{Transparent!T} is asked to do something for which it has no method nor the correct type (that is to say, almost every action you can imagine!), \D{alias this} activates and uses \DD{value} in lieu of \DD{Transparent!T}. This gives us a very transparent wrapper:
+
+\begin{dcode}
+auto i = transparent(10);
+assert(i == 10); // equality testing
+
+i = 1; // Assignment from an int
+
+++i; // ++ acts on i.value
+assert(i == 2); 
+
+// int-accepting function
+int foo(int ii) { return ii+1;}
+
+assert(foo(i) == 3); // function calls
+
+int trueInt = i; // transmits its value
+
+assert(trueInt == 2);
+assert(i == 2);
+assert(i == trueInt);
+
+// Successive calls all collapse into one Transparent.
+i = transparent(transparent(i));
+\end{dcode}
+
+As you can see, \DD{Transparent} behaves very gracefully: in almost all circumstances where an \D{int} could fit, \DD{Tranparent!}\D{int} will act as a real \D{int}. Of course, its type is still OK:
+
+\begin{dcode}
+assert(is(typeof(i) == Transparent!int));
+\end{dcode}
+
+Another wrapper can be added:
+
+\begin{dcode}
+struct Thin(T)
+{
+    T value;
+    alias value this;
+}
+
+Thin!T thin(T)(T t)
+{
+    return Thin!T(t);
+}
+
+auto t = thin(i); // Works.
+assert(t == 2); // Yep, value was transmitted correctly.
+
+assert(is(typeof(t) == Thin!(Transparent!int)));
+\end{dcode}
+
+What's the use of such an invisible wrapper? First, it's a perfect subtype, which is the very goal of \D{alias }\DD{X }\D{this}. You can add functionalities to your type: new methods, etc. Looks a bit like class inheritance, isn't it? Except that \DD{Transparent} can wrap around (ie: become the subtype of) any type it's aimed at. If you are interested in multiple ways to subtype a type, see section \ref{typedef}, showing Trass3r's library typedef.
+
+Note that this is subtly different from the idea shown in section \ref{wrappertemplates}. In section \ref{wrappertemplates}, use of \DD{opDispatch} lets the wrapper intercept calls \emph{before} dispatching them. That way, you can add logging to a type, for instance. This is something you cannot do with \D{alias this}. On the other hand, \D{alias this} dispatching is automatically done by the compiler, no need to write intercepting code.
+
+For example, here is another wrapper that gives the description of the held type:
+
+\begin{dcode}
+struct Descriptor(T)
+{
+    T value;
+    alias value this;
+    
+    string description() @property
+    {
+        import std.conv;
+        
+        return "Descriptor holding a " ~ T.stringof
+             ~ " of value " ~ to!string(value) ~ ".\n"
+             ~ "(sizeof: " ~ to!string(T.sizeof) ~ " bytes)";
+    }
+}
+
+Descriptor!double d = 1.0;
+writeln(d.description); // "Descriptor holding a double of value 1
+                        //  (sizeof: 8 bytes)"
+\end{dcode}
+
+One day, D will get multiple \D{alias this}, since it's described in TDPL (\ref{TDPL}). This will open the possibility of a type being subtype to many other types at the same time, literally acting as a chameleon depending on circumstances. We will be able to group disparate types and functionalities in one place. I wait for it with increasing interest.\footnote{this was written in January 2012, let see when we get multiple \D{alias this}.}
+
+However, as far as I'm concerned, the main interest of this subtyping is not so much the possibility to add `parallel' functionality as encoding information in the type itself. See the next section:
+
+\subsection{Library Typedef}\label{typedef}
+
+As we’ve seen in the previous section, \D{alias this} gives the perfect subtype, able to mimic its parent type in all circumstances. But what if another derived types is needed? D used to have a \D{typedef} keyword to define a new type (as opposed to \D{alias} redefinition which just define a new symbol/name for a type), but it was dropped in 2011. However, the need to define new types in relation with pre-existing types is still there. Templates can help in defining a library-level solution, which is described here.
+
+Mainly, when a new type is defined in relation with another, already existing, type, there can be four different relationships:
+
+\begin{description}
+\item[subtype:] That’s the standard subclass or \D{alias this} relationship: a subtype can act \emph{in lieu of} its parent type in all circumstances. Whatever the supertype can do, the subtype does also. Moreover, the subtype can be forcibly cast as its parent type (think classes).
+\item[supertype:] The converse: a supertype can be assigned a value of type ‘subtype’ (since a subtype can act as its supertype) and that’s about it. Once the supertype and functions acting on it are created, the original subtype can be used there also.
+\item[parallel:] A parallel type is neither a subtype not a supertype of the original target (it cannot mimic the target), but it can be created with target values. It’s more or less the behaviour of the now-deceased \D{typedef} keyword.
+\item[independent:] An independent type is just there and bear no relationship whatsoever with the original, target type. I cite it there but the interest of defining such a type while still having a ‘target’ type in mind is limited\ldots
+\end{description}
+
+\TODO{A small diagram? Asymptote, here I come.}
+
+Here is clean little piece of code from Trass3r that groups all these notions in one template:
+
+\begin{dcode}
+module typedef;
+
+enum Type
+{
+    Independent,
+    Super,
+    Sub,
+    Parallel,
+}
+
+struct Typedef( T, 
+                Type type = Type.Sub, 
+                T init = T.init, 
+                string _f = __FILE__,
+                int _l = __LINE__ )
+{
+    T payload = init;
+
+    static if ( type != Type.Independent )
+        this( T value )
+        {
+            payload = value;
+        }
+
+    static if ( type == Type.Sub)
+        // typedef int foo; foo f;
+        // f.opCast!(t)() == cast(t) f
+        T opCast(T)()
+        {
+            return payload;
+        }
+
+    static if ( type == Type.Sub || type == Type.Parallel )
+        alias payload this;
+
+    static if ( type == Type.Super )
+        typeof( this ) opAssign( T value )
+        {
+            payload = value;
+            return this;
+        }
+    else static if ( type == Type.Sub )
+        @disable void opAssign( T value );
+}
+\end{dcode}
+
+\TODO{Give some examples.}
+
+\section{Types as Information}
+\label{typesasinformation}
+
+\subsection{User-Defined Literals}\label{userdefinedliterals}
+
+In \href{http://drdobbs.com/blogs/tools/229401068}{this article}, Walter Bright makes a convincing case for using templates as user-defined literals. His example is now the \stdanchor{conv}{octal} wrapper that allowed D to (see if it's possible to) ditch octal literals as a compiler construct and push them into library-space. That way, you can use:
+
+\begin{dcode}
+auto o1 = octal!"755";
+// or even:
+auto o2 = octal!755;
+\end{dcode}
+
+as a stand-in replacement for the \DD{0755} octal literal. It's no more complicated to type (a few chars to add at most), it's clearer for a reader of your code (who may miss the beginning \DD{0}) that he's dealing with an octal there. Best of all, the implementation is there as library code: easy to reach, easy to debug\footnote{ And less intimidating than diving into compiler code.} and easy to duplicate for other encodings. That way, this could be done:
+
+\begin{dcode}
+auto h1 = hexa!"deadbeef";
+auto b1 = binary!1011011;
+// Or even:
+auto number = base!(36, "4d6r7th2h7y");
+\end{dcode}
+
+Behind the scene, \DD{octal} reads its \D{string} or \D{int} argument and converts it into an \D{int} or a \D{long} depending on the argument size.  It's a nice piece of work that could pave the way to similar well-integrated language extensions.
+
+\unfinished{Also, DSL in strings in D, see Statically-Checked Writeln in \ref{staticallycheckedwriteln}, encoding informations in types (\ref{encodinginformationwithtypes}) and annotating types (\ref{annotatingtypes}).}
+
+
+\subsection{Encoding Information With Types}
+\label{encodinginformationwithtypes}
+
+This is an extension of the previous section’s idea, that can be found for example in \stdanchor{range}{assumeSorted} and \stdanchor{range}{SortedRange}. These Phobos constructs encode some information in a type (in this case, the fact than the range is sorted, with an associated predicate). That way, subsequent operations acting on a range can use better algorithm if they know it's sorted.
+
+This kind of encoding can be used for many different schemes:
+
+\begin{itemize}
+\item For a matrix library, you could have a, for example, \DD{assumeHermitian} or \DD{assumeTriangular} that just wraps a pre-existing matrix.
+\item For a XML/HTML library, you could imagine a \DD{Validated} struct that's used to indicate, er, validated content. Any external input will have to pass trough a \DD{validate} function that delivers the \DD{Validated} object. Subsequent operations will work only on \DD{Validated} data, not raw data.
+\item A units library (as in, $kg.m/s^{2}$, not unit-testing) is mainly a bunch of \D{double} (or complex) values wrapped in a multi-checked type that allows only some operations, depending on types. \DD{meter(5) + kilo(gram(10))} is a no-no, but \DD{meter(5)*kilo(gram(10))} is OK.
+\end{itemize}
+
+Moreover, it's easy to provide additional information:
+
+\begin{dcode}
+struct MinMax(T)
+{
+    T min;
+    T max;
+    
+    T value;
+    
+    alias value this;
+}
+\end{dcode}
+
+In this case, \DD{MinMax} means the wrapped value is between \DD{min} and \DD{max} (the enforcing code would be in the factory function, for example).
+        
+Things get interesting when using multiple wrappers inside one another. Imagine we have three wrappers, for numerical ranges with an ordering operation:
+
+\begin{itemize}
+\item \DD{minmaxed}, which ascertains (well, at least transmits the message) that the wrapped value is between to extrema.
+\item \DD{periodic}, which encodes the idea the range has a period, accessible through the \DD{.period} member.
+\item \DD{derivative}, which says successive elements' difference is no more than a \DD{.slope} number (in absolute).
+\end{itemize}
+
+\begin{dcode}
+import std.range: cycle;
+
+auto range = cycle([0,1,2,3,4,3,2,1]);
+auto withMetadata = minmaxed( 
+                              periodic( 
+                                       derivative( range
+                                                 , 1)
+                                      , 8
+                            , 0, 10);
+
+assert(withMetadata.period == 8); // propagated all the way up.
+\end{dcode}
+
+So, in the previous sample, \DD{withMetadata}'s elements are at the same time limited in variation, limited in value and periodic. The trouble is when we want to shift metadata around, comparing types with metadata ordered in a different way: obviously for us humans, a range with suprema and periodic is \emph{also} periodic and with suprema. But as far as D is concerned a \DD{minmaxed(periodic())} and a \DD{periodic(minmaxed())} do not have the same type. For more on this notion, see section \ref{annotatingtypes} on annotating types.
+
+\TODO{A unit example in the Examples part? It may be a bit big\ldots}
 
 \section{Templates in Templates}\label{templatesintemplates}
 
@@ -1272,229 +1522,4 @@ That way, no need to modify your beautiful templates.
 
 \TODO{Test that.}
 
-\section{User-Defined Literals}\label{userdefinedliterals}
 
-In \href{http://drdobbs.com/blogs/tools/229401068}{this article}, Walter Bright makes a convincing case for using templates as user-defined literals. His example is now the \stdanchor{conv}{octal} wrapper that allowed D to (see if it's possible to) ditch octal literals as a compiler construct and push them into library-space. That way, you can use:
-
-\begin{dcode}
-auto o1 = octal!"755";
-// or even:
-auto o2 = octal!755;
-\end{dcode}
-
-as a stand-in replacement for the \DD{0755} octal literal. It's no more complicated to type (a few chars to add at most), it's clearer for a reader of your code (who may miss the beginning \DD{0}) that he's dealing with an octal there. Best of all, the implementation is there as library code: easy to reach, easy to debug\footnote{ And less intimidating than diving into compiler code.} and easy to duplicate for other encodings. That way, this could be done:
-
-\begin{dcode}
-auto h1 = hexa!"deadbeef";
-auto b1 = binary!1011011;
-// Or even:
-auto number = base!(36, "4d6r7th2h7y");
-\end{dcode}
-
-Behind the scene, \DD{octal} reads its \D{string} or \D{int} argument and converts it into an \D{int} or a \D{long} depending on the argument size.  It's a nice piece of work that could pave the way to similar well-integrated language extensions.
-
-\unfinished{Also, DSL in strings in D, see Statically-Checked Writeln in \ref{staticallycheckedwriteln}, encoding informations in types (\ref{encodinginformationwithtypes}) and annotating types (\ref{annotatingtypes}).}
-
-\section{Transparent Types}\label{transparenttypes}
-
-Let us define a small wrapper type:
-
-\begin{dcode}
-struct Transparent(T)
-{
-    T value;
-    alias value this;
-}
-
-// factory function
-Transparent!T transparent(T)(T t)
-{
-    return Transparent!T(t);
-}
-\end{dcode}
-
-This defines \DD{Transparent}, a small struct holding a lone value of type \DD{T}. If a \DD{Transparent!T} is asked to do something for which it has no method nor the correct type (that is to say, almost every action you can imagine!), \D{alias this} activates and uses \DD{value} in lieu of \DD{Transparent!T}. This gives us a very transparent wrapper:
-
-\begin{dcode}
-auto i = transparent(10);
-assert(i == 10); // equality testing
-
-i = 1; // Assignment from an int
-
-++i; // ++ acts on i.value
-assert(i == 2); 
-
-// int-accepting function
-int foo(int ii) { return ii+1;}
-
-assert(foo(i) == 3); // function calls
-
-int trueInt = i; // transmits its value
-
-assert(trueInt == 2);
-assert(i == 2);
-assert(i == trueInt);
-
-// Successive calls all collapse into one Transparent.
-i = transparent(transparent(i));
-\end{dcode}
-
-As you can see, \DD{Transparent} behaves very gracefully: in almost all circumstances where an \D{int} could fit, \DD{Tranparent!}\D{int} will act as a real \D{int}. Of course, its type is still OK:
-
-\begin{dcode}
-assert(is(typeof(i) == Transparent!int));
-\end{dcode}
-
-Another wrapper can be added:
-
-\begin{dcode}
-struct Thin(T)
-{
-    T value;
-    alias value this;
-}
-
-Thin!T thin(T)(T t)
-{
-    return Thin!T(t);
-}
-
-auto t = thin(i); // Works.
-assert(t == 2); // Yep, value was transmitted correctly.
-
-assert(is(typeof(t) == Thin!(Transparent!int)));
-\end{dcode}
-
-What's the use of such an invisible wrapper? First, it's a perfect subtype, which is the very goal of \D{alias }\DD{X }\D{this}. You can add functionalities to your type: new methods, etc. Looks a bit like class inheritance, isn't it? Except that \DD{Transparent} can wrap around (ie: become the subtype of) any type it's aimed at. If you are interested in multiple ways to subtype a type, see section \ref{typedef}, showing Trass3r's library typedef.
-
-Note that this is subtly different from the idea shown in section \ref{wrappertemplates}. In section \ref{wrappertemplates}, use of \DD{opDispatch} lets the wrapper intercept calls \emph{before} dispatching them. That way, you can add logging to a type, for instance. This is something you cannot do with \D{alias this}. On the other hand, \D{alias this} dispatching is automatically done by the compiler, no need to write intercepting code.
-
-For example, here is another wrapper that gives the description of the held type:
-
-\begin{dcode}
-struct Descriptor(T)
-{
-    T value;
-    alias value this;
-    
-    string description() @property
-    {
-        import std.conv;
-        
-        return "Descriptor holding a " ~ T.stringof
-             ~ " of value " ~ to!string(value) ~ ".\n"
-             ~ "(sizeof: " ~ to!string(T.sizeof) ~ " bytes)";
-    }
-}
-
-Descriptor!double d = 1.0;
-writeln(d.description); // "Descriptor holding a double of value 1
-                        //  (sizeof: 8 bytes)"
-\end{dcode}
-
-One day, D will get multiple \D{alias this}, since it's described in TDPL (\ref{TDPL}). This will open the possibility of a type being subtype to many other types at the same time, literally acting as a chameleon depending on circumstances. We will be able to group disparate types and functionalities in one place. I wait for it with increasing interest.\footnote{this was written in January 2012, let see when we get multiple \D{alias this}.}
-
-However, as far as I'm concerned, the main interest of this subtyping is not so much the possibility to add `parallel' functionality as encoding information in the type itself. See the next section:
-
-\section{Encoding Information With Types} \label{encodinginformationwithtypes}
-
-This is an extension of the previous two sections' idea, that you can find for example in \stdanchor{range}{assumeSorted} and \stdanchor{range}{SortedRange}. These Phobos constructs encode some information in a type (in this case, the fact than the range is sorted, with an associated predicate). That way, subsequent operations acting on a range can use better algorithm if they know it's sorted.
-
-This kind of encoding can be used for many different schemes:
-
-\begin{itemize}
-\item For a matrix library, you could have a, for example, \DD{assumeHermitian} or \DD{assumeTriangular} that just wraps a pre-existing matrix.
-\item For a XML/HTML library, you could imagine a \DD{Validated} struct that's used to indicate, er, validated content. Any external input will have to pass trough a \DD{validate} function that delivers the \DD{Validated} object. Subsequent operations will work only on \DD{Validated} data, not raw data.
-\item A units library (as in, $kg.m/s^{2}$, not unit-testing) is mainly a bunch of \D{double} (or complex) values wrapped in a multi-checked type that allows only some operations, depending on types. \DD{meter(5) + kilo(gram(10))} is a no-no, but \DD{meter(5)*kilo(gram(10))} is OK.
-\end{itemize}
-
-Moreover, it's easy to provide additional information:
-
-\begin{dcode}
-struct MinMax(T)
-{
-    T min;
-    T max;
-    
-    T value;
-    
-    alias value this;
-}
-\end{dcode}
-
-In this case, \DD{MinMax} means the wrapped value is between \DD{min} and \DD{max} (the enforcing code would be in the factory function, for example).
-        
-Things get interesting when using multiple wrappers inside one another. Imagine we have three wrappers, for numerical ranges with an ordering operation:
-
-\begin{itemize}
-\item \DD{minmaxed}, which ascertains (well, at least transmits the message) that the wrapped value is between to extrema.
-\item \DD{periodic}, which encodes the idea the range has a period, accessible through the \DD{.period} member.
-\item \DD{derivative}, which says successive elements' difference is no more than a \DD{.slope} number (in absolute).
-\end{itemize}
-
-\begin{dcode}
-import std.range: cycle;
-
-auto range = cycle([0,1,2,3,4,3,2,1]);
-auto withMetadata = minmaxed( 
-                              periodic( 
-                                       derivative( range
-                                                 , 1)
-                                      , 8
-                            , 0, 10);
-
-assert(withMetadata.period == 8); // propagated all the way up.
-\end{dcode}
-
-So, in the previous sample, \DD{withMetadata}'s elements are at the same time limited in variation, limited in value and periodic. The trouble is when we want to shift metadata around, comparing types with metadata ordered in a different way: obviously for us humans, a range with suprema and periodic is \emph{also} periodic and with suprema. But as far as D is concerned a \DD{minmaxed(periodic())} and a \DD{periodic(minmaxed())} do not have the same type. For more on this notion, see section \ref{annotatingtypes} on annotating types.
-
-\section{Library Typedef}\label{typedef}
-
-From Trass3r:
-
-\unfinished{This asks for some explanatory text.}
-
-\begin{dcode}
-enum Type
-{
-    Independent,
-    Super,
-    Sub,
-    Parallel,
-}
-
-struct Typedef( T, 
-                Type type = Type.Sub, 
-                T init = T.init, 
-                string _f = __FILE__,
-                int _l = __LINE__ )
-{
-    T payload = init;
-
-    static if ( type != Type.Independent )
-        this( T value )
-        {
-            payload = value;
-        }
-
-    static if ( type == Type.Sub)
-        // typedef int foo; foo f;
-        // f.opCast!(t)() == cast(t) f
-        T opCast(T)()
-        {
-            return payload;
-        }
-
-    static if ( type == Type.Sub || type == Type.Parallel )
-        alias payload this;
-
-    static if ( type == Type.Super )
-        typeof( this ) opAssign( T value )
-        {
-            payload = value;
-            return this;
-        }
-    else static if ( type == Type.Sub )
-        @disable void opAssign( T value );
-}
-\end{dcode}
