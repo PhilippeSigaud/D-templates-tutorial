@@ -1609,7 +1609,7 @@ auto concatenate(A)(A a)
 }
 \end{dcode}
 
-The previous example is not legal D code.\index{mantra} Of course, there is a solution: just return a struct with a template member function (\ref{membertemplates}), in that case the \DD{opCall} operator:
+The previous example is not legal D code (remember \ref{mantra}).\index{mantra} Of course, there is a solution: just return a struct with a template member function (\ref{membertemplates}), in that case the \DD{opCall} operator:
 
 \index{inner struct}
 \index{templated method}
@@ -1857,7 +1857,7 @@ Here it is. It works and we used a struct template (this section, \ref{structtem
 
 \section{Class Templates}\label{classtemplates}
 
-\aparte{This Section Needs You!}{I'm not an OOP programmer and am not used to create interesting hierarchies. If anyone reading this has an interesting example of class templates that could be used throughout the section, I'm game.}
+\aparte{This Section Needs You!}{I'm not an OOP programmer and am not used to create interesting hierarchies. If anyone reading this has an example of class templates that could be used throughout the section, I'm game.}
 
 \subsection{Syntax}\label{classsyntax}
 
@@ -1865,18 +1865,30 @@ No surprise here, just put the template parameters list between \D{class} and th
 
 \index{syntax!class templates}
 \begin{dcode}
+module classsyntax1;
+
+class Base {}
+interface Interface1 {}
+interface Interface2 {}
+
 class MyClass(Type, alias fun, bool b = false)
     : Base, Interface1, Interface2
-{ ... }
+{ /*...*/ }
 \end{dcode}
 
 What's more fun is that you can have parameterized inheritance: the various template parameters are defined before the base class list, you can use them here:
 
 \index{syntax!class templates!parameterized inheritance}
 \begin{dcode}
+module classsyntax2;
+
+class Base(T) {}
+interface Interface1 {}
+interface Interface2(alias fun, bool b) {}
+
 class MyClass(Type, alias fun, bool b = false)
     : Base!(Type), Interface1, Interface2!(fun,b)
-{ ... }
+{ /*...*/ }
 \end{dcode}
 
 \aparte{Interface Templates?}{Yes you can. See section \ref{othertemplates}}
@@ -1884,6 +1896,8 @@ class MyClass(Type, alias fun, bool b = false)
 This opens interesting vistas, where what a class inherits is determined by its template arguments (since \DD{Base} may be many different classes or even interfaces depending on \DD{Type}). In fact, look at this:
 
 \begin{dcode}
+module classsyntax3;
+
 enum WhatBase { Object, Interface, BaseClass }
 
 template Base(WhatBase whatBase = WhatBase.Object)
@@ -1895,6 +1909,8 @@ template Base(WhatBase whatBase = WhatBase.Object)
     else
         alias TheBase Base;
 }
+
+class MyClass(Type) : Base!Type {}
 \end{dcode}
 
 With this, \DD{MyClass} can inherit from \DD{Object}, the root of D's class hierarchy, from an interface, or from another class. Obviously, the dispatching template could be much more refined. With a second template parameter, the base class could itself be parameterized, and so on.
@@ -1909,25 +1925,27 @@ An object's methods are nothing more than delegates with a reference to the loca
 
 \subsection{\texorpdfstring{\D{invariant} clauses}
                            {invariant clauses}}
-\label{class:invariant}
+\label{classinvariant}
 
-In the same family than \D{in}/\D{out} clauses for functions (section \ref{inandoutclauses}), a class template's \D{invariant} clause has access to the template parameter. You cannot make it disappear totally, but you can get it to be empty with a \D{static if} statement.
+In the same family than \D{in}/f\D{out} clauses for functions (section \ref{inandoutclauses}), a class template's \D{invariant} clause has access to the template parameter. You cannot make it disappear totally, but you can get it to be empty with a \D{static if} statement.
 
 \index{class template!invariant}
 \index{static if@\D{static if}!enabling/disabling code!invariant clause@\D{invariant} clause}
 \begin{dcode}
+module classinvariant;
+
 class MyClass(T, U, V)
 {
-    (...)
+    /*...*/
 
-    invariant
+    invariant ()
     {
-        static if (/* some condition on T,U,V */ )
+        static if (is(T == U))
         {
             /* invariant code */
         }
         else
-        { /* empty invariant */ }
+        { } /* empty invariant */
     }
 }
 \end{dcode}
@@ -1942,41 +1960,49 @@ In D, you can return anonymous classes\index{anonymous!classes} directly from a 
 
 \index{anonymous!class templates}
 \begin{dcode}
+module anonymousclass;
+
 // stores a function and a default return value.
-auto acceptor(alias fun, D)(D default)
+auto acceptor(alias fun, D)(D defaultValue)
 {
     return new class 
     { 
+        this() {}
+        
         auto opCall(T)(T t)
         {
             static if (__traits(compiles, fun(T.init)))
                 return fun(t); 
             else
-                return default;
+                return defaultValue;
         }
     };
 }
 
-int add1(int i) { return i+1;}
-auto accept = acceptor!(add1)(0);
-auto test1 = accept(1); 
-assert(test1 == 2);
+unittest
+{
+    int add1(int i) { return i+1;}
+    auto accept = acceptor!(add1)(-1);
+    
+    auto test1 = accept(10); 
+    assert(test1 == 11);
 
-auto test2 = accept("abc");
-assert(test2 == 0); // default value
+    auto test2 = accept("abc");
+    assert(test2 == -1); // default value
+}
 \end{dcode}
-
-\TODO{Test this!}
 
 For \D{\_\_traits}\DD{(compiles, ...)},\index{\_\_traits@\D{\_\_traits}} see \href{www.dlang.org/traits.html}{here} online and section \ref{traits} in this document.
 
-\subsection{Parameterized Base Class}
+\subsection{Parametrized Base Class}
 
 You can use a template parameter directly as a base class:
 
-\index{parameterized base class}
+\index{parametrized base class}
 \index{template!parameters!as a base class}
 \begin{dcode}
+module parametrizedbaseclass;
+
 interface ISerializable
 {
     size_t serialize() @property;
@@ -1984,7 +2010,10 @@ interface ISerializable
 
 class Serializable(T) : T, ISerializable
 {
-    size_t serialize() @property { ... }
+    size_t serialize() @property 
+    {
+        return this.tohash; 
+    }
 } 
 \end{dcode}
 
@@ -1994,115 +2023,133 @@ If you have different interfaces like this, you can nest these properties:
 
 \index{nested templates instantiations}
 \begin{dcode}
-auto wrapped = new Serializable!(Iterable!(SomeClass))(...);
+auto wrapped = new Serializable!(Iterable!(SomeClass))(/*...*/);
 \end{dcode}
 
 Of course, the base class and the interface may themselves be parameterized:
 
 \begin{dcode}
+module serializetemplate;
+
 enum SerializationPolicy { policy1, policy2 }
 
-interface ISerializable
+interface ISerializable 
 (SerializationPolicy policy = SerializationPolicy.policy1)
 {
     static if (is(policy == SerializationPolicy.policy1))
-        ...
+        void serialize() { /*...*/ }
     else
-        .../
+        void serialize() { /*...*/ }
 }
 
 class Serializable(T, Policy) : T, ISerializable!Policy
 {
-    ...
+    /*...*/
 } 
 \end{dcode}
 
 In D, you can also get this kind of effect with an \D{alias X this;} declaration in your class or struct. You should also have a look at mixin templates (\ref{mixintemplates}) and wrapper templates (\ref{wrappertemplates}) for other idioms built around the same need. 
 
-\subsection{Another Example}
+\subsection{Adding Functionalities through inheritance}
+\label{functionalityinheritance}
 
-\unfinished{I need to see with Timon what I can write there.}
+Here is an example taken from Timon Gehr. Given a base class \DD{Cell} with a private field and get/set methods, it's possible to provide additional functionalities through inheritance. By defining templates for \DD{Cell} subclasses, each with a new possibility (doubling the value, logging the value, etc.), it's possible to select those new actions by inheritance:
 
 \begin{dcode}
 /**
-Timon Gehr timon.gehr@gmx.ch via puremagic.com 
-This is an useful pattern. 
-I don't have a very useful example at hand, but this one should do. 
-It does similar things that can be achieved with traits in Scala for example.
-*/
+ * Timon Gehr timon.gehr@gmx.ch via puremagic.com 
+ */
+module inheritanceexample;
+
 import std.stdio;
-abstract class Cell(T){
-       abstract void set(T value);
-       abstract const(T) get();
+
+abstract class Cell(T)
+{
+    abstract void set(T value);
+    abstract const(T) get();
 private:
-       T field;
+    T field;
 }
 
-class AddSetter(C: Cell!T,T): C{
-       override void set(T value){field = value;}
+class AddSetter(C: Cell!T,T): C
+{
+    override void set(T value){field = value;}
 }
-class AddGetter(C: Cell!T,T): C{
-       override const(T) get(){return field;}
-}
-
-class DoubleCell(C: Cell!T,T): C{
-       override void set(T value){super.set(2*value);}
+class AddGetter(C: Cell!T,T): C
+{
+    override const(T) get(){return field;}
 }
 
-class OneUpCell(C: Cell!T,T): C{
-       override void set(T value){super.set(value+1);} 
+class DoubleCell(C: Cell!T,T): C
+{
+    override void set(T value){super.set(2*value);}
 }
 
-class SetterLogger(C:Cell!T,T): C{
-       override void set(T value){
-               super.set(value);
-               writeln("cell has been set to '",value,"'!");
-       }
+class OneUpCell(C: Cell!T,T): C
+{
+    override void set(T value){super.set(value+1);} 
 }
 
-class GetterLogger(C:Cell!T,T): C{
-       override const(T) get(){
-               auto value = super.get();
-               writeln("'",value,"' has been retrieved!");
-               return value;
-       }
+class SetterLogger(C:Cell!T,T): C
+{
+    override void set(T value)
+    {
+        super.set(value);
+        writeln("cell has been set to '",value,"'!");
+    }
 }
 
+class GetterLogger(C:Cell!T,T): C
+{
+    override const(T) get()
+    {
+        auto value = super.get();
+        writeln("'",value,"' has been retrieved!");
+        return value;
+    }
+}
+
+// ConcreteCell has a 'true' getter and a 'true' setter
 class ConcreteCell(T): AddGetter!(AddSetter!(Cell!T)){}
+// OneUpDoubleSetter has a setter that adds 1 to the stored value and then doubles it
 class OneUpDoubleSetter(T): OneUpCell!(DoubleCell!(AddSetter!(Cell!T))){}
+// doubleOneUpSetter has a setter that doubles the stored value and add 1
 class DoubleOneUpSetter(T): DoubleCell!(OneUpCell!(AddSetter!(Cell!T))){}
-void main(){
-       Cell!string x;
-       x = new ConcreteCell!string;
-       x.set("hello");
-       writeln(x.get());
 
-       Cell!int y;
-       y = new SetterLogger!(ConcreteCell!int);
-       y.set(123); // prints: "cell has been set to '123'!
+void main()
+{
+    Cell!string x;
+    x = new ConcreteCell!string;
+    x.set("hello");
+    writeln(x.get());
+    
+    Cell!int y;
+    y = new SetterLogger!(ConcreteCell!int);
+    y.set(123); // prints: "cell has been set to '123'!
        
-       y = new GetterLogger!(DoubleCell!(ConcreteCell!int));
-       y.set(1234);
-       y.get(); // prints "'2468' has been retrieved!"
+    y = new GetterLogger!(DoubleCell!(ConcreteCell!int));
+    y.set(1234);
+    y.get(); // prints "'2468' has been retrieved!"
 
-       y = new AddGetter!(OneUpDoubleSetter!int);
-       y.set(100);
-       writeln(y.get()); // prints "202"
-
-       y = new AddGetter!(DoubleOneUpSetter!int);
-       y.set(100);
-       writeln(y.get()); // prints "201"
-
-       // ...
+    y = new AddGetter!(OneUpDoubleSetter!int);
+    y.set(100);
+    writeln(y.get()); // prints "202"
+    y = new AddGetter!(DoubleOneUpSetter!int);
+    y.set(100);
+    writeln(y.get()); // prints "201"
 }
 \end{dcode}
+For those of you knowing the Scala programming language, this is a bit reminiscent of \emph{traits}, which in Scala a sort-of stub classes that can be added to class to provide new functions. In D, apart from the above feature, you can also use mixin templates (\ref{mixintemplates}) and string mixins (\ref{stringmixins}).
+
 
 \subsection{The Curiously Recurring Template Pattern}
 
 \begin{dcode}
-class Base(Child) { ... }
+module crtp;
 
-class Derived : Base!Derived { ... }
+class Base(Child) { /*...*/ }
+
+class Derived : Base!Derived { /*...*/ }
 \end{dcode}
 
 Hold on, what does that mean? \DD{Base} is easy to understand. But what about \DD{Derived}? It says it inherits from another class that is templated on\ldots \DD{Derived} \emph{itself}? But \DD{Derived} is not defined at this stage! Or is it? 
@@ -2125,6 +2172,8 @@ The syntax is exactly what you might imagine:
 
 \index{syntax!interface templates}
 \begin{dcode}
+module interfacesyntax;
+
 interface Interf(T)
 {
     T foo(T);
@@ -2140,6 +2189,8 @@ Here is the syntax, no suprise there:
 
 \index{syntax!union templates}
 \begin{dcode}
+module unionsyntax;
+
 union Union(A,B,C) { A a; B b; C c;}
 \end{dcode}
 
@@ -2150,8 +2201,11 @@ Strangely, enumerations do not have the previous simplified syntax. To declare a
 \index{syntax!enum template}
 \index{enum template}
 \begin{dcode}
+module enumsyntax;
+
 template Enum(T)
 {
     enum Enum : T { A, B, C}
 }
 \end{dcode}
+
