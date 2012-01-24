@@ -25,43 +25,55 @@ You may have many template declarations with the same name and differing constra
 
 \index{template!constraints}
 \begin{dcode}
-template Constrained(T) 
-    if (is(T : int)) { ... } // #1
-template Constrained(T) 
-    if (is(T : float)) { ... } // #2
-template Constrained(T,U) 
-    if (is(T : int) && !is(U : float)) { ... } // #3
-template Constrained(T,U) 
-    if (is(T : int) && is(U : float)) { ... } // #4
+module constrained;
 
-Constrained!(byte) // #1
-Constrained!(string) // Error, no declaration fits (string)
-Constrained!(int,string) // #3 and #4 considered, but #4 is dropped.
-                         // So #3 it is.
+template Constrained(T) 
+    if (is(T : int)) { /*...*/ } // #1
+template Constrained(T) 
+    if (is(T : float)) { /*...*/ } // #2
+template Constrained(T,U) 
+    if (is(T : int) && !is(U : float)) { /*...*/ } // #3
+template Constrained(T,U) 
+    if (is(T : int) && is(U : float)) { /*...*/ } // #4
+
+alias Constrained!(byte) C1;      // #1
+// alias Constrained!(string) C2; // Error, no declaration fits (string)
+alias Constrained!(int,string) C3;// #3 and #4 considered, but #4 is dropped.
+                                  // So #3 it is.
 \end{dcode}
 
 This syntax is the same for the special-cases templates seen in sections \ref{functiontemplates}, \ref{structtemplates}, \ref{classtemplates} and \ref{othertemplates}. The only tricky part is for class templates, where you may wonder where to put the constraint: before or after the inheritance list? The answer is: before.
 
 \index{syntax!template constraints!for class templates}
 \begin{dcode}
+module constraintsyntax;
+
+
 T theFunction(T)(T argument)
-    if (is(T : int) || is(T : double)) { ... }
+    if (is(T : int) || is(T : double)) 
+{ return argument; }
 
 struct TheStruct(T) 
-    if (is(T : int) || is(T : double)) { ... }
+    if (is(T : int) || is(T : double)) 
+{ /*...*/ }
 
 class TheClass(T) 
     if (is(T : int) || is(T : double)) 
-    : BaseClass!T, Interface1 { ... }
+    : BaseClass!T, Interface1 
+{ /*...*/ }
 \end{dcode}
 
-When you write constraints, just remember they are a compile-time construct. For \DD{theFunction}, \DD{argument} is not known at compile-time, only its type, \DD{T}. So you should not use \DD{argument} in your constraint. If you need a value of type \DD{T}, use \DD{T.init}. For 
+When you write constraints, just remember they are a compile-time construct. For \DD{theFunction}, \DD{argument} is not known at compile-time, only its type, \DD{T}. Do not use \DD{argument} in your constraint. If you need a value of type \DD{T}, use \DD{T.init}. For example:
 
 \index{template!constraints}
 \begin{dcode}
+module ctvalue;
+
 auto callTwice(alias fun, T)(T arg)
     // Is it OK to do fun(fun(some T))?
-    if (is(typeof({ fun(fun(T.init)); }()))) 
+    if (is(typeof({ 
+                      fun(fun(T.init)); 
+                  }()))) 
 {
     return fun(fun(arg));
 }
@@ -69,7 +81,7 @@ auto callTwice(alias fun, T)(T arg)
 
 \subsection{Constraints Usage}\label{constraintsusage}
 
-Constraints come from the same idea than C++0x\index{C++!C++0x} \DD{concept}, er..., concept, although simpler to define, understand and, as shown by D, implement. The idea is to define a set of conditions a type must respect to be a representative of a `concept', and check for it before instantiating.
+Constraints come from the same idea than C++0x\index{C++!C++0x} \DD{concept}, er\dlots, concept, although simpler to define, understand and, as shown by D, implement. The idea is to define a set of conditions a type must respect to be a representative of a `concept', and check for it before instantiating.
 
 Have a look at constraints poster-child: \emph{ranges}\index{range}.\footnote{ Ranges are overdue a tutorial.} They were rapidly described in section \ref{functionflatten}.
 
@@ -78,6 +90,7 @@ Have a look at constraints poster-child: \emph{ranges}\index{range}.\footnote{ R
 \index{predicate templates}
 \index{range templates}
 \begin{dcode}
+module rangewrapper;
 import std.range;
 
 struct RangeWrapper(Range) 
@@ -105,13 +118,16 @@ The main problem is that, compared to templates specializations, you cannot do:
 
 \index{template!constraints!limitations}
 \begin{dcode}
-template Temp(T) if (is(T:int)) // #1
-{ ... } // specialized for ints
+module constraints_error;
 
-template Temp(T) // #2
-{ ... } // generic case
+template Temp(T) 
+if (is(T:int)) // #1, specialized for ints
+{ /*...*/ }
 
-Temp!int // Error!
+template Temp(T) // #2, generic case 
+{ /*...*/ }
+
+alias Temp!int TI;// Error!
 \end{dcode}
 
 Why an error? Because the compiler finds that both the \D{int}-specialized and the generic version can be instantiated. It cannot decide which one you mean and, quite correctly, does nothing, humble code that it is. No problem, says you, we will just add a constraint to the generic version:
