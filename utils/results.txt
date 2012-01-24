@@ -9,9 +9,15 @@ Total of 1 samples found.
 
 
 ************templates_advanced.tex **************************
-Found 0 named samples.
+Found 6 named samples.
+constrained.d: OK
+constraintsyntax.d: OK
+ctvalue.d: OK
+rangewrapper.d: OK
+constraints_error.d: OK (fail as expected).
+librarytypedef.d: OK
 
-Found 69 anonymous samples (no compilation attempted).
+Found 63 anonymous samples (no compilation attempted).
 Total of 69 samples found.
 ********************************************************
 
@@ -25,7 +31,7 @@ Total of 0 samples found.
 
 
 ************templates_basics.tex **************************
-Found 64 named samples.
+Found 76 named samples.
 declaration.d: OK
 instantiation.d: OK
 internaldeclarations1.d: OK
@@ -90,8 +96,20 @@ flatten2.d: OK
 flatten3.d: OK
 flatten4.d: OK
 using_flatten4.d: OK
+classsyntax1.d: OK
+classsyntax2.d: OK
+classsyntax3.d: OK
+classinvariant.d: OK
+anonymousclass.d: OK
+parametrizedbaseclass.d: OK
+serializetemplate.d: OK
+inheritanceexample.d: OK
+crtp.d: OK
+interfacesyntax.d: OK
+unionsyntax.d: OK
+enumsyntax.d: OK
 
-Found 25 anonymous samples (no compilation attempted).
+Found 13 anonymous samples (no compilation attempted).
 Total of 89 samples found.
 ********************************************************
 
