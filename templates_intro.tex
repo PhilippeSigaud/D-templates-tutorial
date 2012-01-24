@@ -56,12 +56,12 @@ For those of you interested by \LaTeX, this document uses the \href{http://code.
 
 I will sometimes make a little explanatory detour, discussing a small piece of info too small to be in its own section but of interest to the reader nonetheless. These will be marked so:
 
-\aparte{Literate Programming}
+\aparte{Semi-Literate Programming}
 {Most code samples presented in this document will compile with a reasonably recent D compiler. In the \DD{utils} directory, there is a small D script called \DD{codesamples.d} that extracts code samples from the \LaTeX\ files.
 
-Samples with a \D{module }\DD{name;} declaration will be extracted and a file called \DD{name.d} will be created and compiled. The previous code sample creates a file called \DD{intro.d} and so on. The compilation results are put in a file called \DD{result.txt}. Samples that depends on other samples just import them (yeah for D modularity, no need for specific mark-up to weave code together). Samples with a name ending in \DD{\_error} will \emph{not} compile, as expected: they are there to show errors, mistakes and gotchas. Anonymous samples are not extracted: I use them to show small snippets not intended to stand by themselves, or just to show D-ish pseudocode.
+Samples with a \D{module }\DD{name;} declaration will be extracted, a file called \DD{name.d} will be created and compiled (possibly with a stub \DD{main()} if none exists). The previous code sample creates a file called \DD{intro.d} and so on. The compilation results are put in a file called \DD{result.txt}. Samples that depend on other samples just import them (yeah for D modularity, no need for specific mark-up to weave code together). Samples with a name ending in \DD{\_error} will \emph{not} compile, as expected: they are there to show errors, mistakes and gotchas. Anonymous samples are not extracted: I use them to show small snippets not intended to stand by themselves, or just to show D-ish pseudocode.
 
-All in all, you can consider this entire document as a gigantic D package, describing hundreds of small modules.}
+All in all, you can see this entire document as a gigantic D package, describing hundreds of small modules.}
 
 Finally, some sections in this doc are not finished yet. The sections I consider unfinished will begin with a friendly red frame:
 
