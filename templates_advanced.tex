@@ -30,13 +30,13 @@ module constrained;
 template Constrained(T) 
     if (is(T : int)) { /*...*/ } // #1
 template Constrained(T) 
-    if (is(T : float)) { /*...*/ } // #2
+    if (is(T : string)) { /*...*/ } // #2
 template Constrained(T,U) 
     if (is(T : int) && !is(U : float)) { /*...*/ } // #3
 template Constrained(T,U) 
     if (is(T : int) && is(U : float)) { /*...*/ } // #4
 
-alias Constrained!(byte) C1;      // #1
+alias Constrained!(int) C1;      // #1
 // alias Constrained!(string) C2; // Error, no declaration fits (string)
 alias Constrained!(int,string) C3;// #3 and #4 considered, but #4 is dropped.
                                   // So #3 it is.
@@ -47,7 +47,6 @@ This syntax is the same for the special-cases templates seen in sections \ref{fu
 \index{syntax!template constraints!for class templates}
 \begin{dcode}
 module constraintsyntax;
-
 
 T theFunction(T)(T argument)
     if (is(T : int) || is(T : double)) 
@@ -81,7 +80,7 @@ auto callTwice(alias fun, T)(T arg)
 
 \subsection{Constraints Usage}\label{constraintsusage}
 
-Constraints come from the same idea than C++0x\index{C++!C++0x} \DD{concept}, er\dlots, concept, although simpler to define, understand and, as shown by D, implement. The idea is to define a set of conditions a type must respect to be a representative of a `concept', and check for it before instantiating.
+Constraints come from the same idea than C++0x\index{C++!C++0x} \DD{concept}, er\ldots, concept, although simpler to define, understand and, as shown by D, implement. The idea is to define a set of conditions a type must respect to be a representative of a `concept', and check for it before instantiating.
 
 Have a look at constraints poster-child: \emph{ranges}\index{range}.\footnote{ Ranges are overdue a tutorial.} They were rapidly described in section \ref{functionflatten}.
 
@@ -102,9 +101,9 @@ struct RangeWrapper(Range)
 }
 
 // In the factory function too.
-auto rangeWrapper(Range) if (isInputRange!Range) 
+auto rangeWrapper(Range)(Range range) if (isInputRange!Range) 
 {
-    return RangeWrapper!(Range)( ... );
+    return RangeWrapper!(Range)(range);
 }
 \end{dcode}
 
@@ -1100,15 +1099,15 @@ However, as far as I'm concerned, the main interest of this subtyping is not so 
 
 \subsection{Library Typedef}\label{typedef}
 
-As we’ve seen in the previous section, \D{alias this} gives the perfect subtype, able to mimic its parent type in all circumstances. But what if another derived types is needed? D used to have a \D{typedef} keyword to define a new type (as opposed to \D{alias} redefinition which just define a new symbol/name for a type), but it was dropped in 2011. However, the need to define new types in relation with pre-existing types is still there. Templates can help in defining a library-level solution, which is described here.
+As we've seen in the previous section, \D{alias this} gives the perfect subtype, able to mimic its parent type in all circumstances. But what if another derived types is needed? D used to have a \D{typedef} keyword to define a new type (as opposed to \D{alias} redefinition which just define a new symbol/name for a type), but it was dropped in 2011. However, the need to define new types in relation with pre-existing types is still there. Templates can help in defining a library-level solution, which is described here.
 
 Mainly, when a new type is defined in relation with another, already existing, type, there can be four different relationships:
 
 \begin{description}
-\item[subtype:] That’s the standard subclass or \D{alias this} relationship: a subtype can act \emph{in lieu of} its parent type in all circumstances. Whatever the supertype can do, the subtype does also. Moreover, the subtype can be forcibly cast as its parent type (think classes).
-\item[supertype:] The converse: a supertype can be assigned a value of type ‘subtype’ (since a subtype can act as its supertype) and that’s about it. Once the supertype and functions acting on it are created, the original subtype can be used there also.
-\item[parallel:] A parallel type is neither a subtype not a supertype of the original target (it cannot mimic the target), but it can be created with target values. It’s more or less the behaviour of the now-deceased \D{typedef} keyword.
-\item[independent:] An independent type is just there and bear no relationship whatsoever with the original, target type. I cite it there but the interest of defining such a type while still having a ‘target’ type in mind is limited\ldots
+\item[subtype:] That's the standard subclass or \D{alias this} relationship: a subtype can act \emph{in lieu of} its parent type in all circumstances. Whatever the supertype can do, the subtype does also. Moreover, the subtype can be forcibly cast as its parent type (think classes).
+\item[supertype:] The converse: a supertype can be assigned a value of type 'subtype' (since a subtype can act as its supertype) and that's about it. Once the supertype and functions acting on it are created, the original subtype can be used there also.
+\item[parallel:] A parallel type is neither a subtype not a supertype of the original target (it cannot mimic the target), but it can be created with target values. It's more or less the behaviour of the now-deceased \D{typedef} keyword.
+\item[independent:] An independent type is just there and bear no relationship whatsoever with the original, target type. I cite it there but the interest of defining such a type while still having a 'target' type in mind is limited\ldots
 \end{description}
 
 \TODO{A small diagram? Asymptote, here I come.}
@@ -1116,7 +1115,7 @@ Mainly, when a new type is defined in relation with another, already existing, t
 Here is clean little piece of code from Trass3r that groups all these notions in one template:
 
 \begin{dcode}
-module typedef;
+module librarytypedef;
 
 enum Type
 {
@@ -1194,7 +1193,7 @@ Behind the scene, \DD{octal} reads its \D{string} or \D{int} argument and conver
 \subsection{Encoding Information With Types}
 \label{encodinginformationwithtypes}
 
-This is an extension of the previous section’s idea, that can be found for example in \stdanchor{range}{assumeSorted} and \stdanchor{range}{SortedRange}. These Phobos constructs encode some information in a type (in this case, the fact than the range is sorted, with an associated predicate). That way, subsequent operations acting on a range can use better algorithm if they know it's sorted.
+This is an extension of the previous section's idea, that can be found for example in \stdanchor{range}{assumeSorted} and \stdanchor{range}{SortedRange}. These Phobos constructs encode some information in a type (in this case, the fact than the range is sorted, with an associated predicate). That way, subsequent operations acting on a range can use better algorithm if they know it's sorted.
 
 This kind of encoding can be used for many different schemes:
 
