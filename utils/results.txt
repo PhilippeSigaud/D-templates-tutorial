@@ -9,16 +9,50 @@ Total of 1 samples found.
 
 
 ************templates_advanced.tex **************************
-Found 6 named samples.
+Found 40 named samples.
 constrained.d: OK
 constraintsyntax.d: OK
 ctvalue.d: OK
 rangewrapper.d: OK
 constraints_error.d: OK (fail as expected).
+isserializable.d: OK
+hasarithmeticoperations.d: OK
+dropfront.d: OK
+tupledemonstration.d: OK
+ttflatten.d: OK
+ttiteration.d: OK
+emptytuple.d: OK
+variadic.d: OK
+popallfronts.d: OK
+areallranges.d: OK
+nameof2.d: OK
+nameof3.d: OK
+interfacelist.d: OK
+eliminate.d: OK
+noduplicates.d: OK
+superlist.d: OK
+checkedinheritance.d: OK
+number.d: OK
+mixinconcatenate.d: OK
+usingmixinconcatenate.d: OK
+dispatcher.d: OK
+getset.d: OK
+transp.d: OK
+usingtransparent.d: OK
+transp2.d: OK
+descriptor.d: OK
 librarytypedef.d: OK
+compare.d: OK
+usingtuple.d: OK
+usingnamedtuple.d:  *** ERROR! ***
+isastringliteral.d: OK
+namedtuple.d:  *** ERROR! ***
+filelinetagging.d: OK
+usingunique.d: OK
+debugger.d: OK
 
-Found 63 anonymous samples (no compilation attempted).
-Total of 69 samples found.
+Found 28 anonymous samples (no compilation attempted).
+Total of 68 samples found.
 ********************************************************
 
 
@@ -115,9 +149,10 @@ Total of 89 samples found.
 
 
 ************templates_examples.tex **************************
-Found 0 named samples.
+Found 1 named samples.
+interleave.d: OK
 
-Found 69 anonymous samples (no compilation attempted).
+Found 68 anonymous samples (no compilation attempted).
 Total of 69 samples found.
 ********************************************************
 
