@@ -611,13 +611,16 @@ Using class templates\index{class template} (\ref{classsyntax}), we might want t
 \index{class template!and type tuples}
 \index{type tuple!and class templates}
 \begin{dcode}
-interface I { ... }
-interface J { ... }
-interface K { ... }
-interface L { ... }
+module interfacelist;
+import std.typetuple;
 
-class BaseA { ... }
-class BaseB { ... }
+interface I {}
+interface J {}
+interface K {}
+interface L {}
+
+class BaseA {}
+class BaseB {}
 
 template Inheritance(Base) if (is(Base == class))
 {
@@ -630,20 +633,13 @@ template Inheritance(Base) if (is(Base == class))
 }
 
 // Inherits from Base
-class MyClass : Inheritance!BaseA { ... }
-class MyOtherClass : Inheritance!MyOtherClass { ... }
+class MyClass : Inheritance!BaseA { /*...*/ }
+class MyOtherClass : Inheritance!BaseB { /*...*/ }
 \end{dcode}
 
 Here I templated \DD{Inheritance} on the base class, but you could easily template it on a global \D{enum}, for example. In any case, the selection is abstracted away and the choice-making code is in one place, for you to change it easily.
 
-There is a catch if you use it again on a derived class:
-
-\begin{dcode}
-// Error! I,J and K are already listed through MyClass
-Class ErrorClass : Inheritance!(MyClass) { ... }
-\end{dcode}
-
-The interfaces are already listed in \DD{MyClass} while \DD{Inheritance} injects them again. That gets us a compilation error, because in D you cannot put an interface twice in an inheritance list. We have to do something a little more complicated: given an inheritance type list, we must eliminate all double interfaces.
+\TODO{Here I need to rewrite the junction between the two parts of this section.}
 
 Let's begin with something more simple: given a type and a type tuple, eliminate all occurrences of the type in the type tuple.
 
@@ -667,12 +663,15 @@ template Eliminate(Type, TargetTuple...)
               Eliminate;
 }
 
-alias TypeTuple!(int,double,int,string) Target;
-alias Eliminate!(int, Target) NoInts;
-static assert(is( NoInts == TypeTuple!(double, string) ));
+unittest
+{
+    alias TypeTuple!(int,double,int,string) Target;
+    alias Eliminate!(int, Target) NoInts;
+    static assert(is( NoInts == TypeTuple!(double, string) ));
+}
 \end{ndcode}
 
-The only difficulty is on line 10: if the first type is not a \DD{Type}, we have to keep it and continue the recursion:
+The only difficulty is on line 13: if the first type is not a \DD{Type}, we have to keep it and continue the recursion:
 
 \begin{dcode}
 Eliminate!(Type,  Type0, Type1, Type2, ...)
@@ -710,18 +709,44 @@ The last piece of the puzzle is to get a given class inheritance list. The \D{is
 
 \index{is expression@\D{is} expression!types specializations}
 \begin{dcode}
+module superlist;
+import std.typetuple;
+
 template SuperList(Class) if (is(Class == class))
 {
-    static if (is(Class list == super))
-        alias TypeTuple!(list) SuperList;
-    else // Object
-        alias TypeTuple!() SuperList;
+    static if (is(Class Parent == super))
+        alias TypeTuple!(Parent, SuperList!Parent) SuperList;
+}
+
+// for Object, is(Object Parent == super)) gives an empty typetuple
+template SuperList()
+{
+    alias TypeTuple!() SuperList;
+}
+
+unittest
+{
+    class A {}
+    class B : A {}
+    class C : A {}
+    class D : C {}
+    
+    static assert(is(SuperList!Object == TypeTuple!()));
+    static assert(is(SuperList!A      == TypeTuple!(Object)));
+    static assert(is(SuperList!B      == TypeTuple!(A, Object)));
+    static assert(is(SuperList!D      == TypeTuple!(C, A, Object)));   
 }
 \end{dcode}
+
+\TODO{Rewrite the end.}
 
 Now we are good to go: given a base class, get its inheritance list with \DD{SuperList}. Drop the base class to keep the interfaces. Stitch with the interfaces provided by \DD{Inheritance} and call \DD{NoDuplicates} on it. To make things clearer, I will define many aliases in the template. To keep the use of the eponymous trick\index{eponymous trick}, I will defer the aliasing in another template, as seen in section \ref{eponymous}\index{idiom!two templates}.
 
 \begin{dcode}
+module checkedinheritance;
+import superlist;
+import interfacelist;
+
 template CheckedInheritance(Base)
 {
     alias CheckedImpl!(Base).Result CheckedInheritance;
@@ -729,26 +754,15 @@ template CheckedInheritance(Base)
 
 template CheckedImpl(Base)
 {
-    // Get the inheritance list, getting rid of the base class
-    static if (SuperList!(Base).length > 0)
-        alias SuperList!(Base)[1..$] InList;
-    else // Object is the only class with a zero-length inh. list
-        alias SuperList!(Base)       InList;
-
-    alias TypeTuple!( InList
-                    , Inheritance!(Base)[1..$]) AllInterfaces;
-
-    alias TypeTuple!( Inheritance!(Base)[0] // base class
-                    , NoDuplicates!(AllInterfaces)) Result;
+    /* Rewrite the 
 } 
 
 // It works!
-class NoError : CheckedInheritance!(MyClass) { ... }
+class NoError : CheckedInheritance!(MyClass) { /*...*/ }
 \end{dcode}
 
 
 \section{Operator Overloading} \label{operatoroverloading}
-
 \index{operator!overloading}
 
 \unfinished{Oh yes, that's quite not finished. I'm afraid I find D syntax for operator overloading a bit heavy for my tastes. As D code in \LaTeX, it's becoming \emph{very} cumbersome to write.}
@@ -760,54 +774,51 @@ D allows users to redefine some operators to enhance readability in code. And gu
 \index{syntax!operator overloading}
 Table \ref{table:operatoroverloading} gives you the operator that you can overload and which function template you must define:
 
-%\begin{table}
-%\begin{tabular}[htb]{|c|c|c|}
-%\hline
-%Category & Operators & Template to define\\ 
-%\hline \hline
+\begin{table}
+\begin{adjustwidth}{-3.5cm}{} % long table: reducing left margin
+\begin{tabular}[htb]{p{5em} c c l}
+\hline
+\multicolumn{1}{c}{Category}&\multicolumn{1}{c}{Operation} & \multicolumn{1}{c}{Operators}  & \multicolumn{1}{c}{Template to define} \\ 
+\hline
 
-%Unary & \DD{+}, \DD{-}, \DD{++}, \DD{--} &\\
-%      & \DD{times}, \DD{tilde} &\hline
-%\emph{op}\DD{a} & & \DD{opUnary(}\D{string}\DD{ s)() if (s == }\emph{op}\DD{)} \hline
-%\emph{op}\DD{a[i0, i1, in]} & &\DD{opIndexUnary(}\D{string}\DD{ s)(size_t i0, ...) if (s == }\emph{op}\DD{)} \hline
-%\emph{op}\DD{a[i..j]} & &\DD{opSliceUnary(}\D{string}\DD{ s)(size_t i, size_t j) if (s == }\emph{op}\DD{)} \hline
-%\emph{op}\DD{a[]} & &\DD{opSliceUnary(}\D{string}\DD{ s)() if (s == }\emph{op}\DD{)} \hline \hline
-%
-%Binary & \DD{+}, \DD{-}, \DD{times}, \DD{/} & \\
-%       & \DD{\%}, \DD{^^}, \DD{tilde}, \DD{in} & \\
-%       & \DD{\&}, \DD{|}, \DD{^} & \\
-%       & \DD{<<}, \DD{>>}, \DD{>>>} &\hline
-%\DD{a }\emph{op}\DD{ b} & &\DD{opBinary(}\D{string}\DD{ s, B)(B b) if (s == }\emph{op}\DD{)} \hline 
-%\DD{b }\emph{op}\DD{ a} & &\DD{opBinaryRight(}\D{string}\DD{ s, B)(B b) if (s == }\emph{op}\DD{)} \hline
-%\hline \hline
-%
-%Op Assignment Operators: & \DD{+}, \DD{-}, \DD{*}, \DD{/} & \\
-%                  & \DD{\%}, \DD{^^}, \DD{~} & \\
-%                  & \DD{\&}, \DD{|}, \DD{^} & \\
-%                  & \DD{<<}, \DD{>>}, \DD{>>>} &\hline
-%\DD{a }\emph{op}\DD{= b} & &\DD{opOpAssign(}\D{string}\DD{ s, B)(B b) if (s == }\emph{op}\DD{)} \hline 
-%
-%Op Index Assignment Operators: & \DD{+}, \DD{-}, \DD{*}, \DD{/} & \\
-%                         & \DD{\%}, \DD{^^}, \DD{~} & \\
-%                         & \DD{\&}, \DD{|}, \DD{^} & \\
-%                         & \DD{<<}, \DD{>>}, \DD{>>>} &\hline
-%\DD{a[i0,i1,in] }\emph{op}\DD{= b} & &\DD{opIndexOpAssign(}\D{string}\DD{ s, B)(B b, size_t i0, ...) if (s == }\emph{op}\DD{)} \hline 
-%
-%Slice Op Assignment Operators: & \DD{+}, \DD{-}, \DD{*}, \DD{/} & \\
-%                         & \DD{\%}, \DD{^^}, \DD{~} & \\
-%                         & \DD{\&}, \DD{|}, \DD{^} & \\
-%                         & \DD{<<}, \DD{>>}, \DD{>>>} &\hline
-%\DD{a[i..j] }\emph{op}\DD{ = b} & &\DD{opSliceOpAssign(}\D{string}\DD{ s, B)(B b, size_t i, size_t j) if (s == }\emph{op}\DD{)} \hline 
-%\DD{a[] }\emph{op}\DD{ = b} & &\DD{opSliceOpAssign(}\D{string}\DD{ s), B)(B b) if (s == }\emph{op}\DD{)} \hline 
+        & \emph{op}\DD{a}             &                                  & \DD{opUnary(}\D{string}\DD{ s)() }\D{if}\DD{ (s == }\emph{op}\DD{)} \\ 
+Unary   & \emph{op}\DD{a[i0, i1, in]} & \DD{+}, \DD{-}, \DD{++}, \DD{--} & \DD{opIndexUnary(}\D{string}\DD{ s)(size\_t i0, ...) }\D{if }\DD{(s == }\emph{op}\DD{)} \\
+        & \emph{op}\DD{a[i..j]}       & \DD{*}, \DD{\~{}}                & \DD{opSliceUnary(}\D{string}\DD{ s)(size\_t i, size\_t j) }\D{if }\DD{(s == }\emph{op}\DD{)} \\
+        &\emph{op}\DD{a[]}            &                                  & \DD{opSliceUnary(}\D{string}\DD{ s)() }\D{if }\DD{(s == }\emph{op}\DD{)}\\ 
+\hline
 
-%
-%Cast operator & \D{cast()} &\hline
-%\D{cast}\DD{(T)a} & & T opCast(T)() & \hline
+        &                          & \DD{+}, \DD{-}, \DD{*}, \DD{/}            & \DD{opBinary(}\D{string}\DD{ s, B)(B b)}\\
+Binary  & \DD{a }\emph{op}\DD{ b}  & \DD{\%}, \DD{\^{}\^{}}, \DD{\~{}}, \D{in} & \D{    if }\DD{(s == }\emph{op}\DD{)} \\
+        & \DD{b }\emph{op}\DD{ a}  & \DD{\&}, \DD{|}, \DD{\^{}}                & \DD{opBinaryRight(}\D{string}\DD{ s, B)(B b)}\\
+        &                          & \DD{$<<$}, \DD{$>>$}, \DD{$>>>$}          & \D{    if }\DD{(s == }\emph{op}\DD{)} \\
+\hline
 
-%\end{tabular}
-%\caption{Operator Overloading}
-%\label{table:operatoroverloading}
-%\end{table}
+              &                          & \DD{+}, \DD{-}, \DD{*}, \DD{/}    & \\
+Assignment & \DD{a }\emph{op}\DD{= b} & \DD{\%}, \DD{\^{}\^{}}, \DD{\~{}}    & \DD{opOpAssign(}\D{string}\DD{ s, B)(B b) }\\
+              &                          & \DD{\&}, \DD{|}, \DD{\^{}}        & \D{    if }\DD{(s == }\emph{op}\DD{)} \\
+              &                          & \DD{$<<$}, \DD{$>>$}, \DD{$>>>$}  & \\
+\hline 
+
+           &                                    & \DD{+}, \DD{-}, \DD{*}, \DD{/}    & \\
+Index      & \DD{a[i0,i1,in] }\emph{op}\DD{= b} & \DD{\%}, \DD{\^{}\^{}}, \DD{\~{}} & \DD{opIndexOpAssign(}\D{string}\DD{ s, B)(B b, size\_t i0, ...)}\\
+Assignment &                                    & \DD{\&}, \DD{|}, \DD{\^{}}        & \D{    if }\DD{(s == }\emph{op}\DD{)} \\
+           &                                    & \DD{$<<$}, \DD{$>>$}, \DD{$>>>$}  & \\
+\hline 
+
+           & \DD{a[i..j] }\emph{op}\DD{= b} & \DD{+}, \DD{-}, \DD{*}, \DD{/}    & \DD{opSliceOpAssign(}\D{string}\DD{ s, B)(B b, size\_t i, size\_t j)} \\
+Slice      &                                & \DD{\%}, \DD{\^{}\^{}}, \DD{\~{}} & \D{    if }\DD{(s == }\emph{op}\DD{)}\\
+Assignment & \DD{a[] }\emph{op}\DD{= b}     & \DD{\&}, \DD{|}, \DD{\^{}}        & \DD{opSliceOpAssign(}\D{string}\DD{ s, B)(B b)}\\
+           &                                & \DD{$<<$}, \DD{$>>$}, \DD{$>>>$}  & \D{    if }\DD{(s == }\emph{op}\DD{)} \\
+\hline 
+
+Cast &\D{cast}\DD{(T)a} & \D{cast()} & \DD{T opCast(T)()} \\ 
+\hline
+
+\end{tabular}
+\caption{Operator Overloading}
+\label{table:operatoroverloading}
+\end{adjustwidth}
+\end{table}
 
 Many other operators can be overloaded in D, but do not demand templates.
 
