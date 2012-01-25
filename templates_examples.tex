@@ -456,6 +456,9 @@ template StaticScan(alias F, T...)
 \subsubsection{Interleaving Types}\label{interleavingtypes}
 
 \begin{dcode}
+module interleave;
+import std.typetuple;
+
 /**
  * Given (T0, T1, T2, ..., Tn) and (U0, U1, ..., Um) will returns
  * the interleaving of the first part with the second part: 
@@ -469,17 +472,16 @@ template Interleave(First...)
 {
     template With(Second...)
     {
-	static if (First.length == 0)
-	    alias Second With;
-	else static if (Second.length == 0)
-	    alias First With;
-	else
-	    alias TypeTuple!( First[0], Second[0]
-	                    , Interleave!(First[1..$]).With!(Second[1..$])) 
-             With;
+	    static if (First.length == 0)
+	        alias Second With;
+	    else static if (Second.length == 0)
+	        alias First With;
+	    else
+	        alias TypeTuple!( First[0], Second[0]
+	                        , Interleave!(First[1..$]).With!(Second[1..$])) 
+                 With;
     }
 }
-
 \end{dcode}
 
 \subsection{Annotating Types}\label{annotatingtypes}

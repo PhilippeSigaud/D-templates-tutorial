@@ -844,13 +844,16 @@ To give it the four basic arithmetic operators with another \DD{Number} and anot
 \index{arithmetic operators}
 \index{operator!arithmetic}
 \begin{dcode}
+module number;
+import std.traits;
+
 struct Number(T) if (isNumeric!T)
 {
     T num;
 
-    auto opBinary(string op, U) 
+    auto opBinary(string op, U)(U u) 
          if ((op == "+" || op == "-" || op == "*" || op == "/") 
-         && ((isNumeric!U) || is(U u == Number!V, V))
+         && ((isNumeric!U) || is(U u == Number!V, V)))
     {
  mixin("alias typeof(a"~op~"b) Result;     
         static if (isNumeric!U)
@@ -914,18 +917,15 @@ For example, remember the operator overloading code we saw in section \ref{opera
 \index{mixin templates}
 \index{operator!concatenation, (~)@concatenation, (\DD{\~})}
 \begin{dcode}
+module mixinconcatenate;
+import std.typecons;
+
 mixin template Concatenate()
 {
-    Tuple!(This, U) opBinary(string op, this This, U)(U u) 
+    Tuple!(typeof(this), U) opBinary(string op, U)(U u) 
     if (op == "~")
     {
         return tuple(this, u);
-    }
-
-    Tuple!(U, This) opBinaryRight(string op, this This, U)(U u) 
-    if (op == "~")
-    {
-        return tuple(u, this);
     }
 }
 \end{dcode}
@@ -933,20 +933,22 @@ mixin template Concatenate()
 As you can see, it uses \D{this}, even though there is no struct or class in sight. It's used like this, to give concatenation (as tuples) ability to a struct:
 
 \begin{dcode}
+module usingmixinconcatenate;
+import std.typecons;
+import mixinconcatenate;
+
 struct S
 {
-    /* some code */
-
     mixin Concatenate;
 }
 
-S s,t,u;
-
-auto result = s ~ t ~ u;
-assert(result == tuple(s, tuple(t,u)));
+unittest
+{
+    S s,t;
+    auto result = s ~ t;
+    assert(result == tuple(s,t));
+}
 \end{dcode}
-
-In this particular case, we should test for tuples already containing the current type and flatten them, so as get \DD{tuple(s,t,u)}.
 
 The idea to take back home is: the concatenation code is written once. It is then an offered functionality for any client scope\index{scope!client} (type) that want it. It could easily have been arithmetic operations, \D{cast} operations or new methods like \DD{log}, \DD{register}, new members or whatever else. Build you own set of mixins and use them freely. And remember they are not limited to classes and structs: you can also use them in functions, module scopes, other templates\ldots
 
@@ -970,23 +972,29 @@ When a type has an \DD{opDispatch} method and a member call is done without find
 
 \index{opDispatch@\DD{opDispatch}}
 \begin{dcode}
+module dispatcher;
+import std.typetuple;
+
 struct Dispatcher
 {
     int foo(int i) { return i*i;}
     string opDispatch(string name, T...)(T t)
     {
-        return "Dispatch activated: " ~ name ~ ":" ~ T.stringof;
+        return "Dispatch activated: " ~ name ~ ":" ~ TypeTuple!(T).stringof;
     }
 }
 
-Dispatcher d;
+void main()
+{
+    Dispatcher d;
 
-auto i = d.foo(1); // compiler finds foo, calls foo.
-auto s1 = d.register("abc"); // no register member -> opDispatch activated;
-assert(s1 == "Dispatch activated: register:string");
+    auto i = d.foo(1); // compiler finds foo, calls foo.
+    auto s1 = d.register("abc"); // no register member -> opDispatch activated;
+    assert(s1 == "Dispatch activated: register:(string)");
 
-auto s2 = d.empty; // no empty member, no argument.
-assert(s2 == "Dispatch activated: empty:()");
+    auto s2 = d.empty; // no empty member, no argument.
+    assert(s2 == "Dispatch activated: empty:()");
+}
 \end{dcode}
 
 Once \DD{opDispatch} has the name called and the arguments, it's up to you to decide what to do: calling free functions, calling other methods or using the compile-time string to generate new code (see section \ref{stringmixins} on string mixins).
@@ -1000,44 +1008,52 @@ For example, suppose you have a bunch of members, all private and want client co
 \index{string mixins}
 \index{opDispatch@\DD{opDispatch}}
 \begin{dcode}
+module getset;
+
 class GetSet
 {
     private int i;
     private int j;
     private double d;
     private string theString;
-
+    
     auto opDispatch(string name)() // no arg version -> getter
     if (name.length > 3 && name[0..3] == "get")
     {
         enum string member = name[3..$]; // "getXXX" -> "XXX"
         // We test if "XXX" exists here: ie if is(typeof(this.XXX)) is true
-        static if (mixin("is(typeof(this." ~ name ~ "))"))
-            mixin("return " ~ name ~ ";");
+        static if (__traits(compiles, 
+                            mixin("is(typeof(this." ~ member ~ "))")))
+        mixin("return " ~ member ~ ";");
         else
-            static assert(0, "GetSet Error: no member called " ~ name);
+            static assert(0, "GetSet Error: no member called " ~ member);
     }
-
+    
     auto opDispatch(string name, Arg)(Arg arg) // setter
-    if (name.length > 3 && name[0..3] == "set")
+        if (name.length > 3 && name[0..3] == "set")
     {
         enum string member = name[3..$]; // "setXXX" -> "XXX"
-        // We test if "name" can be assigned to. this.name = Arg.init
-        static if (__traits(compiles, 
-                            mixin("this." ~ name ~ " = Arg.init;")))
-            mixin("return " ~ name ~ ";");
-        else
-            static assert(0, "GetSet Error: no member called " ~ name);
+        // We test if "member" can be assigned to. this.member = Arg.init
+          static if (__traits(compiles, mixin("{" ~ member ~ " = Arg.init;}")))
+          {
+              mixin(member ~ " = arg;");
+              mixin("return " ~ member ~ ";");
+          }
+          else
+              static assert(0, "GetSet Error: no member called" ~ member);
     }
 }
 
-auto gs = new GetSet();
-gs.seti(3);
-auto i = gs.geti;
-assert(i == 3);
+unittest
+{
+    auto gs = new GetSet();
+    gs.seti(3);
+    auto i = gs.geti;
+    assert(i == 3);
 
-gs.settheString("abc");
-writeln(gs.gettheString); // "abc"
+    gs.settheString("abc");
+    assert(gs.gettheString == "abc"); // "abc"
+}
 \end{dcode}
 
 Nifty, eh? This could be a bit better by dealing with the capitalization of the first letter: \DD{getTheString}, but this is good enough for now. Even better, you could put this code in a mixin template to give this get/set capacity to any struct or class (see section \ref{mixintemplates}).
@@ -1069,6 +1085,8 @@ But, templates can come to the rescue, with a bit of \DD{opDispatch} magic.
 We will play a little bit with \D{alias this}. Let us define a small wrapper type:
 
 \begin{dcode}
+module transp;
+
 struct Transparent(T)
 {
     T value;
@@ -1085,27 +1103,33 @@ Transparent!T transparent(T)(T t)
 This defines \DD{Transparent}, a small struct holding a lone value of type \DD{T}. If a \DD{Transparent!T} is asked to do something for which it has no method nor the correct type (that is to say, almost every action you can imagine!), \D{alias this} activates and uses \DD{value} in lieu of \DD{Transparent!T}. This gives us a very transparent wrapper:
 
 \begin{dcode}
-auto i = transparent(10);
-assert(i == 10); // equality testing
+module usingtransparent;
+import transp;
 
-i = 1; // Assignment from an int
+void main()
+{
+    auto i = transparent(10);
+    assert(i == 10); // equality testing
 
-++i; // ++ acts on i.value
-assert(i == 2); 
+    i = 1; // Assignment from an int
 
-// int-accepting function
-int foo(int ii) { return ii+1;}
+    ++i; // ++ acts on i.value
+    assert(i == 2); 
 
-assert(foo(i) == 3); // function calls
+    // int-accepting function
+    int foo(int ii) { return ii+1;}
 
-int trueInt = i; // transmits its value
+    assert(foo(i) == 3); // function calls
 
-assert(trueInt == 2);
-assert(i == 2);
-assert(i == trueInt);
+    int trueInt = i; // transmits its value
 
-// Successive calls all collapse into one Transparent.
-i = transparent(transparent(i));
+    assert(trueInt == 2);
+    assert(i == 2);
+    assert(i == trueInt);
+
+    // Successive calls all collapse into one Transparent.
+    i = transparent(transparent(i));
+}
 \end{dcode}
 
 As you can see, \DD{Transparent} behaves very gracefully: in almost all circumstances where an \D{int} could fit, \DD{Tranparent!}\D{int} will act as a real \D{int}. Of course, its type is still OK:
@@ -1117,6 +1141,9 @@ assert(is(typeof(i) == Transparent!int));
 Another wrapper can be added:
 
 \begin{dcode}
+module transp2;
+import transp;
+
 struct Thin(T)
 {
     T value;
@@ -1128,10 +1155,14 @@ Thin!T thin(T)(T t)
     return Thin!T(t);
 }
 
-auto t = thin(i); // Works.
-assert(t == 2); // Yep, value was transmitted correctly.
+unittest
+{
+    auto i = transparent(10);
+    auto t = thin(i); // Works.
+    assert(t == 10); // Yep, value was transmitted correctly.
 
-assert(is(typeof(t) == Thin!(Transparent!int)));
+    assert(is(typeof(t) == Thin!(Transparent!int)));
+}
 \end{dcode}
 
 What's the use of such an invisible wrapper? First, it's a perfect subtype, which is the very goal of \D{alias }\DD{X }\D{this}. You can add functionalities to your type: new methods, etc. Looks a bit like class inheritance, isn't it? Except that \DD{Transparent} can wrap around (ie: become the subtype of) any type it's aimed at. If you are interested in multiple ways to subtype a type, see section \ref{typedef}, showing Trass3r's library typedef.
@@ -1141,6 +1172,9 @@ Note that this is subtly different from the idea shown in section \ref{wrapperte
 For example, here is another wrapper that gives the description of the held type:
 
 \begin{dcode}
+module descriptor;
+import std.stdio;
+
 struct Descriptor(T)
 {
     T value;
@@ -1156,9 +1190,12 @@ struct Descriptor(T)
     }
 }
 
-Descriptor!double d = 1.0;
-writeln(d.description); // "Descriptor holding a double of value 1
-                        //  (sizeof: 8 bytes)"
+void main()
+{
+    auto d = Descriptor!double(1.0);
+    writeln(d.description); // "Descriptor holding a double of value 1
+                            //  (sizeof: 8 bytes)"
+}
 \end{dcode}
 
 One day, D will get multiple \D{alias this}, since it's described in TDPL (\ref{TDPL}). This will open the possibility of a type being subtype to many other types at the same time, literally acting as a chameleon depending on circumstances. We will be able to group disparate types and functionalities in one place. I wait for it with increasing interest.\footnote{this was written in January 2012, let see when we get multiple \D{alias this}.}
@@ -1184,8 +1221,6 @@ Mainly, when a new type is defined in relation with another, already existing, t
 \item[parallel:] A parallel type is neither a subtype not a supertype of the original target (it cannot mimic the target), but it can be created with target values. It's more or less the behaviour of the now-deceased \D{typedef} keyword.
 \item[independent:] An independent type is just there and bears no relationship whatsoever with the original, target type. I cite it there but the interest of defining such a type while still having a 'target' type in mind is limited\ldots
 \end{description}
-
-
 
 Here is clean little piece of code from Trass3r that groups all these notions in one template:
 
@@ -1358,6 +1393,8 @@ Remember, a template can have template members. So you can nest templates within
 For example, what if you want to compare to template tuples to see if they contain the same arguments?
 
 \begin{dcode}
+module compare;
+
 template Compare(First...)
 {
     template With(Second...)
@@ -1374,7 +1411,11 @@ template Compare(First...)
 }
 
 //Usage:
-Compare!(int, double, string).With!(int, double, char);
+unittest
+{
+    alias Compare!(int, double, string).With!(int, double, char) C;
+    static assert(C == false);
+}
 \end{dcode}
 
 In that case, using \DD{With} inside \DD{Compare} let the code be quite easy to use. Notice that the eponymous trick is done only on \DD{With}, because it's this inner template that we want the result of.
@@ -1431,8 +1472,14 @@ alias memoizer!longCalculation2 mlc2;
 Let's have another example, to use IFTI (\ref{ifti}). In Phobos, the function \stdanchor{typecons}{tuple} lets you create a tuple on the fly. It's a very nice example of IFTI in action:
 
 \begin{dcode}
-auto tuple1 = tuple(1, 3.14159, "abc"); // tuple1 is a Tuple!(int,double,string)
-auto tuple2 = tuple('a','b','c'); // tuple2 is a Tuple!(char,char,char)
+module usingtuple;
+import std.typecons;
+
+void main()
+{
+    auto tuple1 = tuple(1, 3.14159, "abc"); // tuple1 is a Tuple!(int,double,string)
+    auto tuple2 = tuple('a','b','c');       // tuple2 is a Tuple!(char,char,char)
+}
 \end{dcode}
 
 But Phobos' \DD{Tuple} is more powerful than that. It can have named parameters:
@@ -1446,17 +1493,23 @@ myCounter.name = "The One and Only Counter Around There";
 As of this writing, Phobos doesn't provide a \DD{tuple} factory function allowing named arguments in an nice, automated manner:
 
 \begin{dcode}
-auto myCounter = tuple!("counter", "name")(-1, "Who's his Daddy's counter?");
+module usingnamedtuple;
+import namedtuple;
 
-myCounter.counter = 1;
+void main()
+{
+    auto myCounter = tuple!("counter", "name")(-1, "Who's his Daddy's counter?");
 
-// Or even:
-alias tuple!("counter", "name") makeCounter;
+    myCounter.counter = 1;
 
-auto c1 = makeCounter(0, "I count ints!");
-auto c2 = makeCounter("Hello", "I'm a strange one, using strings");
+    // Or even:
+    alias tuple!("counter", "name") makeCounter;
 
-c2.counter ~= " World!";
+    auto c1 = makeCounter(0, "I count ints!");
+    auto c2 = makeCounter("Hello", "I'm a strange one, using strings");
+
+    c2.counter ~= " World!"; 
+}
 \end{dcode}
 
 In the previous example, \DD{c1} is a \DD{Tuple!(}\D{int}\DD{,}\D{string}\DD{)}, whereas \DD{c2} is a \DD{Tuple!(}\D{string}\DD{,}\D{string}\DD{)}. That means \DD{makeCounter} is a factory function for tuples with two fields, named \DD{counter} and \DD{name}, which see their types determined later on. I want this, so let's code it.
@@ -1480,6 +1533,7 @@ if (names.length && allSatisfy!(isAStringLiteral, names))
 The constraint is here to check that the user gives at least one name and also that all passed \DD{names} are indeed string literals template parameters. I use \stdanchor{typetuple}{allSatisfy} to verify the condition on all of them. I cannot use directly \stdanchor{traits}{isSomeString} because this template acts on types, whereas I need something checking a string literal.
 
 \begin{dcode}
+module isastringliteral;
 import std.traits: isSomeString;
 
 template isAStringLiteral(alias name)
@@ -1517,7 +1571,11 @@ if (names.length && allSatisfy!(isAStringLiteral, names))
 Now, we just need the alternate the names and the argument types. Happily, this document describe a \DD{Interleave} template in \ref{interleavingtypes}, that does just that:
 
 \begin{dcode}
-import std.typetuple: allSatisfy;
+module namedtuple;
+import std.typecons;
+import std.typetuple;
+import interleave;
+import isastringliteral;
 
 template tuple(names...) 
 if (names.length && allSatisfy!(isAStringLiteral, names))
@@ -1545,6 +1603,8 @@ They are mostly declared like this:
 
 \index{\_\_FILE\_\_ and \_\_LINE\_\_@\D{\_\_FILE\_\_} and \D{\_\_LINE\_\_}!unique types}
 \begin{dcode}
+module filelinetagging;
+
 struct Unique(T, string file, size_t line)
 {
     enum size_t l = line;
@@ -1561,14 +1621,17 @@ auto unique(T, string file = __FILE__, size_t line = __LINE__)(T t)
 As \DD{Unique}'s name suggests, this is a way to obtain unique instantiations. Except if you call the very same template twice in the same line of your file, this pretty much guarantee your instantiation will be the only one. Remember that template arguments become part of the template scope\index{scope!template scope} name when instantiation is done (\ref{instantiating}).
 
 \begin{dcode}
-// file thefile.d
-//module thefile;
+module usingunique;
+import filelinetagging;
 
-auto u = unique(1); // Unique!(int, "thefile.d", 4)
+void main()
+{
+    auto u = unique(1); // Unique!(int, "thefile.d", 4)
 
-auto v = unique(1); // Unique!(int, "thefile.d", 6)
+    auto v = unique(1); // Unique!(int, "thefile.d", 6)
 
-static assert(!is( typeof(v) == typeof(u) ))
+    static assert(!is( typeof(v) == typeof(u) ));
+}
 \end{dcode}
 
 Even though \DD{u} and \DD{v} are declared the same way, they have different types.
@@ -1593,7 +1656,12 @@ auto flatten(Range, file == __FILE__, line == __LINE__)(Range range)
 And here is a little gift:
 
 \begin{dcode}
-template Debug(alias toTest, file == __FILE__, line == __LINE__)
+module debugger;
+
+/** Usage:
+ * Debug!(templateToBeTested).With!(Argument0, Argument1, Argument2);
+ */
+template Debug(alias toTest, string file = __FILE__, size_t line = __LINE__)
 {
     template With(Args...)
     {
@@ -1603,10 +1671,8 @@ template Debug(alias toTest, file == __FILE__, line == __LINE__)
             static assert(0, "Error: " ~ to!string(toTest)
                            ~ " called withs arguments: "
                            ~ Args.stringof);
+    }
 }
-
-/* Usage */
-Debug!(templateToBeTested).With!(Argument0, Argument1, Argument2);
 \end{dcode}
 
 That way, no need to modify your beautiful templates.
