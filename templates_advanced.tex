@@ -1101,23 +1101,30 @@ However, as far as I'm concerned, the main interest of this subtyping is not so 
 
 As we've seen in the previous section, \D{alias this} gives the perfect subtype, able to mimic its parent type in all circumstances. But what if another derived types is needed? D used to have a \D{typedef} keyword to define a new type (as opposed to \D{alias} redefinition which just define a new symbol/name for a type), but it was dropped in 2011. However, the need to define new types in relation with pre-existing types is still there. Templates can help in defining a library-level solution, which is described here.
 
-Mainly, when a new type is defined in relation with another, already existing, type, there can be four different relationships:
+Mainly, when a new type is defined in relation with another, already existing, type, there can be four different relationships shown in figure \ref{fig:typedef}:
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.5\textwidth]{typedef}
+\caption{Typedef relationships}
+\label{fig:typedef}
+\end{figure}
 
 \begin{description}
-\item[subtype:] That's the standard subclass or \D{alias this} relationship: a subtype can act \emph{in lieu of} its parent type in all circumstances. Whatever the supertype can do, the subtype does also. Moreover, the subtype can be forcibly cast as its parent type (think classes).
-\item[supertype:] The converse: a supertype can be assigned a value of type 'subtype' (since a subtype can act as its supertype) and that's about it. Once the supertype and functions acting on it are created, the original subtype can be used there also.
+\item[subtype:] That's the standard subclass or \D{alias this} relationship: a subtype can act \emph{in lieu of} its parent type in all circumstances. Whatever its parent can do, the subtype does also. Moreover, the subtype can be forcibly cast as its parent type (think classes).
+\item[supertype:] The converse: a supertype can be assigned a value of type 'target', its subtype (since a subtype can act as its supertype), and that's about it. Once the supertype and functions acting on it are created, the original target type can be used there also.
 \item[parallel:] A parallel type is neither a subtype not a supertype of the original target (it cannot mimic the target), but it can be created with target values. It's more or less the behaviour of the now-deceased \D{typedef} keyword.
-\item[independent:] An independent type is just there and bear no relationship whatsoever with the original, target type. I cite it there but the interest of defining such a type while still having a 'target' type in mind is limited\ldots
+\item[independent:] An independent type is just there and bears no relationship whatsoever with the original, target type. I cite it there but the interest of defining such a type while still having a 'target' type in mind is limited\ldots
 \end{description}
 
-\TODO{A small diagram? Asymptote, here I come.}
+
 
 Here is clean little piece of code from Trass3r that groups all these notions in one template:
 
 \begin{dcode}
 module librarytypedef;
 
-enum Type
+enum Relationship
 {
     Independent,
     Super,
@@ -1125,39 +1132,40 @@ enum Type
     Parallel,
 }
 
-struct Typedef( T, 
-                Type type = Type.Sub, 
-                T init = T.init, 
+struct Typedef( Target, 
+                Relationship relation = Relationship.Sub, 
+                Target init = Target.init, 
                 string _f = __FILE__,
                 int _l = __LINE__ )
 {
-    T payload = init;
+    Target payload = init;
 
-    static if ( type != Type.Independent )
-        this( T value )
+    static if ( relation != Relationship.Independent )
+        this( Target value )
         {
             payload = value;
         }
 
-    static if ( type == Type.Sub)
+    static if ( relation == Relationship.Sub)
         // typedef int foo; foo f;
         // f.opCast!(t)() == cast(t) f
-        T opCast(T)()
+        Target opCast(Target)()
         {
             return payload;
         }
 
-    static if ( type == Type.Sub || type == Type.Parallel )
+    static if ( relation == Relationship.Sub 
+             || relation == Relationship.Parallel )
         alias payload this;
 
-    static if ( type == Type.Super )
-        typeof( this ) opAssign( T value )
+    static if ( relation == Relationship.Super )
+        typeof( this ) opAssign( Target value )
         {
             payload = value;
             return this;
         }
-    else static if ( type == Type.Sub )
-        @disable void opAssign( T value );
+    else static if ( relation == Relationship.Sub )
+        @disable void opAssign( Target value );
 }
 \end{dcode}
 
