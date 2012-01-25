@@ -192,20 +192,20 @@ There is a last thing to know about \D{is}: with the \D{is}\DD{(Type (identifier
 
 \begin{table}[htb]
 \centering
-\begin{tabular}[c]{|c|p{9em}|p{17em}|}
+\begin{tabular}[c]{cp{9em}p{17em}}
 \hline
-Specialization & Satisfied if &\ \DD{identifier} becomes \\ \hline \hline
-\D{function}& \DD{Type} is a function & The function parameters type tuple \\ \hline
-\D{delegate}& \DD{Type} is a delegate & The delegate function type \\ \hline
-\D{return}& \DD{Type} is a function or a delegate & The return type \\ \hline \hline
-\D{struct}& \DD{Type} is a struct & The struct type\\ \hline
-\D{enum}& \DD{Type} is an enum & The enum base type\\ \hline
-\D{union}& \DD{Type} is an union& The union type\\ \hline
-\D{class}& \DD{Type} is a class& The class type\\ \hline
-\D{interface}& \DD{Type} is an interface & The interface type\\ \hline
-\D{super}& \DD{Type} is a class& The type tuple (Base Class, Inter\-fa\-ces)\\ \hline \hline
-\D{const}& \DD{Type} is const & The type\\ \hline
-\D{immutable}& \DD{Type} is immutable & The type\\ \hline
+Specialization & Satisfied if &\ \DD{identifier} becomes \\ \hline% \hline
+\D{function}& \DD{Type} is a function & The function parameters type tuple \\ %\hline
+\D{delegate}& \DD{Type} is a delegate & The delegate function type \\ %\hline
+\D{return}& \DD{Type} is a function or a delegate & The return type \\ \hline %\hline
+\D{struct}& \DD{Type} is a struct & The struct type\\ %\hline
+\D{enum}& \DD{Type} is an enum & The enum base type\\ %\hline
+\D{union}& \DD{Type} is an union& The union type\\ %\hline
+\D{class}& \DD{Type} is a class& The class type\\ %\hline
+\D{interface}& \DD{Type} is an interface & The interface type\\ %\hline
+\D{super}& \DD{Type} is a class& The type tuple (Base Class, Inter\-fa\-ces)\\ \hline %\hline
+\D{const}& \DD{Type} is const & The type\\ %\hline
+\D{immutable}& \DD{Type} is immutable & The type\\ %\hline
 \D{shared}& \DD{Type} is shared & The type\\ \hline
 \end{tabular}
 \caption{Effect of type specializations in \D{is}}
@@ -263,21 +263,21 @@ Here are some resources on D templates.
 Your first stop should be the \href{http://dlang.org}{dlang.org} pages on templates. They are quite easy to read, don't hesitate to peruse them and bother the authors if anything is unclear or blatantly false. The \DD{dlang.org} website is also a github project, \href{https://github.com/D-Programming-Language/d-programming-language.org}{here}. Table \ref{table:dlangpages} lists the pages dealing with templates.
 
 \begin{table}[htb]
-\centering
-\begin{tabular}[l]{|p{19em}|p{15em}|}
+%\centering
+\begin{tabular}[l]{p{14em}l}
 \hline
-URL                  & Subject         \\ \hline \hline
-\url{http://dlang.org/template.html} & The general page on templates\\ \hline
-\url{http://dang.org/templates-revisited.html} & An article on D templates and the difference with C++ ones\\ \hline
-\url{http://dlang.org/tuple.html} & An article on tuples\\ \hline
-\url{http://dlang.org/variadic-function-templates.html} & Another article dealing with template tuple parameters\\ \hline
-\url{http://dlang.org/concepts.html} & Template Constraints\\ \hline
-\url{http://dlang.org/template-mixin.html} & Mixin Templates\\ \hline
-\url{http://dlang.org/mixin.html} & A small article on string mixins \\ \hline
-\url{http://dlang.org/version.html#staticif}  & \D{static if}\\ \hline
-\url{http://dlang.org/expression.html#IsExpression} & \D{is}\\ \hline
-\url{http://dlang.org/declaration.html#alias} & Type Aliasing\\ \hline
-\url{http://dlang.org/operatoroverloading.html} & Operator Overloading\\ \hline
+Subject & URL  \\ \hline %\hline
+The general page on templates & \url{http://dlang.org/template.html}\\ %\hline
+D templates vs C++ ones & \url{http://dang.org/templates-revisited.html} \\ %\hline
+An article on tuples & \url{http://dlang.org/tuple.html}\\ %\hline
+Template tuple parameters & \url{http://dlang.org/variadic-function-templates.html} \\ %\hline
+Template constraints & \url{http://dlang.org/concepts.html}\\ %\hline
+Mixin Templates & \url{http://dlang.org/template-mixin.html}\\ %\hline
+A small article on string mixins & \url{http://dlang.org/mixin.html}\\% \hline
+\D{static if} & \url{http://dlang.org/version.html#staticif}\\ %\hline
+\D{is} & \url{http://dlang.org/expression.html#IsExpression}\\ %\hline
+Type Aliasing & \url{http://dlang.org/declaration.html#alias}\\ %\hline
+Operator Overloading & \url{http://dlang.org/operatoroverloading.html}\\ \hline
 \end{tabular}
 \caption{\url{dlang.org} pages dealing with templates}
 \label{table:dlangpages}
@@ -290,16 +290,16 @@ The main D book as of this writing is of course \textsc{The D Programming Langua
 
 \begin{table}[htb]
 \centering
-\begin{tabular}[c]{|l|l|}
+\begin{tabular}[c]{ll}
 \hline
-Chapter                  & Subject         \\ \hline \hline
-5.3, 5.4, 5.10, and 5.12 & functions \\ \hline
-6.14                     & classes \\ \hline
-7.1.10                   & structs \\ \hline
-7.4                      & alias \\ \hline
-7.5                      & templates themselves \\ \hline
-7.6                      & mixin templates \\ \hline
-12                       & operator overloading  \\ \hline
+Subject & Chapter           \\ \hline
+Functions Templates & 5.3, 5.4, 5.10, and 5.12\\
+Classes Templates & 6.14 \\
+Struct Templates & 7.1.10 \\ 
+\D{alias} & 7.4 \\ 
+General Templates & 7.5 \\ 
+Mixin Templates & 7.6 \\ 
+Operator Overlaoding & 12 \\ \hline
 \end{tabular}
 \caption{TDPL Chapters Dealing With Templates}
 \label{table:tdplchapters}
