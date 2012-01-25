@@ -191,13 +191,14 @@ This will be OK if \DD{T} is indeed an \DD{A} instantiated with an \DD{U} and a 
 There is a last thing to know about \D{is}: with the \D{is}\DD{(Type (identifier) == Something)} version, \DD{Something} can also be a type specialization\index{is expression@\D{is} expression!type specialization}, one of the following D keywords: \D{function}, \D{delegate}, \D{return}, \D{struct}, \D{enum}, \D{union}, \D{class}, \D{interface}, \D{super}, \D{const}, \D{immutable} or \D{shared}. The condition is satisfied if \DD{Type} is one of those (except for \D{super} and \D{return}, see below). \DD{identifier} then becomes an alias for some property of \DD{Type}, as described in table \ref{table:typespecializations}.
 
 \begin{table}[htb]
-\centering
+\begin{adjustwidth}{-0.2cm}{} % long table: reducing left margin
 \begin{tabular}[c]{cp{9em}p{17em}}
 \hline
-Specialization & Satisfied if &\ \DD{identifier} becomes \\ \hline% \hline
+\multicolumn{1}{c}{Specialization} & \multicolumn{1}{c}{Satisfied if} &  \multicolumn{1}{c}{\DD{identifier} becomes} \\ \hline% \hline
 \D{function}& \DD{Type} is a function & The function parameters type tuple \\ %\hline
 \D{delegate}& \DD{Type} is a delegate & The delegate function type \\ %\hline
-\D{return}& \DD{Type} is a function or a delegate & The return type \\ \hline %\hline
+\D{return}& \DD{Type} is a function  & The return type \\ 
+          & \DD{Type} is a delegate & \\ \hline %\hline
 \D{struct}& \DD{Type} is a struct & The struct type\\ %\hline
 \D{enum}& \DD{Type} is an enum & The enum base type\\ %\hline
 \D{union}& \DD{Type} is an union& The union type\\ %\hline
@@ -210,6 +211,7 @@ Specialization & Satisfied if &\ \DD{identifier} becomes \\ \hline% \hline
 \end{tabular}
 \caption{Effect of type specializations in \D{is}}
 \label{table:typespecializations}
+\end{adjustwidth}
 \end{table}
 
 Let's put that to some use: we want a factory template that will create a new struct or a new class, given its name as a template parameter:
@@ -262,11 +264,12 @@ Here are some resources on D templates.
 
 Your first stop should be the \href{http://dlang.org}{dlang.org} pages on templates. They are quite easy to read, don't hesitate to peruse them and bother the authors if anything is unclear or blatantly false. The \DD{dlang.org} website is also a github project, \href{https://github.com/D-Programming-Language/d-programming-language.org}{here}. Table \ref{table:dlangpages} lists the pages dealing with templates.
 
+ 
 \begin{table}[htb]
-%\centering
+\begin{adjustwidth}{-1.3cm}{} % long table: reducing left margin
 \begin{tabular}[l]{p{14em}l}
 \hline
-Subject & URL  \\ \hline %\hline
+\multicolumn{1}{c}{Subject} & \multicolumn{1}{c}{URL}\\ \hline %\hline
 The general page on templates & \url{http://dlang.org/template.html}\\ %\hline
 D templates vs C++ ones & \url{http://dang.org/templates-revisited.html} \\ %\hline
 An article on tuples & \url{http://dlang.org/tuple.html}\\ %\hline
@@ -281,6 +284,7 @@ Operator Overloading & \url{http://dlang.org/operatoroverloading.html}\\ \hline
 \end{tabular}
 \caption{\url{dlang.org} pages dealing with templates}
 \label{table:dlangpages}
+\end{adjustwidth}
 \end{table}
 
 \subsubsection{The D Programming Language}
@@ -292,7 +296,7 @@ The main D book as of this writing is of course \textsc{The D Programming Langua
 \centering
 \begin{tabular}[c]{ll}
 \hline
-Subject & Chapter           \\ \hline
+\multicolumn{1}{c}{Subject} & \multicolumn{1}{c}{Chapter} \\ \hline
 Functions Templates & 5.3, 5.4, 5.10, and 5.12\\
 Classes Templates & 6.14 \\
 Struct Templates & 7.1.10 \\ 
