@@ -120,7 +120,7 @@ The main problem is that, compared to templates specializations, you cannot do:
 module constraints_error;
 
 template Temp(T) 
-if (is(T:int)) // #1, specialized for ints
+if (is(T:int))   // #1, specialized for ints
 { /*...*/ }
 
 template Temp(T) // #2, generic case 
@@ -212,6 +212,8 @@ For example, if you want to test is some type can be serialized, through a \D{si
 
 \index{predicate templates!member testing}
 \begin{dcode}
+module isserializable;
+
 template isSerialazable(Type)
 {
     static if (__traits(compiles, {
@@ -230,28 +232,30 @@ As seen in previous sections (\ref{structflatten}, \ref{constraintsusage}), we a
 
 \index{predicate templates!operator testing}
 \begin{dcode}
+module hasarithmeticoperations;
+
 template hasArithmeticOperations(Type)
 {
     static if (__traits(compiles, 
                        {   
-                           Type t;
-                           t + t; // addition
-                           t / t; // substraction
-                           t * t; // multiplication
-                           t / t; // division
-                           +t;    // unary +
-                           -t;    // unary -
+                           Type t, result;
+                           result = t + t; // addition
+                           result = t - t; // substraction
+                           result = t * t; // multiplication
+                           result = t / t; // division
+                           result = +t;    // unary +
+                           result = -t;    // unary -
                        }))
         enum bool hasArithmeticOperations = true;
     else
         enum bool hasArithmeticOperations = false;
 }
 
-static assert(hasArithmeticOperation!int);
-static assert(hasArithmeticOperation!double);
+static assert(hasArithmeticOperations!int);
+static assert(hasArithmeticOperations!double);
 
 struct S {}
-static assert(!hasArithmeticOperation!S);
+static assert(!hasArithmeticOperations!S);
 \end{dcode}
 
 As you can see, you can test for any type of D code, which means it's \emph{much} more powerful than templates specializations (\ref{specializations}\index{template!specialization!compared to constraints}) or the \D{is} expression (Appendix \ref{isexpression})\index{is expression@\D{is} expression!compared to constraints}.
@@ -295,6 +299,8 @@ D template tuples have a \DD{.length} member (defined at compile-time, obviously
 \index{template!tuple parameter}
 \index{type tuple}
 \begin{dcode}
+module dropfront;
+
 template DropFront(T...)
 {
     static if ( T.length > 0     // .length. At least 1 element
@@ -305,8 +311,8 @@ template DropFront(T...)
 }
 
 alias DropFront!(int, double, string) Shortened;
-static assert(is( Shortened[0] == double);
-static assert(is( Shortened[1] == string);
+static assert(is( Shortened[0] == double));
+static assert(is( Shortened[1] == string));
 \end{dcode}
 
 You can declare a value of type `tuple'. This value (called an expression tuple) also has a length, can be indexed and can be sliced. You can also pass it directly to a function if the types check with a function parameter list. If you throw it into an array\index{arrays!and expression tuples}, it will `melt' and initialize the array:
@@ -314,26 +320,31 @@ You can declare a value of type `tuple'. This value (called an expression tuple)
 \index{expression tuple}
 \index{tuple!expression tuple}
 \begin{dcode}
+module tupledemonstration;
+
 template TupleDemonstration(T...)
 {
     alias T TupleDemonstration; 
 }
 
-TupleDemonstration!(string, int, double) t;
+unittest
+{
+    TupleDemonstration!(string, int, double) t;
 
-assert(t.length == 3);
-t[0] = "abc";
-t[1] = 1;
-t[2] = 3.14;
-auto t2 = t[1..$];
-assert(t2[0] = 1)
-assert(t2[1] = 3.14);
+    assert(t.length == 3);
+    t[0] = "abc";
+    t[1] = 1;
+    t[2] = 3.14;
+    auto t2 = t[1..$];
+    assert(t2[0] == 1);
+    assert(t2[1] == 3.14);
 
-void foo(int i, double d) {}
-foo(t2); // OK.
+    void foo(int i, double d) {}
+    foo(t2); // OK.
 
-double[] array = [t2]; // see, between [ and ]
-assert(array == [1.0, 3.14]);
+    double[] array = [t2]; // see, between [ and ]
+    assert(array == [1.0, 3.14]);
+}
 \end{dcode}
 
 The simplest possible tuple is already defined in Phobos\index{Phobos} in \stdanchor{typetuple}{TypeTuple}:
@@ -351,6 +362,9 @@ static assert(is( TypeTuple!(ISD[0], ISD[1], ISD[2]) == ISD ));
 Pure template parameter tuples are auto-flattening: they do \emph{not} nest:
 
 \begin{dcode}
+module ttflatten;
+import std.typetuple;
+
 alias TypeTuple!(int, string, double) ISD;
 alias TypeTuple!(ISD, ISD) ISDISD; 
 // ISDISD is *not* ((int, string, double), (int, string, double))
@@ -363,28 +377,42 @@ This is both a bug and a feature. On the negative side, that condemns us to line
 The last property tuples have is that they can be iterated over: use a \D{foreach} expression, like you would for an array. With \D{foreach}, you can iterate on both type tuples and expression tuples. The indexed version is also possible, but you cannot ask directly for a \D{ref} access to the values (but see the example below). This iteration is done at compile-time and is in fact one of the main ways to get looping at compile-time\index{compile-time!looping} in D.
 
 \begin{dcode}
-// keeping the same t and T than the previous examples.
-string[T.length] s;
+module ttiteration;
 
-foreach(index, Type; T) // Iteration on types.
-                        // Type is a different, er, type at each position
+import std.typetuple;
+
+unittest
 {
-    static if(is(Type == double))
-        s[index] = Type.stringof;
+    alias TypeTuple!(string, int, double) T;
+    T t;
+    t[0] = "abc";
+    t[1] = 1;
+    t[2] = 3.14;
+
+    string[T.length] s;
+
+    foreach(index, Type; T) // Iteration on types.
+                            // Type is a different, er, type at each position
+    {
+        static if(is(Type == double))
+            s[index] = Type.stringof;
+    }
+    assert(s ==  ["", "", "double"]);
+
+    void bar(T)(ref T d) { T t; d = t;}
+
+    foreach(index, value; t) // Iteration on values.
+                             // value has a different type at each position!
+    {
+        bar(t[index]); // use t[iindex], not 'value' to get a ref access
+    }
+
+    assert(t[0] == "");
+    assert(t[1] == 0);
+    
+    import std.math;
+    assert(std.math.isnan(t[2]));
 }
-assert(s ==  ["", "", "double"]);
-
-void bar(T)(ref T d) { T t; d = t;}
-
-foreach(index, value; t) // Iteration on values.
-                         // value has a different type at each position!
-{
-    bar(t[index]); // use t[iindex], not 'value' to get a ref access
-}
-
-assert(t[0] == "");
-assert(t[1] == 0);
-assert(std.math.isnan(t[2]));
 \end{dcode}
 
 As values of this type can be created and named, they are \emph{almost} first-class. They have two limitations, however: 
@@ -426,6 +454,9 @@ You can get a tuple's type by using \D{typeof}\DD{(tuple)}, like any other D typ
 \paragraph{\D{void}-containing tuples\index{void@\D{void}!in tuples}\index{tuple!containing void@containing \D{void}} and empty tuples: } A type tuple may hold the \D{void} type, like any other D type. It `takes a slot' in the tuple and a tuple holding only a \D{void} is \emph{not} the empty tuple.
 
 \begin{dcode}
+module emptytuple;
+import std.typetuple;
+
 alias TypeTuple!(void) Void;
 alias TypeTuple!() Empty;
 static assert( !is(Void == Empty) );
@@ -440,9 +471,11 @@ Tuples are very useful to make function templates variadic (that is, accept a di
 \index{variadic functions}
 \index{compile-time iteration}
 \begin{dcode}
+module variadic;
+
 string toStrings(string sep = ", ", Args...)(Args args)
 {
-    import std.conv:to;
+    import std.conv;
     string result;
     foreach(index, argument; args)
     {
@@ -452,8 +485,11 @@ string toStrings(string sep = ", ", Args...)(Args args)
     return result;
 }
 
-assert( toStrings(1, "abc", 3.14, 'a', [1,2,3]) 
-              == "1, abc, 3.14, a, [1,2,3]"); 
+unittest
+{
+    assert( toStrings(1, "abc", 3.14, 'a', [1,2,3]) 
+                  == "1, abc, 3.14, a, [1, 2, 3]"); 
+}
 \end{dcode}
 
 If you want to restrict the number of parameters or their types, use template constraints:
@@ -469,24 +505,29 @@ Imagine you a have a bunch of ranges. Since they all have different types, you c
 
 \index{tuple!and ranges}
 \begin{dcode}
+module popallfronts;
 import std.range, std.algorithm;
+import areallranges;
 
 void popAllFronts(Ranges...)(ref Ranges ranges) 
     if(areAllRanges!Ranges)
 {
     foreach(index, range; ranges) 
-        ranges[i].popFront; // to get a ref access
+        ranges[index].popFront; // to get a ref access
 }
 
-auto arr1 = [0,1,2];
-auto arr2 = "Hello, World!";
-auto arr3 = map!"a*a"(arr1);
+unittest
+{
+    auto arr1 = [0,1,2];
+    auto arr2 = "Hello, World!";
+    auto arr3 = map!"a*a"(arr1);
 
-popAllFronts(arr1, arr2, arr3);
+    popAllFronts(arr1, arr2, arr3);
 
-assert(arr1 == [1,2]);
-assert(arr2 == "ello, World!");
-assert(equal( arr3, [1,4])); 
+    assert(arr1 == [1,2]);
+    assert(arr2 == "ello, World!");
+    assert(equal( arr3, [1,4])); 
+}
 \end{dcode}
 
 It works for any number of ranges, that's cool. And it's checked at compile-time, you cannot pass it an \D{int} discretly, hoping no one will see: it's the job of \DD{areAllRanges}\index{predicate templates!areAllRanges@\DD{areAllRanges}} to verify that. Its code is a classical example of recursion\index{recursion} on type tuples:
@@ -495,6 +536,9 @@ It works for any number of ranges, that's cool. And it's checked at compile-time
 \index{type tuple!recursion}
 \index{static if@\D{static if}!nested}
 \begin{dcode}
+module areallranges;
+import std.range;
+
 template areAllRanges(Ranges...)
 {
     static if (Ranges.length == 0) // Base case: stop.
@@ -524,6 +568,8 @@ The recursion\index{recursion!areAllRanges@\DD{areAllRanges}} is interesting: by
 Sometimes it makes sense for a template to accept either a type parameter\index{template!parameters!type} or an alias\index{template!parameters!alias}. For example, a template that returns a string representing its argument. In that case, since type parameter do not accept symbols as arguments and the same way round for alias, you're doomed to repeat yourself:
 
 \begin{dcode}
+module nameof2;
+
 template nameOf(T)
 {
     enum string nameOf = T.stringof;
@@ -534,16 +580,20 @@ template nameOf(alias a)
     enum string nameOf = a.stringof;
 }
 
-static assert(nameOf!(double[]) == "double[]");
+unittest
+{
+    assert(nameOf!(double[]) == "double[]");
 
-int i;
-
-static assert(nameOf!(i) == "i");
+    int i;
+    assert(nameOf!(i) == "i");
+}
 \end{dcode}
 
 Since tuples can accept both types and alias, you can use them to simplify your code a bit:
 
 \begin{dcode}
+module nameof3;
+
 template nameOf(T...) if (T.length == 1) // restricted to one argument
 {
     enum string nameOf = T[0].stringof;
@@ -601,6 +651,9 @@ Let's begin with something more simple: given a type and a type tuple, eliminate
 \index{recursion}
 \index{is expression@\D{is} expression}
 \begin{ndcode}
+module eliminate;
+import std.typetuple;
+
 template Eliminate(Type, TargetTuple...)
 {
     static if (TargetTuple.length == 0) // Tuple exhausted,
@@ -632,19 +685,23 @@ We cannot juxtapose types like I just did, we have to wrap them in a template. P
 Now that we know how to get rid of all occurrences of a type in a type tuple, we have to write a template to eliminate all duplicates. The algorithm is simple: take the first type, eliminate all occurrences of this type in the remaining type tuple. Then call the duplicate elimination anew from the resulting type tuple, while at the same time collecting the first type.
 
 \begin{dcode}
+module noduplicates;
+import std.typetuple;
+import eliminate;
+
 template NoDuplicates(Types...)
 {
     static if (Types.length == 0)
         alias Types NoDuplicates; // No type, nothing to do.
     else
         alias TypeTuple!( 
-                Types[0]
-              , NoDuplicates!(Eliminate!(Types[0], Types[1..$]));
-                         ) NoDuplicates;
+                          Types[0]
+                        , NoDuplicates!(Eliminate!(Types[0], Types[1..$]))
+                        ) NoDuplicates;
 }
 
-assert(is( NoDuplicates!(int,double,int,string,double)
-           == TypeTuple!(int,double,string)));
+static assert(is( NoDuplicates!(int,double,int,string,double)
+                  == TypeTuple!(int,double,string)));
 \end{dcode}
 
 By the way, code to do that, also called \DD{NoDuplicates}, is already in Phobos. It can be found in \std{typetuple}. I found coding it again a good exercise in type tuple manipulation\index{type tuple!manipulation}. You can find a few examples of this kind of templates in \autoref{typesorcery}.
