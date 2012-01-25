@@ -1,18 +1,21 @@
 \documentclass[10pt,a4paper]{article}
 
+% Font packages
 \usepackage{lmodern}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{textcomp}
-\usepackage{datetime}
 
+% Misc.
+\usepackage{datetime}% hmm, \yyyymmdd
+\usepackage{graphicx}% \includegraphics(}
 \usepackage{makeidx} % for the index
 \usepackage{framed}  % for the \aparte command
 \usepackage{minted}  % for code highlighting
 
 \makeindex
 
-%\yyyymmdddate
+%\yyyymmdd
 
 %%%% Redefinitions for minted / dcode %%%%%%%%%%%%%%
 
@@ -104,12 +107,12 @@
 
 \tableofcontents
 
-\input{templates_intro}
-\input{templates_basics}
+%\input{templates_intro}
+%\input{templates_basics}
 \input{templates_advanced}
-\input{templates_around}
-\input{templates_examples}
-\input{templates_appendix}
+%\input{templates_around}
+%\input{templates_examples}
+%\input{templates_appendix}
 
 \newpage
 \phantomsection
