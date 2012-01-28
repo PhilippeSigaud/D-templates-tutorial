@@ -9,22 +9,25 @@ void main(string[] args)
 {
     //if (!exists(samplesDir)) mkdir(samplesDir);
     auto compilationResults = File("results.txt", "w");
+    auto texFiles = filter!`endsWith(a.name,".tex")`(dirEntries("..",SpanMode.shallow));
     
-    auto texFiles = filter!`endsWith(a.name,".tex")`(dirEntries("..",SpanMode.shallow)); 
+    string[] fileNames;
+    string[][string] sampleNames;
+    bool[string] gotMain;
+    int[string] anonymousSamples;
+    
     foreach(entry; texFiles)
-    {
-        auto name = baseName(entry.name);
-        compilationResults.write("\n************", name, " **************************\n");
-        auto file = File("../" ~ name, "r");
+    { 
+        auto fileName = baseName(entry.name);
+        fileNames ~= fileName;
+        anonymousSamples[fileName] = 0;
+        
+        auto file = File("../" ~ fileName, "r");
         
         bool inCode;
         string accumulator;
-        int anonymous, named;
-        string moduleName;
-        bool gotMain;
-        string[] allSamples;
-        bool[] allMains;
-        
+        string sampleName;
+                
         foreach(line; file.byLine) // KeepTerminator.yes doesn't work?
         {
             if (line.startsWith("\\begin{dcode}") || line.startsWith("\\begin{ndcode}")) 
@@ -36,69 +39,85 @@ void main(string[] args)
             if (inCode && line.startsWith("module "))
             {
                 auto m = match(line, modName);
-                moduleName = to!string(m.captures[1]);
-                ++named;
+                sampleName = to!string(m.captures[1]);
             }
             
-            if (inCode && line.startsWith("void main()") && moduleName != "") gotMain = true;
+            if (inCode && line.startsWith("void main()") && sampleName != "") 
+                gotMain[sampleName~".d"] = true;
             
             if (inCode && (line.startsWith("\\end{dcode}") || line.startsWith("\\end{ndcode}")) )
             {
-                if (moduleName.length)
+                if (sampleName.length)
                 {
-                    auto sampleName = moduleName ~ ".d";
-                    auto sampleFile = File(sampleName, "w");
+                    auto sampleFile = File(sampleName ~ ".d", "w");
                     sampleFile.write(accumulator);
                     sampleFile.close();
-                    allSamples ~= sampleName;
-                    allMains ~= gotMain;
+                    sampleNames[fileName] ~= (sampleName~".d");
+                    if ((sampleName~".d") !in gotMain) 
+                        gotMain[sampleName~".d"] = false;
                 }
                 else
                 {
-                    ++anonymous;
+                    anonymousSamples[fileName]++;
                 }
 
                 inCode = false;
                 accumulator = "";
-                moduleName = "";
-                gotMain = false;
+                sampleName = "";
             }
             
             if (inCode) accumulator ~= line ~ "\n";
         }
+    }
         
-        // Now we have all samples extracted from the current file. Let's compile them.
-        compilationResults.write("Found " ~ to!string(named) ~ " named samples.\n");
-        
-        foreach(sample; zip(allSamples, allMains))
+    // Now we have all samples extracted from all files. Let's compile them.
+    
+    // Non, attention entre les modules et les samples, je suis en train de confondre.
+    // Il faudra probablement un tableau associatif
+    foreach(fileName; fileNames)
+    {
+        compilationResults.write("\n************", fileName, " **************************\n");
+        int named;
+        if (fileName in sampleNames)
         {
-            string sampleName = sample[0];
-            int compilationResult;
-            
-            if (sample[1]) //got main
-                compilationResult = system("rdmd -w -unittest " ~ sampleName);
-            else
-                compilationResult = system("rdmd --main -w -unittest " ~ sampleName);
-            
-            if (compilationResult == 0)
-                compilationResults.write(sampleName ~ ": OK\n");
-            else
+            named = sampleNames[fileName].length;
+            compilationResults.write("Found " ~ to!string(named) ~ " named samples.\n");
+        
+            foreach(sampleName; sampleNames[fileName])
             {
-                if (sampleName.endsWith("_error.d"))
-                    compilationResults.write(sampleName ~ ": OK (fail as expected).\n");
+                int compilationResult;
+                    
+                if (sampleName in gotMain && gotMain[sampleName]) //got main
+                    compilationResult = system("rdmd -w -unittest " ~ sampleName);
                 else
-                    compilationResults.write(sampleName ~ ":  *** ERROR! ***\n");
+                    compilationResult = system("rdmd --main -w -unittest " ~ sampleName);
                 
+                if (compilationResult == 0) // success
+                    compilationResults.write(sampleName ~ ": OK\n");
+                else // failure
+                {
+                    if (sampleName.endsWith("_error.d"))
+                        compilationResults.write(sampleName ~ ": OK (fail as expected).\n");
+                    else
+                        compilationResults.write(sampleName ~ ":  *** ERROR! ***\n");
+                    
+                }
             }
         }
-
-        compilationResults.write("\n");
-        compilationResults.write("Found " ~ to!string(anonymous) ~ " anonymous samples (no compilation attempted).\n");
-        compilationResults.write("Total of " ~ to!string(anonymous+named) ~ " samples found.\n");
-        compilationResults.write("********************************************************\n\n");
-        anonymous = 0;
-        named = 0;
-    }
+        else
+        {
+            compilationResults.write("Found no named sample.");
+            named = 0;
+        }
     
-    system("rm *.deps");
-}    
+        compilationResults.write("\n");
+        compilationResults.write("Found " ~ to!string(anonymousSamples[fileName]) ~ " anonymous samples (no compilation attempted).\n");
+        compilationResults.write("Total of " ~ to!string(anonymousSamples[fileName]+named) ~ " samples found.\n");
+        compilationResults.write("********************************************************\n\n");
+            }
+    
+    // removing .deps generated by rdmd
+    auto deps = filter!`endsWith(a.name,".deps")`(dirEntries(".",SpanMode.shallow));
+    foreach(dep; deps)
+        system("rm " ~ dep.name);
+}
