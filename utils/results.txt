@@ -44,9 +44,9 @@ descriptor.d: OK
 librarytypedef.d: OK
 compare.d: OK
 usingtuple.d: OK
-usingnamedtuple.d:  *** ERROR! ***
+usingnamedtuple.d: OK
 isastringliteral.d: OK
-namedtuple.d:  *** ERROR! ***
+namedtuple.d: OK
 filelinetagging.d: OK
 usingunique.d: OK
 debugger.d: OK
@@ -57,8 +57,7 @@ Total of 68 samples found.
 
 
 ************dtemplates.tex **************************
-Found 0 named samples.
-
+Found no named sample.
 Found 0 anonymous samples (no compilation attempted).
 Total of 0 samples found.
 ********************************************************
@@ -158,25 +157,48 @@ Total of 69 samples found.
 
 
 ************templates_around.tex **************************
-Found 9 named samples.
-mine.d: OK
-utils.d: OK
-utils.d: OK
-mine.d: OK
-utils.d: OK
-a.d: OK
-b.d:  *** ERROR! ***
-test.d:  *** ERROR! ***
-test.d:  *** ERROR! ***
+Found 33 named samples.
+usingmystruct1.d: OK
+mystruct1.d: OK
+mystruct2.d: OK
+usingmystruct2.d: OK
+mystruct3.d: OK
+getset2.d: OK
+getset3.d: OK
+usinginterpolate.d: OK
+stringinterpolation.d: OK
+sortingnetwork.d: OK
+buildsortingcode.d: OK
+networksort.d: OK
+nameof.d: OK
+usingallmembers1.d: OK
+allmemberstemplate.d: OK
+allmemberstemplate2.d: OK
+templateintrospection.d: OK
+allmembersmodule.d: OK
+member.d: OK
+makemember.d: OK
+overloads1.d: OK
+myclass.d: OK
+usingoverloads1.d: OK
+overloads2.d: OK
+allmembers.d: OK
+usingallmembers2.d: OK
+implements.d: OK
+cclass.d: OK
+parent.d: OK
+qualifiedname.d: OK
+usingqualifiedname.d: OK
+scopename.d: OK
+usingscopename.d: OK
 
-Found 35 anonymous samples (no compilation attempted).
-Total of 44 samples found.
+Found 12 anonymous samples (no compilation attempted).
+Total of 45 samples found.
 ********************************************************
 
 
 ************templates_appendix.tex **************************
-Found 0 named samples.
-
+Found no named sample.
 Found 12 anonymous samples (no compilation attempted).
 Total of 12 samples found.
 ********************************************************
