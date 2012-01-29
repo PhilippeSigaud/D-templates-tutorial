@@ -31,6 +31,8 @@ Let's begin with the very first syntax: if \DD{Type} is a valid D type in the sc
 
 \index{is expression@\D{is} expression}
 \begin{dcode}
+module canbeinstantiated;
+
 template CanBeInstantiatedWith(alias templateName, Types...)
 {
     // is templateName!(Types) a valid type?
@@ -52,6 +54,9 @@ Let's put this to some use. Imagine you have a function template \DD{fun} and so
 
 \index{is(typeof())@\D{is}\DD{(}\D{typeof}\DD{())}}
 \begin{dcode}
+module validcall;
+import std.conv;
+
 bool validCall(alias fun, Args...)(Args args) 
 {
     static if (is( typeof({ /* code to test */
@@ -65,18 +70,20 @@ bool validCall(alias fun, Args...)(Args args)
 
 // Usage:
 T add(T)(T a, T b) { return a+b;}
-
-assert( validCall!add(1, 2.3));   // generates add!(double)
-assert(!validCall!add(1, "abc")); // no template instantiation possible
-
 string conc(A,B)(A a, B b) { return to!string(a) ~ to!string(b);}
 
-assert( validCall!conc(1, "abc")); // conc!(int, string) is OK.
-assert(!validCall!conc(1)       ); // no 1-argument version for conc
+void main()
+{
+    assert( validCall!add(1, 2));   // generates add!(int)
+    assert(!validCall!add(1, "abc")); // no template instantiation possible
 
-struct S {}
+    assert( validCall!conc(1, "abc")); // conc!(int, string) is OK.
+    assert(!validCall!conc(1)       ); // no 1-argument version for conc
 
-assert(!validCall!S(1, 2.3); // S is not callable
+    struct S {}
+  
+    assert(!validCall!S(1, 2.3)); // S is not callable
+}
 \end{dcode}
 
 Note that the tested code is simply `\DD{fun(args);}'. That is, there is no condition on \DD{fun}'s type: it could be a function, a delegate or even a struct or class with \D{opCall} defined. There are basically two ways \DD{fun(args);} can be invalid code: either \DD{fun} is not callable as a function, or it is callable, but \DD{args} are not valid arguments.
@@ -161,6 +168,9 @@ But sometimes D channels its inner perl\index{perl!inner perl in D} and, lo! The
 
 \index{is(typeof())@\D{is}\DD{(}\D{typeof}\DD{())}}
 \begin{ndcode}
+module istuple;
+import std.typecons;
+
 template isTuple(T)
 {
     static if (is(typeof({
@@ -174,7 +184,7 @@ template isTuple(T)
 }
 \end{ndcode}
 
-Line 4 defines the function template \DD{tupleTester}, that only accepts \DD{Tuple}s as arguments (even though it does nothing with them). We create something of type \DD{T} on line 5, using the \DD{.init} property inherent in all D types, and try to call \DD{tupleTester} with it. If \DD{T} is indeed a \DD{Tuple} this entire block statement is valid, the resulting delegate call indeed has a type and \D{is} returns \D{true}.
+Line 7 defines the function template \DD{tupleTester}, that only accepts \DD{Tuple}s as arguments (even though it does nothing with them). We create something of type \DD{T} on line 8, using the \DD{.init} property inherent in all D types, and try to call \DD{tupleTester} with it. If \DD{T} is indeed a \DD{Tuple} this entire block statement is valid, the resulting delegate call indeed has a type and \D{is} returns \D{true}.
 
 There are two things to note here: first, \DD{isTuple} works for any templated type called \DD{Tuple}, not only \stdanchor{typecons}{Tuple}. If you want to restrict it, change \DD{tupleTester} definition. Secondly, we do not get access to the inner types this way. For \stdanchor{typecons}{Tuple} it's not really a problem, as they can be accessed with the \DD{someTuple.Types} alias, but still\ldots
 
@@ -218,15 +228,16 @@ Let's put that to some use: we want a factory template that will create a new st
 
 \index{is expression@\D{is} expression!type specialization}
 \begin{dcode}
+module maker;
 import std.algorithm;
+import std.conv;
 
-template make(alias aggregate) 
-    if (is(typeof(aggregate) == class ) 
-     || is(typeof(aggregate) == struct))
+template make(A) 
+    if (is(A a == class ) 
+     || is(A a == struct))
 {
     auto make(Args...)(Args args)
     {
-        alias typeof(aggregate) A;        
         static if (is(A a == class))
             return new A(args);
         else
@@ -235,15 +246,23 @@ template make(alias aggregate)
 }
 
 struct S {int i;}
-class C {int i; this(int ii) { i = ii;}}
+class C 
+{
+    int i; 
+    this(int ii) { i = ii;}
+    override string toString() @property { return "C("~to!string(i)~")";}
+}
 
-auto array = [0,1,2,3];
+void main()
+{
+    auto array = [0,1,2,3];
 
-auto structRange = map!( make!S )(array);
-auto classRange  = map!( make!C )(array);
+    auto structRange = map!( make!S )(array);
+    auto classRange  = map!( make!C )(array);
 
-assert(equal(structRange, [S(0), S(1), S(2), S(3)]));
-assert(equal(structRange, [new C(0), new C(1), new C(2), new C(3)]));
+	 assert(equal(structRange, [S(0), S(1), S(2), S(3)]));
+    assert(classRange.front.toString == "C(0)");
+}
 \end{dcode}
 
 You can find another example of this kind of \D{is} in section \ref{classtemplates}, with the \DD{duplicator} template.
