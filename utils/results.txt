@@ -148,11 +148,58 @@ Total of 89 samples found.
 
 
 ************templates_examples.tex **************************
-Found 1 named samples.
+Found 48 named samples.
+staticmap.d: OK
+qualified.d: OK
+tester.d: OK
+staticfilter.d: OK
+usingstaticfilter1.d: OK
+istype.d: OK
+isbuiltintype.d: OK
+usingstaticfilter2.d: OK
+staticreduce.d: OK
+maxtemplate.d: OK
+usingmax.d: OK
+variant_error.d: OK (fail as expected).
+sorttypes.d: OK
+sortingtypes.d: OK
+staticscan.d: OK
 interleave.d: OK
+annotation.d: OK
+maptuple.d: OK
+filtertuple.d: OK
+functionarity.d: OK
+memoize1.d: OK
+usingmemoize1.d: OK
+memoize2.d: OK
+checkcompatibility.d: OK
+curry.d: OK
+juxtapose.d: OK
+juxtaposehelper.d: OK
+maponalias.d: OK
+relational.d: OK
+half.d: OK
+usingrelational.d: OK
+fields.d: OK
+usingfields.d: OK
+notify.d: OK
+usingnotify.d: OK
+fieldsof.d: OK
+enumdefasstring.d: OK
+extendenum.d: OK
+staticswitch.d: OK
+gobbler.d: OK
+usinggobbler.d: OK
+alist.d: OK
+isanytype.d: OK
+usingcheckedwrite.d: OK
+getformatters.d: OK
+verifychecks.d: OK
+checkedwrite.d: OK
+forwarder.d: OK
 
-Found 68 anonymous samples (no compilation attempted).
-Total of 69 samples found.
+Found 34 anonymous samples (no compilation attempted).
+Total of 82 samples found.
 ********************************************************
 
 
@@ -198,8 +245,13 @@ Total of 45 samples found.
 
 
 ************templates_appendix.tex **************************
-Found no named sample.
-Found 12 anonymous samples (no compilation attempted).
+Found 4 named samples.
+canbeinstantiated.d: OK
+validcall.d: OK
+istuple.d: OK
+maker.d: OK
+
+Found 8 anonymous samples (no compilation attempted).
 Total of 12 samples found.
 ********************************************************
 
