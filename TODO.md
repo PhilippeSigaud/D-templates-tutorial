@@ -1,29 +1,22 @@
 TODO
 ====
 
-Scaffolding
------------
+Topics that interest me most right now:
+---------------------------------------
 
-* Define more LaTeX environments (invisible-D, D-in-main, D-module-scope)
-* A D script that extract the code samples and put them in directories.
-* Another D script that extract the \TODO{} commands and list them all.
-
-Templates to show
------------------
-
-* juxtapose functions
-* annotating type
-* compile-time writefln
-* mapping n ranges in parallel
-* heterogeneous tree
-* Generating random values, whatever the type.
+* juxtaposing functions,
+* mapping n ranges in parallel,
+* Generating random values, whatever the type,
+* grouping functions,
+* a simple compile-time state machine? (to parse something, for example)
 
 Misc.
 -----
 
-
 * __LINE__ and __FILE__ are described on dlang.org. Link it.
 * Index Appendix B.
+
+From the D mailing lists, related to templates (to be put somewhere in the text):
 
 "You can't use methods (delegates) for template parameters, because they need a context, which is not known at compile-time."
 
