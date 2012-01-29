@@ -93,7 +93,12 @@ void main(string[] args)
                     compilationResult = system("rdmd --main -w -unittest " ~ sampleName);
                 
                 if (compilationResult == 0) // success
-                    compilationResults.write(sampleName ~ ": OK\n");
+                {
+                    if (!sampleName.endsWith("_error.d"))
+                        compilationResults.write(sampleName ~ ": OK\n");
+                    else
+                        compilationResults.write(sampleName ~ ": *** ERROR *** (compiled OK, but should fail)\n");
+                }
                 else // failure
                 {
                     if (sampleName.endsWith("_error.d"))
