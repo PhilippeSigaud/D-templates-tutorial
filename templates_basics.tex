@@ -286,6 +286,7 @@ void main()
 But, you will ask, what if I want client code to be clean and readable by using the eponymous trick, when at the same time I need to internally create many symbols in my template? In that case, create a secondary template with as many symbols as you need, and expose its final result through a (for example) \DD{result} symbol. The first template can instantiate the second one, and refer only to the \DD{.result} name:
 
 \index{secondary template}
+\label{impltrick}
 \begin{dcode}
 module record;
 

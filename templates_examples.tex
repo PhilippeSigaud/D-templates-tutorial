@@ -1804,7 +1804,260 @@ And \emph{voila}, your own toy D extension. Or, you know, you could just bug Wal
 
 \section{Statically-Checked Writeln}\label{staticallycheckedwriteln}
 
-\TODO{As an intro to compile-time parsing, for a limited (!) domain-specific language.}
+This is an example of verifying a limited (!) Domain-Specific Language (DSL) at compile-time in D. The goal is to take a format string for \stdanchor{stdio}{writef} or \stdanchor{stdio}{writefln} and to check the arguments' types before passing them to \DD{writef}(\DD{ln}).
+
+For example, when writing:
+\begin{dcode}
+writefln("For sample #%d, the results are (%s, %f)", num, name, f);
+\end{dcode}
+
+We know that \DD{\%d} means the argument must be an integral type, \DD{\%f} asks for a floating-point type and so on. That means in the previous sample, we know that:
+
+\begin{itemize}
+\item There must exactly 3 args, no more, no less.
+\item The first one must have an integral type.
+\item The second one can be of any type (more exactly, of any type that can be converted into a \D{string}).
+\item The third one must be of some floating point type.
+\end{itemize}
+
+These four conditions can be checked at compile-time, that's what we will do here. I won't code the entire POSIX specification for \DD{printf}, table \ref{table:formatters} shows what will be checked.
+
+\begin{table}[htb]
+\begin{tabular}[c]{cll}
+\hline
+\multicolumn{1}{c}{Formatter} & \multicolumn{1}{c}{Asks For} & \multicolumn{1}{c}{Equivalent Constraint} \\ 
+\hline
+\DD{\%d}, \DD{\%i} & an integral type & \DD{isIntegral} \\
+\DD{\%u}, \DD{\%x}, \DD{\%X}, \DD{\%o} & an unsigned integral type & \DD{isUnsigned} \\
+\DD{\%f}, \DD{\%F}, \DD{\%e}, \DD{\%E}, \DD{\%g}, \DD{\%G} & a floating point type & \DD{isFloatingPoint} \\
+\DD{\%c} & a char type & \DD{isSomeChar} \\
+\DD{\%s} & any type & \DD{isAnyType} \\
+\DD{\%\%} & not a formatter, just the '\DD{\%}' char & no check \\
+\hline\end{tabular}
+\caption{Standard formatters recognized by \DD{cwrite}}
+\label{table:formatters}
+\end{table}
+
+For those interested in the details, \href{http://en.wikipedia.org/wiki/Printf_format_string}{this Wikipedia article} makes for a nice reference. Note that not all formatters are implemented in \std{stdio}, for example the \DD{\%p} formatter for \D{void}\DD{*} pointers seems not to work.
+
+Most of the previous typechecking templates are in \std{traits}: \DD{isIntegral}, \DD{isFloatingPoint}, \DD{isUnsigned} and \DD{isSomeChar} are already implented in Phobos. The only one left is \DD{isAnyType}, a quite complacent template:
+
+\begin{dcode}
+module isanytype;
+
+template isAnyType(T)
+{
+    enum isAnyType = true;
+}
+\end{dcode}
+
+The only way for it to fail would be to give it a non-type.
+
+Continuing with the previous chapters' example-driven development, here is what I want to obtain (\DD{cwritefln} stands for checked-\DD{writefln}):
+
+\label{usingcheckedwrite}
+\begin{dcode}
+module usingcheckedwrite;
+import checkedwrite;
+
+void main()
+{
+    cwritefln!"For sample #%d, the results are (%s, %f)"( 0, "foo", 3.14); // OK
+ // NOK: bad number or args: waited for 3 args, got 2.
+ // cwritefln!"For sample #%d, the results are (%s, %f)"( 0, "foo");
+ // NOK: arg #3 of type double does not verify check isFloatingPoint
+ // cwritefln!"For sample #%d, the results are (%s, %f)"( 0, 3.14, "foo");
+}
+\end{dcode}
+
+Now, given a formatting string, the first thing is to extract the formatters and construct the constraints list. Here I'll use a string mixin and just need to build a string representing the desired final code:
+
+\begin{dcode}
+module getformatters;
+import std.conv;
+import std.traits;
+
+string getFormatters(S)(S s) if (isSomeString!S)
+{
+    dstring ds = to!dstring(s);
+    bool afterPercent = false;
+    bool error;
+    string result = "alias TypeTuple!(";
+    foreach(elem; ds)
+    {
+        if (error) break;
+        if (afterPercent)
+        {
+            switch (elem)
+            {
+                case '%':
+                    afterPercent = false;
+                    break;
+                case 'd':
+                case 'i':
+                    result ~= "isIntegral,"; // integers
+                    afterPercent = false;
+                    break;
+                case 'u':
+                case 'x':
+                case 'X':
+                case 'o':
+                    result ~= "isUnsigned,"; // unsigned integral
+                    afterPercent = false;
+                    break;
+                case 'f':
+                case 'F':
+                case 'e':
+                case 'E':
+                case 'g':
+                case 'G':
+                    result ~= "isFloatingPoint,"; // floating point
+                    afterPercent = false;
+                    break;
+                case 'c':
+                    result ~= "isSomeChar,"; // char
+                    afterPercent = false;
+                    break;
+                case 's':
+                    result ~= "isAnyType,"; // any string-convertible type
+                    afterPercent = false;
+                    break;
+                /* flags, width, */
+                case '+':
+                case '-':
+                case '#':
+                case '.':
+                case ' ':
+                case '0':
+                    ..
+                case '9':
+                    break;
+                default:
+                    error = true; // Error!
+                    break;
+            }
+        }
+        else
+        {
+            if (elem == '%') afterPercent = true;
+        }
+    }
+    
+    // Get rid of the last comma:
+    if (result.length > 17) result = result[0..$-1];
+    // finishing the alias code
+    result ~= ") ArgsChecks;"; 
+    
+    if (afterPercent // finished the string but still in "afterPercent" mode 
+     || error) 
+        result = "static assert(0, \"Bad format string: \" ~ a);";
+    
+    return result;
+}
+\end{dcode}
+
+It's quite a long sample, but the logic behind it is straightforward: it iterates on all characters and looks for \DD{\%x} patterns. I included here a basic treatment for flags and such, but as I said earlier, this example does not deal with the entire POSIX specification: the goal is \emph{not} to validate the formatting string, but to extract the formatters. When it determines the string is malformed, the generated code will be a \D{static assert}.
+
+So, at the end, we get ready-to-be-mixed-in strings, like these:
+
+\begin{dcode}
+"alias TypeTuple!() ArgsChecks;" // no formatter
+"alias TypeTuple!(isIntegral,isAnyType,isFloatingType) ArgsChecks;" // the previous example
+"static assert(0, \"Bad format string: %s and %z\");" // Bad string
+\end{dcode}
+
+Once the tuple of checks is done, we need a template that verifies each argument in turn with the corresponding template. To get a better error message, I use an \D{int} template parameter, to count the number of args checked.
+
+\begin{ndcode}
+module verifychecks;
+import std.conv;
+import std.traits;
+import std.typetuple;
+import isanytype;
+import getformatters;
+
+template ArgsChecks(alias a) if (isSomeString!(typeof(a)))
+{
+    mixin(getFormatters(a));
+}
+
+template VerifyChecks(int which, Checks...)
+{
+    template on(Args...)
+    {
+        static if (Checks.length != Args.length)
+            static assert(0, "ctwrite bad number of args: waited for " ~ to!string(Checks.length) 
+                           ~ " args, got " ~ to!string(Args.length) ~ ".");
+        else static if (Checks.length == 0) // end of process
+            enum on = true;
+        else static if ({ alias Checks[0] C; return C!(Args[0]);}()) // recurse
+            enum on = VerifyChecks!(which+1, Checks[1..$]).on!(Args[1..$]);
+        else
+            static assert(0, "cwrite bad arg: arg #" ~ to!string(which) 
+                           ~ " of type " ~ Args[0].stringof 
+                           ~ " does not verify check " ~ __traits(identifier, Checks[0]));
+    }
+}
+\end{ndcode}
+
+The \DD{Verify} template is another example of a double-decker template, as seen in section \ref{templatesintemplates}, to get a nice calling syntax:
+
+\begin{dcode}
+Verify!(0, isIntegral, isFloatingPoint).on!(int, double)
+\end{dcode}
+
+The most subtle part is on line 19: 
+
+\begin{dcode}
+else static if ({ alias Checks[0] C; return C!(Args[0]);}()) // recurse
+\end{dcode}
+
+We want to apply the first checking constraint, \DD{Check[0]}, on the first argument type, \DD{Args[0]}. Halas, the D grammar does not allow the following construct:
+
+\begin{dcode}
+else static if (Checks[0]!(Args[0])) // recurse
+\end{dcode}
+
+The standard way to do this would be:
+
+\begin{dcode}
+alias Checks[0] Check;
+// and then
+else static if (Check!(Args[0]))
+\end{dcode}
+
+But that would put a \DD{Check} symbol in the template local scope, therefore breaking the eponymous template trick. It'd be possible to define a \DD{VerifyImpl} template (see section \ref{impltrick} on page \pageref{impltrick}), but using a local delegate works as well:
+
+\begin{dcode}
+{ alias Checks[0] C; return C!(Args[0]);}()
+\end{dcode}
+
+The \DD{\{...\}} part defines the delegate and \DD{()} calls it, returning either \D{true} or \D{false}. This is then inserted inside the \D{static if}.\footnote{ Now that I think about it, that trick could be inserted in the Eponymous Templates section\ldots}
+
+Anyway, once the checking code is done, the rest is easy:
+
+\begin{dcode}
+module checkedwrite;
+import std.stdio;
+import std.traits;
+import verifychecks;
+
+void cwritef(alias a, Args...)(Args args) 
+if (isSomeString!(typeof(a))
+ && VerifyChecks!(1, ArgsChecks!(a)).on!(Args))
+{
+    writef(a, args);
+}
+
+void cwritefln(alias a, Args...)(Args args)
+if (isSomeString!(typeof(a))
+ && VerifyChecks!(1, ArgsChecks!(a)).on!(Args))
+{
+    writefln(a, args);
+}
+\end{dcode}
+
+Usage is then as shown in page \pageref{usingcheckedwrite}.
 
 \section{Extending a Class}\label{extendingaclass}
 
