@@ -21,6 +21,9 @@ As we saw in section \ref{tuples}, template tuple parameters can hold type tuple
 Mapping a type tuple is simply applying another (unary) template on all types of a type tuple. Phobos already defines \DD{staticMap} in \std{typetuple}, but it's a nice exercise to code it again. We want a template that takes another template name (as an \D{alias} parameter), say \DD{Wrapper}, and a typetuple (\DD{T0, T1, T2, ..., Tn}) and returns \DD{Wrapper!T0, Wrapper!T1, Wrapper!T2, ..., Wrapper!Tn}.
 
 \begin{dcode}
+module staticmap;
+import std.typetuple;
+
 template staticMap(alias M, T...)
 {
     static if (T.length == 0) // End of sequence
@@ -30,7 +33,7 @@ template staticMap(alias M, T...)
 }
 \end{dcode}
 
-We use the auto-flattening of type tuples to aggregate the results into a unique tuple. Notice how indexing and slicing make for a not-so-complicated piece of code.
+We use the auto-flattening of type tuples to aggregate the results into a unique tuple. Notice how indexing and slicing make for a not-so-complicated piece of code. As it's already defined in \std{typetuple}, I'll use Phobos' template from now on.
 
 Even a simple template such as this one can have great uses:
 
@@ -45,6 +48,9 @@ Even a simple template such as this one can have great uses:
 The seconde use in the previous section's list can be useful to unit-test a part of your code. Suppose you have a templated function that is supposed to work on any built-in type. You do not need to generate all possible combinations of types. Just use \DD{staticMap} to generate them for you:
 
 \begin{dcode}
+module qualified;
+import std.typetuple;
+
 /** 
 * Given a type T, generates all qualified versions of T
 * that you find interesting (eleven versions all in all).
@@ -79,12 +85,12 @@ alias staticMap!(Qualified, QualifiedTypes) DoublyQualifiedTypes;
 Now, if your function is supposed to work on all the generated qualified types, just test it:
 
 \begin{dcode}
-void myFun(T)(T t) { ... }
+module tester;
+import qualified;
 
-/* Here we generate the qualified types, see above */
-(...) 
-temp
-late test(alias fun)
+void myFun(T)(T t) {}
+
+template test(alias fun)
 {
     void on(T...)()
     {
@@ -108,6 +114,9 @@ You can search for and extract some types from a tuple, using a predicate to cho
 That gives us the following code:
 
 \begin{dcode}
+module staticfilter;
+import std.typetuple;
+
 template staticFilter(alias Pred, T...)
 {
     static if (T.length == 0) // End of sequence
@@ -122,16 +131,23 @@ template staticFilter(alias Pred, T...)
 Using \DD{staticFilter} is quite simple. Let's get integral types from a tuple, by way of \stdanchor{traits}{isIntegral}:
 
 \begin{dcode}
+module usingstaticfilter1;
+import std.typetuple;
+import std.traits;
+import staticfilter;
+
 alias TypeTuple!(int, double, float, string, byte, bool, float, void) Types;
 
 alias staticFilter!(isIntegral, Types) OnlyIntegrals;
 
-static assert(is(OnlyIntegrals == TypeTuple!(int, byte, bool)));
+static assert(is(OnlyIntegrals == TypeTuple!(int, byte)));
 \end{dcode}
 
 What about separating types from non-types? First, let creates a template that is \D{true} for pure types and \D{false} on non-types:
 
 \begin{dcode}
+module istype;
+
 template isType(T)
 {
     enum isType = true;
@@ -146,9 +162,11 @@ template isType(alias a)
 }
 \end{dcode}
 
-Hey, wait! OK with having two specialised templates, one on template type parameters and another on aliases. But why the \D{static if}? It's because user-defined types (\DD{MyClass} and such) are \emph{both} a type and a symbol (we saw that in section \ref{declarations}). For this particular use, I want them to be considered as types, opposed to other symbols (function names, module names, variables, \ldots). Hence the \D{is}\DD{()} test. If you simplify the second \DD{isType} to just give \D{false}, what you get is a builtin-type detector, which may also be interesting:
+Hey, wait! OK with having two specialised templates, one on template type parameters and another on aliases. But why the \D{static if}? It's because user-defined types (\DD{MyClass} and such) are \emph{both} a type and a symbol (we saw that in section \ref{declarations}). For this particular use, I want them to be considered as types, contrary to other symbols (function names, module names, variables, \ldots). Hence the \D{is}\DD{()} test. If you simplify the second \DD{isType} to just give \D{false}, what you get is a builtin-type detector, which may also be interesting:
 
 \begin{dcode}
+module isbuiltintype;
+
 template isBuiltinType(T)
 {
     enum isBuiltinType = true;
@@ -163,6 +181,12 @@ template isBuiltinType(alias a)
 And, here we go:
 
 \begin{dcode}
+module usingstaticfilter2;
+import std.typetuple;
+import staticfilter;
+import istype;
+import isbuiltintype;
+
 class MyClass {}
 int foo(int i) { return i;}
 
@@ -170,7 +194,7 @@ alias staticFilter!(isType, 1, int, 3.14, "abc", foo, MyClass) Types;
 alias staticFilter!(isBuiltinType, 1, int, 3.14, "abc", foo, MyClass) Builtins;
 
 static assert(is(Types == TypeTuple!(int, MyClass)));
-static assert(is(Builtin == TypeTuple!(int)));
+static assert(is(Builtins == TypeTuple!(int)));
 \end{dcode}
 
 But that is, admittedly, pretty run-of-the-mill stuff. Though useful from time to time, it's quite rare for someone to be given a pure type tuple like this. A much more common use for the likes of \DD{staticFilter} is when creating complex types.
@@ -249,12 +273,12 @@ template GraphCheckImpl(NodesOrEdges...)
     alias staticFilter!(isEdge, NodesOrEdges) Edges;
     
     // 1. All arguments must be nodes or edges
-    static if (Nodes.length + Edges.length != NodesOrEdges.length)
-    static assert(0, "Some args are not nodes or edges.");
+    static assert (Nodes.length + Edges.length != NodesOrEdges.length,
+                   "Some args are not nodes or edges.");
     
     // 2. There must be at least one node
-    static if (Nodes.length == 0)
-    static assert(0, "You must provide at least one node.");
+    static assert (Nodes.length == 0,
+                   "You must provide at least one node.");
     
     // 3. Is there a common type for the nodes' labels and values?
     // First step: extracting labels and values
@@ -271,27 +295,27 @@ template GraphCheckImpl(NodesOrEdges...)
     alias staticMap!(GetLabel, Nodes) NodesLabels;
     alias staticMap!(GetValue, Nodes) NodesValues; 
     
-    static if (is(CommonType!(NodesLabels) == void)) // no common type
-    static assert(0, "The nodes do not have all the same label type.");
+    static assert (is(CommonType!(NodesLabels) == void), // no common type
+                   "The nodes do not have all the same label type.");
     
-    static if (is(CommonType!(NodesValues) == void))
-    static assert(0, "The nodes do not have all the same value type.");
+    static assert (is(CommonType!(NodesValues) == void),
+                   "The nodes do not have all the same value type.");
 
     // 4. Same for edges
     alias staticMap!(GetLabel, Edges) EdgesLabels;  
     
-    static if (is(CommonType!(EdgesLabels) == void))
-    static assert(0, "The edges do not have all the same label type.");
+    static assert (is(CommonType!(EdgesLabels) == void),
+                   "The edges do not have all the same label type.");
         
     // 5. Edges - Node compatibility
-    static if(!is(CommonType!NodesLabels == CommonType!EdgesLabels))
-        static assert(0, "Nodes and edges do not have the same label type.");
+    static assert(!is(CommonType!NodesLabels == CommonType!EdgesLabels),
+                  "Nodes and edges do not have the same label type.");
     
     enum result = true;
 }    
 \end{dcode}
 
-This is one huge template, but \DD{staticFilter} sits square in the middle and greatly simplifies the code. Now, \DD{graph} signature is simply:
+This is one huge template, but \DD{staticFilter} sits square in the middle and greatly simplifies the code. Note the use of \D{static assert}, slightly different from Now, \DD{graph} signature is simply:
 
 \begin{dcode}
 auto graph(NodesOrEdges...)(NodesOrEdges args) if (GraphCheck!NodesOrEdges)
@@ -311,6 +335,8 @@ Here, we will see two examples: getting the maximum type and sorting a type tupl
 But first, here is \DD{staticReduce}:
 
 \begin{dcode}
+module staticreduce;
+
 template staticReduce(alias bin, Types...) // Types[0] is the seed
 {
     static if (Types.length < 2)
@@ -320,13 +346,16 @@ template staticReduce(alias bin, Types...) // Types[0] is the seed
         alias bin!(Types[0], Types[1]) staticReduce;
     else // recurse
         alias staticReduce!(bin, bin!(Types[0], Types[1])
-                               , Types[2..$]) staticReduce;
+                               , Types[2..$]) 
+              staticReduce;
 }
 \end{dcode}
 
 From here, how do we get the biggest type? Simple, just apply a \DD{Max} binary template to your type list:
 
 \begin{dcode}
+module maxtemplate;
+
 template Max(T1, T2)
 {
     static if (T1.sizeof >= T2.sizeof)
@@ -337,6 +366,11 @@ template Max(T1, T2)
 \end{dcode}
 
 \begin{dcode}
+module usingmax;
+import std.typetuple;
+import maxtemplate;
+import staticreduce;
+
 alias TypeTuple!(int, bool, double, float delegate(float), string[]) Types;
 
 alias staticReduce!(Max, Types) MaxType;
@@ -361,10 +395,15 @@ When can sorting a tuple be useful? Mainly for the same reason you'd want to sor
 I'll focus on the third use, comparing two type tuples. See for example the \stdanchor{variant}{Algebraic} template struct. \DD{Algebraic!(Type0, Type1, ... TypeN)} can hold a value of one of \DD{Type0}, \ldots \DD{TypeN}. But of course, in a certain sense, the previous type is also the same than \DD{Algebraic!(Type1, TypeN, ... Type0)} or any other reordering of the types. But that's not the case currently:
 
 \begin{dcode}
+module variant_error;
 import std.variant;
 
-Algebraic!(int, double, string) algOne = 1;
-Algebraic!(double, int, string) algTwo = algOne; // fail!
+void main()
+{
+    Algebraic!(int, double, string) algOne;
+    algOne = 1;
+    Algebraic!(double, int, string) algTwo = algOne; // fail!
+}
 \end{dcode}
 
 Using sorted types internally (or even using a factory function to create algebraic values, that always returned sorted \DD{Algebraic}) would allow for a seamless use of algebraic values.
@@ -377,6 +416,10 @@ Finally, what predicate to use? \DD{.sizeof} is not adequate: many different typ
 
 
 \begin{dcode}
+module sorttypes;
+import std.typecons;
+import staticreduce;
+
 template Max(T1, T2)
 {
     static if (T1.stringof >= T2.stringof)
@@ -418,6 +461,10 @@ As I said, in the end \DD{Sort} is just applying \DD{AddToSorted} to the target 
 Now, does that work? You bet:
 
 \begin{dcode}
+module sortingtypes;
+import std.typetuple;
+import sorttypes;
+
 alias TypeTuple!(int, bool, string function(int), float[]) Types1;
 alias TypeTuple!(int, float[], string function(int), bool) Types2;
 
@@ -438,6 +485,9 @@ If you do not like sorting types alphabetically by name, you can resort to other
 A \emph{scan} is a sort of \DD{reduce}/\DD{fold} operation (see \ref{staticreduce}), but giving the intermediary results. It's used by the \DD{juxtapose} template in \ref{juxtapose}.
 
 \begin{dcode}
+module staticscan;
+import std.typetuple;
+
 /**
 Gives the TypeTuple resulting from the successive applications of F to reduce
 the T list.
@@ -520,6 +570,9 @@ assert(arr3.property!"sorted" == arr7.property!"sorted"); // same predicate
 Here is a first \emph{very rough and unfinished} draft:
 
 \begin{dcode}
+module annotation;
+import std.typetuple;
+
 struct Meta(string Name, alias Data)
 {
     enum name = Name;
@@ -611,6 +664,11 @@ template annotated(Metadata...) if (Metadata.length)
 \subsection{Mapping on Tuples}\label{mappingontuples}
 
 \begin{dcode}
+module maptuple;
+import std.typecons;
+import std.typetuple;
+import std.functional;
+
 /**
  * Helper template to get a template function return type.
  */
@@ -623,7 +681,7 @@ template RT(alias fun)
 }
 
 /// Maps on a tuple, using a polymorphic function. Produces another tuple.
-Tuple!(StaticMap!(RT!fun, T)) mapTuple(alias fun, T...)(Tuple!T tup)
+Tuple!(staticMap!(RT!fun, T)) mapTuple(alias fun, T...)(Tuple!T tup)
 {
     StaticMap!(RT!fun, T) res;
     foreach(i, Type; T) res[i] = unaryFun!fun(tup.field[i]);
@@ -637,14 +695,20 @@ Tuple!(StaticMap!(RT!fun, T)) mapTuple(alias fun, T...)(Tuple!T tup)
 \unfinished{The idea here is to filter a tuple with a predicate acting on types. It's quite useful when you can get a bunch of parameters in a function and want only some of them. See \ref{staticfilter} to see an example with the \DD{graph} function.}
 
 \begin{dcode}
+module filtertuple;
+import std.typecons;
+import std.typetuple;
+
 template FilterTupleTypes(alias pred, alias tup)
 {
     static if (tup.field.length)
     {
         static if (pred(tup.field[0]))
-            alias TypeTuple!(tup.Types[0], FilterTupleTypes!(pred, tuple(tup.expand[1..$]))) FilterTupleTypes;
+            alias TypeTuple!(tup.Types[0], FilterTupleTypes!(pred, tuple(tup.expand[1..$]))) 
+                  FilterTupleTypes;
         else
-            alias FilterTupleTypes!(pred, tuple(tup.expand[1..$])) FilterTupleTypes;
+            alias FilterTupleTypes!(pred, tuple(tup.expand[1..$]))               
+                  FilterTupleTypes;
     }
     else
     {
@@ -697,6 +761,9 @@ This section will present some templates acting on functions or templated wrappe
 \unfinished{This is old code, see if anything changed about that in the past two years.}
 
 \begin{dcode}
+module functionarity;
+import std.traits;
+
 template arity(alias fun) 
 if (isFunction!fun)
 {
@@ -714,6 +781,10 @@ The previously-seen results are stored in an associative array, indexed on tuple
 \index{function templates!wrapping a function!memoize@\DD{memoize}}
 \index{template!parameters!alias}
 \begin{dcode}
+module memoize1;
+import std.traits;
+import std.typecons;
+
 struct Memoize(alias fun)
 {
     alias ReturnType!fun RT;
@@ -729,7 +800,7 @@ struct Memoize(alias fun)
         else // if not, compute the result and store it.
         {
             RT result = fun(args);
-            memo[tuple(args)] == result;
+            memo[tuple(args)] = result;
             return result;
         }
     }
@@ -737,22 +808,33 @@ struct Memoize(alias fun)
 
 Memoize!fun memoize(alias fun)()
 {
-    return Memoize!fun();
+    Memoize!fun memo;
+    return memo;
 }
 \end{dcode}
 
 Usage is very simple:
 
 \begin{dcode}
-int veryLongCalc(int i double d, string s) { ... }
+module usingmemoize1;
+import memoize1;
 
-auto vlcMemo = memoize!(veryLongCalc);
+int veryLongCalc(int i, double d, string s) 
+{
+	/* ... cheating here ... */
+	return i;
+}
 
-// calculate veryLongCalc(1, 3.14, "abc")
-// takes minutes!
-int res1 = vlcMemo(1, 3.14, "abc"); 
-int res2 = vlcMemo(2, 2.718, "def");// minutes again!
-int res3 = vlcMemo(1, 3.14, "abc"); // a few ms to get res3
+void main()
+{
+    auto vlcMemo = memoize!(veryLongCalc);
+
+   // calculate veryLongCalc(1, 3.14, "abc")
+   // takes minutes!
+   int res1 = vlcMemo(1, 3.14, "abc"); 
+   int res2 = vlcMemo(2, 2.718, "def");// minutes again!
+   int res3 = vlcMemo(1, 3.14, "abc"); // a few ms to get res3
+}
 \end{dcode}
 
 The above code is trivial and could be optimized in many ways. Mostly, a real memoizing template should also modify its behavior with storing policies. For example:
@@ -783,6 +865,10 @@ Here is a possible small implementation. It makes for a nice example of enabling
 \index{idiom!enabling/disabling code}
 \index{idiom!policy}
 \begin{dcode}
+module memoize2;
+import std.traits;
+import std.typecons;
+
 enum Storing { 
     always,  // there is no tomorrow
     maximum  // sustainable growth
@@ -834,7 +920,6 @@ struct Memoize(alias fun,
                     {
                         memo.remove(argsQueue[0]);
                         argsQueue = argsQueue[1..$];
-                        writeln("Discarding oldest.");
                     }
                     else static if (discarding == Discarding.fraction)
                     {
@@ -842,13 +927,11 @@ struct Memoize(alias fun,
                         foreach(elem; argsQueue[0..num])
                             memo.remove(elem);
                         argsQueue = argsQueue[num..$];
-                        writeln("Discarding fraction.");
                     }
                     else static if (discarding == Discarding.all)
                     {
                         memo = null;
                         argsQueue.length = 0;
-                        writeln("Discarding all.");
                     }
                 }
                 
@@ -865,6 +948,9 @@ struct Memoize(alias fun,
 And a few factory function to help creating those \DD{Memoize} structs:
 
 \begin{dcode}
+import memoize3;
+import memoize2;
+
 // No runtime arg -> always store
 Memoize!(fun, Storing.always, Discarding.all)
 memoize(alias fun)()
@@ -916,16 +1002,26 @@ Note that, due to the introduction of an \DD{opCall} operator, it's not possible
 Most of the time, the type of runtime arguments is enough to determine what you want as a memoizing/storing behavior. Only for the (rarer?) policy of discarding only the oldest stored result does the user need to indicate it with a template argument:
 
 \begin{dcode}
-int veryLongCalc(int i double d, string s) { ... }
+moduleusingmemoize3;
+import memoize3;
 
-// Store the first million results, flush the memo on max
-auto vlcMemo1 = memoize!(veryLongCalc)(1_000_000);
+int veryLongCalc(int i, double d, string s)
+{
+   /* ... cheating here ... */
+   return i,;
+}
 
-// Store the first million results, flush half the memo on max
-auto vlcMemo2 = memoize!(veryLongCalc)(1_000_000, 0.5f);
+void main()
+{
+    // Store the first million results, flush the memo on max
+    auto vlcMemo1 = memoize!(veryLongCalc)(1_000_000);
 
-// Store first twenty results, discard only the oldest
-auto vlcMemo3 = memoize!(veryLongCalc, Discarding.oldest)(20);
+    // Store the first million results, flush half the memo on max
+    auto vlcMemo2 = memoize!(veryLongCalc)(1_000_000, 0.5f);
+
+    // Store first twenty results, discard only the oldest  
+    auto vlcMemo3 = memoize!(veryLongCalc, Discarding.oldest)(20);
+}
 \end{dcode}
 
 \subsection{Currying a Function} \label{currying}
@@ -940,6 +1036,8 @@ Another useful transform on functions is to \emph{curry}\footnote{from Haskell C
 \index{static if@\D{static if}!nested}
 \index{template!double-decker template!CheckCompatibility.With@\DD{CheckCompatibility.With}}
 \begin{dcode}
+module checkcompatibility;
+
 template CheckCompatibility(T...)
 {
     template With(U...)
@@ -961,6 +1059,10 @@ template CheckCompatibility(T...)
 \index{template!parameters!alias}
 \index{static assert@\D{static assert}}
 \begin{dcode}
+module curry;
+import std.traits;
+import checkcompatibility;
+
 struct Curry(alias fun, int index = 0)
 {
     alias ReturnType!fun RT;
@@ -1012,6 +1114,9 @@ double baz(double d) { return d*d;}
 Then \DD{juxtapose!(foo,bar,baz)} is a function accepting two \D{int}s and a \D{double} as arguments and returning a tuple holding an \D{int}, a \D{string} and a \D{double}.
 
 \begin{dcode}
+module juxtapose;
+import juxtaposehelper;
+
 template juxtapose(Funs...)
 {
     Tuple!(staticFilter!(isNotVoid, ReturnTypes!Funs))
@@ -1035,6 +1140,12 @@ template juxtapose(Funs...)
 Necessary scaffolding:
 
 \begin{dcode}
+module juxtaposehelper;
+import std.traits;
+import functionarity;
+import staticscan;
+import maponalias;
+
 template isNotVoid(T)
 {
     enum bool isNotVoid = !is(T == void);
@@ -1085,6 +1196,9 @@ template SumOfReturns(Funs...)
 Should I also add these?
 
 \begin{dcode}
+module maponalias;
+import std.typetuple;
+
 /**
  * Maps the Mapper template on the alias list.
  */
@@ -1109,16 +1223,27 @@ Inspiration for this example comes from \href{http://david.rothlis.net/d/templat
 \TODO{I have the code somewhre. What it should do: extracting from a tuple: project, select. Also, natural/inner/outer join, cartesian product. And intersection/union/difference. rename!( "oldField", "newField"). Databases are just dynamic arrays of tuples.}.
 
 \begin{dcode}
+module relational;
+import std.traits;
+import std.typetuple;
+import std.typecons;
+import std.range;
+import std.conv;
+import isastringliteral;
+import istype;
+import half;
+import interleave;
+
 struct Entry(Data...) 
 if ( (Data.length % 2 == 0)
-  && (allSatisfy!(isStringLiteral, Half!Data))
+  && (allSatisfy!(isAStringLiteral, Half!Data))
   && (allSatisfy!(isType, Half!(Data[1..$], void))))
 {
     alias Half!Data Headers;
     alias Half!(Data[1..$], void) Values;
     alias data this;
 
-    Tuple!(Interleave!(Values, Headers)) data;
+    Tuple!(Interleave!(Values).With!(Headers)) data;
 
     this(Values values)
     {
@@ -1135,9 +1260,9 @@ if ( (Data.length % 2 == 0)
 }
 
 template entry(Headers...) 
-if (allSatisfy!(isStringLiteral, Headers))
+if (allSatisfy!(isAStringLiteral, Headers))
 {
-    Entry!(Interleave!(Headers, Values)) entry(Values...)(Values values) 
+    Entry!(Interleave!(Headers).With!(Values)) entry(Values...)(Values values) 
     if (Values.length == Headers.length)
     {
         return typeof(return)(values);
@@ -1245,11 +1370,45 @@ if (Headers.length > 0)
 }
 \end{dcode}
 
-\TODO{I need to add code for \DD{Half}.}
+\DD{Half} is more or less the converse of \DD{Interleave} (see section \ref{interleavingtypes}): given a typetuple, it takes every other types:\footnote{ A standard generalization would be a template taking on type in $n$: \DD{Stride!(3, T0, T1, ..., Tn)}. I let that as an exercise to the reader.}
+
+\begin{dcode}
+module half;
+import std.typetuple;
+
+template Half(T...)
+{
+    static if (T.length == 0)
+        alias TypeTuple!() Half;
+    else static if (T.length == 1)
+        alias TypeTuple!(T[0]) Half;
+    else
+        alias TypeTuple!(T[0], Half!(T[2..$])) Half;
+}
+
+unittest
+{
+    alias TypeTuple!() Test0;
+    alias TypeTuple!(int) Test1;
+    alias TypeTuple!(int, float) Test2;
+    alias TypeTuple!(int, float, string) Test3;
+    alias TypeTuple!(int, float, string, double) Test4;
+
+    static assert(is(Half!Test0 == TypeTuple!()));
+    static assert(is(Half!Test1 == TypeTuple!(int)));
+    static assert(is(Half!Test2 == TypeTuple!(int)));
+    static assert(is(Half!Test3 == TypeTuple!(int, string)));
+    static assert(is(Half!Test4 == TypeTuple!(int, string)));
+}
+\end{dcode}
 
 Which gives us:
 
 \begin{dcode}
+module usingrelational;
+import std.stdio;
+import relational;
+
 alias Entry!("Name",     string
             ,"EmployId", int
             ,"Dept", string) Employee;
@@ -1259,7 +1418,6 @@ alias Entry!("DeptName", string
 
 void main()
 {
-
     auto e = entry!("Name", "EmployId", "DeptName")("John", 1, "Tech");
     auto e2 = Employee("Susan", 2, "Financial");
     auto e3 = Employee("Bob", 3, "Financial");
@@ -1309,13 +1467,12 @@ auto theCs2 = map!makeC(zip([0,1,2,3,4],
 This example template, comprising \DD{Fields} and \DD{Notify}, comes from Andrej Mitrovic. He has be kind enough to allow me to put it there and to give me some explanations for the logic behind this template. He's using it in his experimental GUI library to signal an event.
 
 \begin{dcode}
-template isSomeStringLiteral(alias a)
-{
-    enum isSomeStringLiteral = isSomeString!(typeof(a));
-}
+module fields;
+import std.typetuple;
+import isastringliteral;
 
 mixin template Fields(T, fields...) 
-    if (allSatisfy!(isSomeStringLiteral, fields))
+    if (allSatisfy!(isAStringLiteral, fields))
 {
     alias typeof(this) This;
 
@@ -1354,6 +1511,9 @@ mixin template Fields(T, fields...)
 The user mix it in its own types:
 
 \begin{dcode}
+module usingfields;
+import fields;
+
 struct Point {
     mixin Fields!(int, "x", "y", "z", "w");
 }
@@ -1366,6 +1526,9 @@ struct Size {
 This goes hand in hand with the \DD{Notify} struct template:
 
 \begin{dcode}
+module notify;
+import std.conv;
+
 struct Notify(T)
 {
     alias void delegate(ref T) OnEventFunc;
@@ -1377,7 +1540,7 @@ struct Notify(T)
 
     string toString()
     {
-        return raw.toString;
+        return to!string(raw);
     }
 
     auto opEquals(T)(T rhs)
@@ -1419,12 +1582,17 @@ struct Notify(T)
 Which you mix in classes you want to notify any changes to their internal state:
 
 \begin{dcode}
+module usingnotify;
+import std.stdio;
+import usingfields;
+import notify;
+
 class Widget 
 {
     this()
     {
-        point.init((Point pt) { writefln("changed point to %s", pt); });
-        size.init((Size sz)   { writefln("changed size to %s", sz); });
+        point.init((ref Point pt) { writefln("changed point to %s", pt); });
+        size.init((ref Size sz)   { writefln("changed size to %s", sz); });
     }
 
     Notify!Point point;
@@ -1482,6 +1650,8 @@ Notice that assignments never happen, external code has to use the \DD{.raw} fie
 From Jacob Carlborg's \href{https://github.com/jacob-carlborg/orange}{Orange} serialization library:
 
 \begin{dcode}
+module fieldsof;
+
 /**
  * Evaluates to an array of strings containing 
  * the names of the fields in the given type
@@ -1514,6 +1684,8 @@ template fieldsOfImpl (T, size_t i)
 This code comes from Simen Kj\ae r\r{a}s.  It generates an enum definition as a string, by taking all the members of the old enum, and adding those passed in string parameters, and mixing it in.
 
 \begin{dcode}
+module enumdefasstring;
+
 string EnumDefAsString(T)() 
 if (is(T == enum)) 
 {
@@ -1546,6 +1718,9 @@ As we can see, this is a valid body for an enum. That means we can use
 \D{mixin}\DD{()} to generate this exact same enum. But wait - there's more:
 
 \begin{dcode}
+module extendenum;
+import enumdefasstring;
+
 template ExtendEnum(T, string s)
    if (is(T == enum) &&
    is(typeof({mixin("enum a{"~s~"}");})))
@@ -1589,6 +1764,8 @@ The mixin then pastes it in, and it is compiled as regular D code.
 Example of: tuples, type filtering (in constraints), recursion, etc.
 
 \begin{dcode}
+module staticswitch;
+
 template staticSwitch(List...) // List[0] is the value commanding the switching
                                // It can be a type or a symbol.
 {
@@ -1616,6 +1793,7 @@ template staticSwitch(List...) // List[0] is the value commanding the switching
 Let's begin with \DD{Gobbler}, a small exercise in tuple manipulation and operator overloading. \DD{Gobbler} is a struct wrapping a tuple and defining only one operator: the right-concatenation operator (\DD{\~}).
 
 \begin{dcode}
+module gobbler;
 
 struct Gobbler(T...)
 {
@@ -1633,9 +1811,16 @@ Gobbler!() gobble() { return Gobbler!()();}
 \DD{gobble} creates an empty gobbler and is there to activate the aspiration:
 
 \begin{dcode}
-auto list = gobble ~ 1 ~ "abc" ~ 3.14 ~ "another string!";
+module usinggobbler;
+import std.typetuple;
+import gobbler;
 
-assert(is(list.Types == TypeTuple!(int, string, double, string)));
+void main()
+{
+    auto list = gobble ~ 1 ~ "abc" ~ 3.14 ~ "another string!";
+    assert(is(list.Types == TypeTuple!(int, string, double, string)));
+    assert(list.store[2] == 3.14);
+}
 \end{dcode}
 
 \TODO{Indexing the \DD{Gobbler}.}
@@ -1652,13 +1837,10 @@ Usage: a bit like Lua tables: structs, classes (you can put anonymous functions 
 Also, maybe to add metadata to a type?
 
 \begin{dcode}
-template Half(T...)
-{
-    static if (T.length <= 1)
-        alias TypeTuple!() Half;
-    else
-        alias TypeTuple!(T[0], Half!(T[2..$])) Half;
-}
+module alist;
+import std.typetuple;
+import std.stdio;
+import half;
 
 struct AList(T...)
 {
@@ -1676,7 +1858,8 @@ struct AList(T...)
 
     template at(alias a)
     {
-        static if ((staticIndexOf!(a, Keys) == -1) && (T.length % 2 == 1)) // key not found, but default value present
+        // key not found, but default value present
+        static if ((staticIndexOf!(a, Keys) == -1) && (T.length % 2 == 1)) 
             enum at = T[$-1]; // default value
         else static if ((staticIndexOf!(a, Keys) == -1) && (T.length % 2 == 0))
             static assert(0, "AList: no key equal to " ~ a.stringof);
@@ -1685,18 +1868,21 @@ struct AList(T...)
     }
 }
 
-alias AList!( 1,     "abc"
-            , 2,     'd'
-            , 3,     "def"
-            , "foo", 3.14
-            ,        "Default") al;
+void main()
+{
+    alias AList!( 1,     "abc"
+                , 2,     'd'
+                , 3,     "def"
+                , "foo", 3.14
+                ,        "Default") al;
 
-writeln("Keys: ", al.Keys.stringof);
-writeln("Values: ", al.Values.stringof);
-writeln("at!1: ", al.at!(1));
-writeln("at!2: ", al.at!(2));
-writeln("at!\"foo\": ", al.at!("foo"));
-writeln("Default: ", al.at!4);
+    writeln("Keys: ", al.Keys.stringof);
+    writeln("Values: ", al.Values.stringof);
+    writeln("at!1: ", al.at!(1));
+    writeln("at!2: ", al.at!(2));
+    writeln("at!\"foo\": ", al.at!("foo"));
+    writeln("Default: ", al.at!4);
+}
 \end{dcode}
 
 \subsection{A Polymorphic Tree}\label{polymorphictree}
@@ -1834,7 +2020,7 @@ These four conditions can be checked at compile-time, that's what we will do her
 \DD{\%s} & any type & \DD{isAnyType} \\
 \DD{\%\%} & not a formatter, just the '\DD{\%}' char & no check \\
 \hline\end{tabular}
-\caption{Standard formatters recognized by \DD{cwrite}}
+\caption{Standard formatters recognized by \DD{cwritef}}
 \label{table:formatters}
 \end{table}
 
@@ -1863,8 +2049,10 @@ import checkedwrite;
 void main()
 {
     cwritefln!"For sample #%d, the results are (%s, %f)"( 0, "foo", 3.14); // OK
+
  // NOK: bad number or args: waited for 3 args, got 2.
  // cwritefln!"For sample #%d, the results are (%s, %f)"( 0, "foo");
+
  // NOK: arg #3 of type double does not verify check isFloatingPoint
  // cwritefln!"For sample #%d, the results are (%s, %f)"( 0, 3.14, "foo");
 }
@@ -2068,7 +2256,9 @@ There is no way to get that in D for built-in types except by hacking the compil
 \DD{opDispatch} can be used to forward to an external free function. A call \D{this}\DD{.method(a,b)} becomes \DD{method(}\D{this}\DD{,a,b)}.
 
 \begin{dcode}
-mixin template Forwarder
+module forwarder;
+
+mixin template Forwarder()
 {
     auto opDispatch(string name, Args...)(Args args)
     {
@@ -2095,5 +2285,5 @@ The main limitation of this trick is that it doesn't work across modules boundar
 \section{Generating a Switch for Tuples}
 Case 0:, etc.
 
-Or more generaly, the idea to craft specific runtime code given compile-time information.
+Or more generally, the idea to craft specific runtime code given compile-time information.
 See also \autoref{sortingnetworks}.
