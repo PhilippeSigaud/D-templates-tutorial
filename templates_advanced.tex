@@ -954,6 +954,262 @@ The idea to take back home is: the concatenation code is written once. It is the
 
 \aparte{Limitations\index{mixin templates!limitations}}{ Mixin templates inject code at the local scope\index{scope!local scope}. They cannot add an \D{invariant} clause in a class, or \D{in}/\D{out} clauses in a function. They can be injected into an \D{invariant}/\D{in}/\D{out} clause.}
 
+\subsection{Mixin Example: Subscriber and Stack}
+
+This example comes from Bj\"{o}rn Lietz-Spendig, who was kind enough to allow me to use it there. Thanks Bj\"{o}rn!
+
+We will define two mixin templates \DD{Publisher} and \DD{Stack}, the first one implementing a subscription/unsubscription engine, the second providing the standard stack operations (\DD{push}, \DD{pop},\ldots). I'd like you to notice two important things here:
+
+\begin{itemize}
+\item D allowing local imports, \DD{Publisher} imports the machinery necessary for it to function: \stdanchor{functional}{toDelegate} and \std{stdio}. Local imports really allow D template mixins to provide a nicely wrapped functionality as a coherent whole.
+\item \D{alias typeof}\DD{(}\D{this}\DD{)} (here called \DD{Me}) is also a nice feature to remember: the mixin will 'look around', get the local \D{this} type and can then provide generic ready-to-be-used code.
+\end{itemize}
+
+\begin{dcode}
+module publisher;
+
+mixin template Publisher()
+{
+    import std.stdio;
+    import std.functional: toDelegate; // to simplify client code.
+                                       // See module usingperson
+    
+    alias void delegate(Object sender, string event) CallBack;
+    alias void function(Object sender, string event) CallBackFun;
+    
+    bool[CallBack] callBacks;
+    
+    //Register subscriber
+    public void register(CallBack callBack)
+    {
+        // Ensure subscriber is not yet registered.
+        if (callBack in callBacks)
+            writeln("Subscriber already registered.");	
+        else
+            callBacks[callBack] = true;
+    }
+
+    // Register Subscriber via function ptr.
+    public void register(CallBackFun callBackFun)
+    {
+        register(toDelegate(callBackFun));
+    }
+
+    // Remove Subscriber
+    public void unRegister(CallBack callBack)
+    {
+        if (callBack in callBacks)
+            callBacks.remove(callBack);
+        else
+            writeln("Trying to remove an unknown callback.");	
+    }
+    
+    // Remove Subscriber via function ptr.
+    public void unRegister(CallBackFun callBackFun)
+    {
+        unRegister(toDelegate(callBackFun));
+    }
+
+    // Notify ALL Subscribers
+    public void notify(Object from, string evt)
+    {
+        foreach (CallBack callBack, bool b; callBacks )
+        {
+            callBack( from, evt );
+        }
+    }
+}
+
+mixin template Stack() 
+{
+    alias typeof(this) Me;
+    static Me[] stack;
+    
+    public:
+    
+    bool empty()
+    {
+        return stack.length == 0;
+    }
+    
+    int count()
+    {
+        return stack.length;
+    }
+    void push(Me element)
+    {
+        stack ~= element;
+    }
+    
+    Me pop()
+    {
+        Me el = peek();
+        stack.length -= 1;
+        return el;
+    }
+    
+    Me peek()
+    {
+        if ( stack.length == 0 )
+        {
+            throw new Exception("Peek() on an empty stack.");
+        }
+        Me el = stack[stack.length-1];
+        return el;
+    }
+}
+\end{dcode}
+
+Now that the mixins are defined, we can inject them into any structure with a defined \D{this}. Here we will use classes to show that mixins are inherited:
+
+\begin{dcode}
+module person;
+import std.stdio;
+import publisher;
+
+class PersonStack
+{
+    private string name;
+    private int age;
+    
+    // Our Mixins
+    mixin Stack;
+    mixin Publisher;
+    
+    this()
+    {
+        //class methods are available too!
+        register ( &MsgReceiver );      
+    }
+
+    // Push 
+    void add(string name, int age)
+    {
+        // Create new instance for the Stack.
+        auto person = new PersonStack();
+        person.name = name;
+        person.age = age;
+                
+        push(person);
+                
+        // Notify all subscribers               
+        notify(person, "Push");                 
+    }
+    
+    //Pop
+    void remove()
+    {
+        auto person = pop();
+        notify( person, "Pop");
+    }
+
+    // Subscriber method
+    void MsgReceiver(Object sender, string msg)
+    {
+        auto p = cast(PersonStack)sender;
+        writefln("Subscriber: class method, Name: %s, Age: %s, Message: %s \n",
+                 p.name, p.age, msg);
+    }
+}
+
+/**
+ * 
+ *  DeveloperStack is like PersonStack: a Stack and a Publisher
+ *  In other words both mixins are inherited too. Please View DevDraw()
+ */ 
+class DeveloperStack : PersonStack
+{
+    private bool isDeveloper;
+    
+    this()
+    {
+        super();
+    }
+        
+    // Push 
+    void add(string name, int age, bool isD)
+    {
+        // Create new instance for the Stack.
+        auto person = new DeveloperStack();
+        person.name = name;
+        person.age = age;
+        person.isDeveloper = isD;
+        
+        push(person);
+        
+        // Notify all subscribers               
+        notify(person, "Push");                 
+    }
+}
+
+/**
+ * 
+ *  PERSONSTACK Subscriber functions
+ */ 
+void DrawBarChart(Object sender, string msg)
+{
+    auto p = cast(PersonStack)sender;
+    writefln("Subscriber: DrawBarChart, Name: %s, Age: %s, Message: %s \n",
+             p.name, p.age, msg);
+}
+void DrawPieChart(Object sender, string msg)
+{
+    auto p = cast(PersonStack)sender;
+    writefln("Subscriber: DrawPieChart, Name: %s, Age: %s, Message: %s \n",
+             p.name, p.age, msg);
+}
+void Draw(Object sender, string msg)
+{
+    auto p = cast(PersonStack)sender;
+    writefln("Subscriber: Draw, Name: %s, Age: %s, Message: %s \n",
+             p.name, p.age, msg);
+}
+
+/**
+ *  
+ *  DEVELOPERSTACK Subscriber functions
+ *  contains additional --isDeveloper-- information.
+ */
+void DevDraw(Object sender, string msg)
+{
+    auto p = cast(DeveloperStack)sender;
+    writefln("Subs-DevDraw, Name: %s, Age: %s, Is Developer?: %s, Message: %s \n",
+             p.name, p.age, p.isDeveloper, msg);
+}
+\end{dcode}
+
+And now we can use the stacks to our heart's content:
+
+\begin{dcode}
+module usingperson;
+import person;
+
+void main()
+{
+    auto p = new PersonStack();
+    
+    auto p2 = new DeveloperStack();
+    p2.register(&DevDraw);       
+    p2.add("Olga",28, true);
+    p2.remove();
+    p2.add("Nana",28, false);
+    
+    p.register(&Draw);
+    p.add("Hans", 42);
+    p.add("Fred", 35);
+    p.add("Xaver", 22); 
+    p.remove();
+    p.remove();
+    p.remove();
+    p.register( &DrawBarChart );
+    p.register( &Draw );
+    p.unRegister( &Draw );
+    p.add("Bjarne", 55);
+}
+\end{dcode}
+
+If you run the previous code, you'll see that a \DD{DeveloperStack} inherits the mixins from \DD{PersonStack}.
+
 \section{\DD{opDispatch}} \label{opdispatch}
 
 \subsection{Syntax}\label{opdispatchsyntax}
