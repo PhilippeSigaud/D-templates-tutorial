@@ -9,7 +9,7 @@ Total of 1 samples found.
 
 
 ************templates_advanced.tex **************************
-Found 40 named samples.
+Found 43 named samples.
 constrained.d: OK
 constraintsyntax.d: OK
 ctvalue.d: OK
@@ -35,6 +35,9 @@ checkedinheritance.d: OK
 number.d: OK
 mixinconcatenate.d: OK
 usingmixinconcatenate.d: OK
+publisher.d: OK
+person.d: OK
+usingperson.d: OK
 dispatcher.d: OK
 getset.d: OK
 transp.d: OK
@@ -52,7 +55,7 @@ usingunique.d: OK
 debugger.d: OK
 
 Found 28 anonymous samples (no compilation attempted).
-Total of 68 samples found.
+Total of 71 samples found.
 ********************************************************
 
 
@@ -148,7 +151,7 @@ Total of 89 samples found.
 
 
 ************templates_examples.tex **************************
-Found 48 named samples.
+Found 49 named samples.
 staticmap.d: OK
 qualified.d: OK
 tester.d: OK
@@ -172,6 +175,7 @@ functionarity.d: OK
 memoize1.d: OK
 usingmemoize1.d: OK
 memoize2.d: OK
+memoize3.d: OK
 checkcompatibility.d: OK
 curry.d: OK
 juxtapose.d: OK
@@ -198,7 +202,7 @@ verifychecks.d: OK
 checkedwrite.d: OK
 forwarder.d: OK
 
-Found 34 anonymous samples (no compilation attempted).
+Found 33 anonymous samples (no compilation attempted).
 Total of 82 samples found.
 ********************************************************
 
