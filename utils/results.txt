@@ -36,8 +36,8 @@ number.d: OK
 mixinconcatenate.d: OK
 usingmixinconcatenate.d: OK
 publisher.d: OK
-person.d: OK
-usingperson.d: OK
+friends.d: OK
+usingfriends.d: OK
 dispatcher.d: OK
 getset.d: OK
 transp.d: OK
