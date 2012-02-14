@@ -1029,7 +1029,7 @@ mixin template StackMixin()
 protected:
     
     @property bool empty()  { return stack.length == 0;  }  
-    @property int count()   { return stack.length; }        
+    @property size_t count()   { return stack.length; }        
                     
     void push(Me element)
     {
