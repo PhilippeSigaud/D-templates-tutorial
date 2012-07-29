@@ -326,7 +326,7 @@ auto graph(NodesOrEdges...)(NodesOrEdges args) if (GraphCheck!NodesOrEdges)
 
 \subsubsection{Folding Type Tuples}\label{staticreduce}
 
-With mapping and filtering, folding (aka, reducing) is the third standard operation on sequences.\footnote{ In fact, it's the mother of all operations on sequences, since map and filter can be defined using reduce.} The idea is the same than \stdanchor{algorithm}{reduce}: given a seed \DD{S} and a binary function \DD{bin}, calculate \DD{bin(bin(bin(S, T[0]),T[1],T[2],...))}: apply \DD{bin} on the seed and the first type of the tuple, then take the resulting type as a new seed and re-apply \DD{bin} to this and the second type of the tuple, and so on, until the entire tuple is used.
+With mapping and filtering, folding (aka, reducing) is the third standard operation on sequences.\footnote{ In fact, it's the mother of all operations on sequences, since map and filter can be defined using reduce.} The idea is the same as \stdanchor{algorithm}{reduce}: given a seed \DD{S} and a binary function \DD{bin}, calculate \DD{bin(bin(bin(S, T[0]),T[1],T[2],...))}: apply \DD{bin} on the seed and the first type of the tuple, then take the resulting type as a new seed and re-apply \DD{bin} to this and the second type of the tuple, and so on, until the entire tuple is used.
 
 So, what's the use of such a function? It's used to \emph{collapse} a type tuple into one type. This one type can a simple type (for example, the 'biggest' type in the tuple, for some definition of big) or a complex structure built iteratively step by step along the tuple: a binary tree holding all the types, for example, or the reverse of the tuple, or even all the types but sorted according to a predicate.
 
@@ -392,7 +392,7 @@ When can sorting a tuple be useful? Mainly for the same reason you'd want to sor
 \item easily getting rid of duplicates (transforming a tuple into a set of types).
 \end{itemize}
 
-I'll focus on the third use, comparing two type tuples. See for example the \stdanchor{variant}{Algebraic} template struct. \DD{Algebraic!(Type0, Type1, ... TypeN)} can hold a value of one of \DD{Type0}, \ldots \DD{TypeN}. But of course, in a certain sense, the previous type is also the same than \DD{Algebraic!(Type1, TypeN, ... Type0)} or any other reordering of the types. But that's not the case currently:
+I'll focus on the third use, comparing two type tuples. See for example the \stdanchor{variant}{Algebraic} template struct. \DD{Algebraic!(Type0, Type1, ... TypeN)} can hold a value of one of \DD{Type0}, \ldots \DD{TypeN}. But of course, in a certain sense, the previous type is also the same as \DD{Algebraic!(Type1, TypeN, ... Type0)} or any other reordering of the types. But that's not the case currently:
 
 \begin{dcode}
 module variant_error;
