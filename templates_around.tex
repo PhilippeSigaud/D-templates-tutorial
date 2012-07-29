@@ -803,7 +803,7 @@ void main()
 }
 \end{dcode}
 
-In the previous code, you see that among \DD{a} members, there is \DD{"object"} (the implicit \DD{object.d} module\index{module!implicit object.d module@implicit \DD{object.d} module} imported by the runtime), and \DD{"std"}, the global package that shows here whenever you import a \DD{std.*} module. It would be easy to imagine a template that recursively explore the members, find the modules and try to recurse into them to get a complete import-tree with a template. Halas \DD{"std"} blocks that, since the package itself do not have a member.\footnote{ If someone finds a way to determine with a template that \DD{b} imports \DD{std.algorithm}, I'd be delighted to see how it's done!}
+In the previous code, you see that among \DD{a} members, there is \DD{"object"} (the implicit \DD{object.d} module\index{module!implicit object.d module@implicit \DD{object.d} module} imported by the runtime), and \DD{"std"}, the global package that shows here whenever you import a \DD{std.*} module. It would be easy to imagine a template that recursively explore the members, find the modules and try to recurse into them to get a complete import-tree with a template. Alas \DD{"std"} blocks that, since the package itself do not have a member.\footnote{ If someone finds a way to determine with a template that \DD{b} imports \DD{std.algorithm}, I'd be delighted to see how it's done!}
 
 \aparte{introspection}{I'm pretty sure auto-introspection (a module calling \DD{allMembers} on its own name) used to work in Fall 2011. Now it's 2012 and this doesn't work anymore. Hmmm\ldots}
 

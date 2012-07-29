@@ -2200,7 +2200,7 @@ The most subtle part is on line 19:
 else static if ({ alias Checks[0] C; return C!(Args[0]);}()) // recurse
 \end{dcode}
 
-We want to apply the first checking constraint, \DD{Check[0]}, on the first argument type, \DD{Args[0]}. Halas, the D grammar does not allow the following construct:
+We want to apply the first checking constraint, \DD{Check[0]}, on the first argument type, \DD{Args[0]}. Alas, the D grammar does not allow the following construct:
 
 \begin{dcode}
 else static if (Checks[0]!(Args[0])) // recurse
