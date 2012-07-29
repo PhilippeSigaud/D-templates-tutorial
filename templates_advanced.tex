@@ -1214,7 +1214,8 @@ If you run the previous code, you'll see that a \DD{DeveloperStack} inherits the
 
 \index{syntax!opDispatch@\DD{opDispatch}}
 \begin{dcode}
-... opDispatch(string name, Args)(Arg arg)
+... opDispatch(string name)()
+... opDispatch(string name, Arg)(Arg arg)
 ... opDispatch(string name, Args...)(Args args)
 \end{dcode}
 
