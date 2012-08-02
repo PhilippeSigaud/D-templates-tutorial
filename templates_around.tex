@@ -634,7 +634,7 @@ These can all be quite useful in your code, but I'll shy away from them since th
 
 \DD{identifier} gives you a symbol's name as a string. This is quite interesting, since some symbols are what I'd call \emph{active}: for example, if \DD{foo} is a function, \DD{foo.stringof} will try to first call \DD{foo} and the \DD{.stringof} will fail. Also, \DD{.stringof}, though eminently useful, sometimes returns strangely formatted strings. \DD{identifier} is much more well-behaved.
 
-Let's get back to one of the very first template in this doc, \DD{nameOf} on page \pageref{templatedeclarationexamples}. Initially, it was coded like this:
+Let's get back to one of the very first templates in this doc, \DD{nameOf} on page \pageref{templatedeclarationexamples}. Initially, it was coded like this:
 
 \begin{dcode}
 template nameOf(alias a)
@@ -761,7 +761,7 @@ static assert([__traits(allMembers, MyClass!int)]
                "opEquals", "Monitor", "factory"]);
 \end{dcode}
 
-If you remember one of the very first use we saw for templates in \ref{instantiating}, that is as a named, parameterized scope,\index{scope} this can give rise to interesting introspection:\index{introspection}
+If you remember one of the very first uses we saw for templates in \ref{instantiating}, that is as a named, parameterized scope,\index{scope} this can give rise to interesting introspection:\index{introspection}
 
 \begin{dcode}
 module templateintrospection;
@@ -783,7 +783,7 @@ static assert([__traits(allMembers, Temp!(double,string))]
 
 As you can see, you also get aliases' names. By the way, this is true for structs and templates also\ldots
 
-Another fun fact is that D modules\index{module!modules as aggregates} are amenable to \D{\_\_traits}'s calls, though that's true only for packaged module (that is, \D{import }\DD{pack.mod;} imports the \DD{pack} and \DD{mod} symbols, but \D{import }\D{mod;} imports nothing).
+Another fun fact is that D modules\index{module!modules as aggregates} are amenable to \D{\_\_traits}'s calls, though that's true only for packaged modules (that is, \D{import }\DD{pack.mod;} imports the \DD{pack} and \DD{mod} symbols, but \D{import }\D{mod;} imports nothing).
 
 \begin{dcode}
 module allmembersmodule;
@@ -803,7 +803,7 @@ void main()
 }
 \end{dcode}
 
-In the previous code, you see that among \DD{a} members, there is \DD{"object"} (the implicit \DD{object.d} module\index{module!implicit object.d module@implicit \DD{object.d} module} imported by the runtime), and \DD{"std"}, the global package that shows here whenever you import a \DD{std.*} module. It would be easy to imagine a template that recursively explore the members, find the modules and try to recurse into them to get a complete import-tree with a template. Halas \DD{"std"} blocks that, since the package itself do not have a member.\footnote{ If someone finds a way to determine with a template that \DD{b} imports \DD{std.algorithm}, I'd be delighted to see how it's done!}
+In the previous code, you see that among \DD{a} members, there is \DD{"object"} (the implicit \DD{object.d} module\index{module!implicit object.d module@implicit \DD{object.d} module} imported by the runtime), and \DD{"std"}, the global package that shows here whenever you import a \DD{std.*} module. It would be easy to imagine a template that recursively explores the members, finds the modules and tries to recurse into them to get a complete import-tree with a template. Alas, \DD{"std"} blocks that, since the package itself does not have a member.\footnote{ If someone finds a way to determine with a template that \DD{b} imports \DD{std.algorithm}, I'd be delighted to see how it's done!}
 
 \aparte{introspection}{I'm pretty sure auto-introspection (a module calling \DD{allMembers} on its own name) used to work in Fall 2011. Now it's 2012 and this doesn't work anymore. Hmmm\ldots}
 
@@ -811,7 +811,7 @@ Like for the other aggregates, you get the aliased names also, and the unit test
 
 \aparte{What's the point of inspecting a module?}{ Well, first that was just for fun and to see if I could duplicate a module or create a struct with an equivalent members list (all forwarding to the module's own members). But the real deal for me was when using string mixins to generate some type. If the user uses the mixin in its own module, it could create conflicts with already-existing names. So I searched for a way for a mixin template to inspect the module it's currently being instantiated in.
 
-Then, I wanted to write a template the, given a class name, would give me the entire hierarchy it's in (as the local module scope would see it, that was enough for me). This \DD{Hierarchy} template should be shown in this document.
+Then, I wanted to write a template that, given a class name, would give me the entire hierarchy it's in (as the local module scope would see it, that was enough for me). This \DD{Hierarchy} template should be shown in this document.
 
 Then, while testing \stdanchor{traits}{ParameterTypeTuple}, I saw that it gives the parameter typetuple of \emph{one} function, even when it's overloaded. So inspecting a module is also a way to get the full list of functions with a particular name and getting the parameter typetuple for each of them.}
 
