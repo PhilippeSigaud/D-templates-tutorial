@@ -143,7 +143,7 @@ alias staticFilter!(isIntegral, Types) OnlyIntegrals;
 static assert(is(OnlyIntegrals == TypeTuple!(int, byte)));
 \end{dcode}
 
-What about separating types from non-types? First, let creates a template that is \D{true} for pure types and \D{false} on non-types:
+What about separating types from non-types? First, let's create a template that is \D{true} for pure types and \D{false} on non-types:
 
 \begin{dcode}
 module istype;

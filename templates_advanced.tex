@@ -196,7 +196,7 @@ template StaticIfied(T)
 \end{dcode}
 
 What were the D designers thinking? Well, they got specializations (\ref{specializations}) from D's cousin, C++\index{C++}. The two other subsystems were added a few years later, as the power of D compile-time metaprogramming\index{compile-time!introspection} became apparent and more powerful tools were needed. So, the 'modern' subsystems are constraints and \D{static if} (\ref{staticif})\index{static if@\D{static if}}. Constraints are much more powerful than specializations, as anything you can test with specialization, you can test with an \D{is} expression in a constraint\index{is expression@\D{is} expression!in a constraint}. And \D{static if} is wonderfully useful outside of template instantiation, so these two are well implanted in D and are there to stay.
-What about specializations, now? First, they are quite nice to have when porting some C++\index{C++} code. Second, they have a nice effet that constraints do \emph{not} have: when more than one definition could be instantiated, priority is given to the more specialized. You saw the explanation in the previous subsection.
+What about specializations, now? First, they are quite nice to have when porting some C++\index{C++} code. Second, they have a nice effect that constraints do \emph{not} have: when more than one definition could be instantiated, priority is given to the more specialized. You saw the explanation in the previous subsection.
 
 So in the end, the conclusion is a bit of \emph{D Zen}\index{D Zen}: you are given tools, powerful tools. As these are powerful, they sometimes can do what other options in your toolbox can do also. D does not constrain (!) you, chose wisely.
 
@@ -214,15 +214,15 @@ For example, if you want to test is some type can be serialized, through a \D{si
 \begin{dcode}
 module isserializable;
 
-template isSerialazable(Type)
+template isSerializable(Type)
 {
     static if (__traits(compiles, {
                                    Type type;
                                    size_t num = type.serialize;
                                   }))
-        enum bool isSerialazable = true;
+        enum bool isSerializable = true;
     else
-        enum bool isSerialazable = false;
+        enum bool isSerializable = false;
 }
 \end{dcode}
 
