@@ -196,7 +196,7 @@ template StaticIfied(T)
 \end{dcode}
 
 What were the D designers thinking? Well, they got specializations (\ref{specializations}) from D's cousin, C++\index{C++}. The two other subsystems were added a few years later, as the power of D compile-time metaprogramming\index{compile-time!introspection} became apparent and more powerful tools were needed. So, the 'modern' subsystems are constraints and \D{static if} (\ref{staticif})\index{static if@\D{static if}}. Constraints are much more powerful than specializations, as anything you can test with specialization, you can test with an \D{is} expression in a constraint\index{is expression@\D{is} expression!in a constraint}. And \D{static if} is wonderfully useful outside of template instantiation, so these two are well implanted in D and are there to stay.
-What about specializations, now? First, they are quite nice to have when porting some C++\index{C++} code. Second, they have a nice effet that constraints do \emph{not} have: when more than one definition could be instantiated, priority is given to the more specialized. You saw the explanation in the previous subsection.
+What about specializations, now? First, they are quite nice to have when porting some C++\index{C++} code. Second, they have a nice effect that constraints do \emph{not} have: when more than one definition could be instantiated, priority is given to the more specialized. You saw the explanation in the previous subsection.
 
 So in the end, the conclusion is a bit of \emph{D Zen}\index{D Zen}: you are given tools, powerful tools. As these are powerful, they sometimes can do what other options in your toolbox can do also. D does not constrain (!) you, chose wisely.
 
@@ -214,15 +214,15 @@ For example, if you want to test is some type can be serialized, through a \D{si
 \begin{dcode}
 module isserializable;
 
-template isSerialazable(Type)
+template isSerializable(Type)
 {
     static if (__traits(compiles, {
                                    Type type;
                                    size_t num = type.serialize;
                                   }))
-        enum bool isSerialazable = true;
+        enum bool isSerializable = true;
     else
-        enum bool isSerialazable = false;
+        enum bool isSerializable = false;
 }
 \end{dcode}
 
@@ -767,7 +767,7 @@ class NoError : CheckedInheritance!(MyClass) { /*...*/ }
 
 \unfinished{Oh yes, that's quite not finished. I'm afraid I find D syntax for operator overloading a bit heavy for my tastes. As D code in \LaTeX, it's becoming \emph{very} cumbersome to write.}
 
-D allows users to redefine some operators to enhance readability in code. And guess what? Operator overloading is based on templates. They are described \href{www.dlang.org/operators.html}{here} in the docs. 
+D allows users to redefine some operators to enhance readability in code. And guess what? Operator overloading is based on templates. They are described \href{www.dlang.org/operatoroverloading.html}{here} in the docs. 
 
 \subsection{Syntax}
 
@@ -1210,11 +1210,12 @@ If you run the previous code, you'll see that a \DD{DeveloperStack} inherits the
 
 \subsection{Syntax}\label{opdispatchsyntax}
 
-\DD{opDispatch} is a sort of operator overloading (it's in the same place in the \href{www.dlang.org/operator.html}{online documentation}) that deals with members calls (methods or value members). Its definition is the same than an operator:
+\DD{opDispatch} is a sort of operator overloading (it's in the same place in the \href{www.dlang.org/operatoroverloading.html#Dispatch}{online documentation}) that deals with members calls (methods or value members). Its definition is the same as an operator:
 
 \index{syntax!opDispatch@\DD{opDispatch}}
 \begin{dcode}
-... opDispatch(string name, Args)(Arg arg)
+... opDispatch(string name)()
+... opDispatch(string name, Arg)(Arg arg)
 ... opDispatch(string name, Args...)(Args args)
 \end{dcode}
 
@@ -1617,7 +1618,7 @@ template MyTemp(A..., B...)
 { ... }
 \end{dcode}
 
-Halas, two template parameters tuples do not make sense (see \autoref{declarations}). But it's not a dead-end. First, you could try to write:
+Alas, two template parameters tuples do not make sense (see \autoref{declarations}). But it's not a dead-end. First, you could try to write:
 
 \begin{dcode}
 template(AB...)
