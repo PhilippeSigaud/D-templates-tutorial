@@ -4,4 +4,6 @@
 *.idx
 *.out
 *.toc
+*.ind
+*.ilg
 *~
