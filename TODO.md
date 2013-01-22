@@ -21,7 +21,9 @@ So, here is my own small list:
 * UFCS: not a template feature per se, but quite useful in conjunction with templates.
 * UDA. ditto, except I know zilch about them. But, type & value manipulation at compile-time, them I know.
 * __LINE__ and __FILE__ are described on dlang.org. Link it.
-
+* the isPOD __traits
+* Now there is a way to peek at function parameter identifiers (!): http://dlang.org/phobos/std_traits.html#.ParameterIdentifierTuple
+* Some goodies I might forgot in std.traits, it's worth revisiting
 
 ## New subjects:
 
