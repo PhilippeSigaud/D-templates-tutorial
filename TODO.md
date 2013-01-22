@@ -1,5 +1,9 @@
 # TODO
 
+## Document
+
+* Update `utils/codesamples.d` to extract the modules from the markdown master file.
+It fitlers the .tex files right now, this should be changed.
 
 ## New topics
 

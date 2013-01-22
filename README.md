@@ -41,3 +41,8 @@ The master document is `dtemplates.tex` and calls the other subfiles:
 
 The LaTeX files use the [minted](http://code.google.com/p/minted/) package. `minted` uses Python's [Pygment](pygments.org) highlighter.
 D code blocks are between `\begin{dcode}` and `\end{dcode}` commands. Transform them into `verbatim` commands if you do not want to use `minted`.
+
+## Utils
+
+The `utils` folder contains a small D script to extract the hundreds of modules present in the text and test their compilation.
+I have to update it to make it parse the markdown file instead.
