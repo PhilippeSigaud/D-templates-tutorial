@@ -3999,36 +3999,43 @@ MyStruct!<span class="st">&quot;Second&quot;</span> s1;</code></pre>
 <span class="kw">static</span> <span class="kw">assert</span>(doubleTree
           == <span class="st">&quot;struct DoubleTree { double value; DoubleTree[] children;}&quot;</span>);</code></pre>
 <p>As you can see, the string to be interpolated is passed as a template parameter. Placeholders use a character normally not found in D code: <code class="sourceCode d">#</code>. The <span class="math"><em>n</em><sup><em>t</em><em>h</em></sup></span> parameter is <code class="sourceCode d">#n</code>, starting from 0. As a concession to practicality, a lone <code class="sourceCode d">#</code> is considered equivalent to <code class="sourceCode d">#<span class="dv">0</span></code>. Args to be put into the string are passed as standard (non-template) parameters and can be of any type.</p>
-<p>module usinginterpolate; ```{.d} module stringinterpolation; import std.conv;</p>
-<p>template interpolate(string code) { string interpolate(Args...)(Args args) { string[] stringified; foreach(index, arg; args) stringified ~= to!string(arg);</p>
-<pre><code>    string result;
-    int i;
-    int zero = to!int(&#39;0&#39;);
+<pre class="sourceCode d"><code class="sourceCode d"><span class="kw">module</span> stringinterpolation;
+<span class="kw">import</span> std.conv;
 
-    while (i &lt; code.length) {
-        if (code[i] == &#39;#&#39;) {
-            int j = 1;
-            int index;
-            while (i+j &lt; code.length
-                &amp;&amp; to!int(code[i+j])-zero &gt;= 0
-                &amp;&amp; to!int(code[i+j])-zero &lt;= 9)
-            {
-                index = index*10 + to!int(code[i+j])-zero;
-                ++j;
+<span class="kw">template</span> interpolate(<span class="dt">string</span> code)
+{
+    <span class="dt">string</span> interpolate(Args...)(Args args) {
+        <span class="dt">string</span>[] stringified;
+        <span class="kw">foreach</span>(index, arg; args) stringified ~= to!<span class="dt">string</span>(arg);
+
+        <span class="dt">string</span> result;
+        <span class="dt">int</span> i;
+        <span class="dt">int</span> zero = to!<span class="dt">int</span>(<span class="ch">&#39;0&#39;</span>);
+
+        <span class="kw">while</span> (i &lt; code.<span class="dt">length</span>) {
+            <span class="kw">if</span> (code[i] == <span class="ch">&#39;#&#39;</span>) {
+                <span class="dt">int</span> j = <span class="dv">1</span>;
+                <span class="dt">int</span> index;
+                <span class="kw">while</span> (i+j &lt; code.<span class="dt">length</span>
+                    &amp;&amp; to!<span class="dt">int</span>(code[i+j])-zero &gt;= <span class="dv">0</span>
+                    &amp;&amp; to!<span class="dt">int</span>(code[i+j])-zero &lt;= <span class="dv">9</span>)
+                {
+                    index = index*<span class="dv">10</span> + to!<span class="dt">int</span>(code[i+j])-zero;
+                    ++j;
+                }
+
+                result ~= stringified[index];
+                i += j;
             }
+            <span class="kw">else</span> {
+                result ~= code[i];
+                ++i;
+            }
+        }
 
-            result ~= stringified[index];
-            i += j;
-        }
-        else {
-            result ~= code[i];
-            ++i;
-        }
+        <span class="kw">return</span> result;
     }
-
-    return result;
 }</code></pre>
-<p>} ```</p>
 <blockquote>
 <p><strong>TODO</strong> The syntax could be extended somewhat: inserting multiple strings, inserting a range of strings, all arguments to the end.</p>
 </blockquote>

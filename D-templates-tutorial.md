@@ -4527,7 +4527,6 @@ static assert(doubleTree
 
 As you can see, the string to be interpolated is passed as a template parameter. Placeholders use a character normally not found in D code: `#`{.d}. The $n^{th}$ parameter is `#n`{.d}, starting from 0. As a concession to practicality, a lone `#`{.d} is considered equivalent to `#0`{.d}. Args to be put into the string are passed as standard (non-template) parameters and can be of any type.
 
-module usinginterpolate;
 ```{.d}
 module stringinterpolation;
 import std.conv;
