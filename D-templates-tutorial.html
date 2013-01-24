@@ -1485,7 +1485,7 @@ flatten!(-<span class="dv">1</span>)([[[<span class="dv">0</span>,<span class="d
 <pre class="sourceCode d"><code class="sourceCode d"><span class="kw">module</span> tree5;
 <span class="kw">import</span> std.array;
 
-<span class="kw">auto</span> tree(T)(T value, Tree!T[] children = <span class="kw">null</span>)
+Tree!(T) tree(T)(T value, Tree!T[] children = <span class="kw">null</span>)
 {
     <span class="kw">return</span> Tree!(T)(value, children);
 }
@@ -1498,7 +1498,8 @@ flatten!(-<span class="dv">1</span>)([[[<span class="dv">0</span>,<span class="d
 
     <span class="dt">bool</span> isLeaf() @property { <span class="kw">return</span> children.empty;}
 
-    <span class="kw">auto</span> fold(<span class="kw">alias</span> ifLeaf, <span class="kw">alias</span> ifBranch = ifLeaf, S)(S seed)
+    <span class="dt">typeof</span>(ifLeaf(T.<span class="dt">init</span>, S.<span class="dt">init</span>))
+    fold(<span class="kw">alias</span> ifLeaf, <span class="kw">alias</span> ifBranch = ifLeaf, S)(S seed)
     {
         <span class="kw">if</span> (isLeaf)
         {
@@ -1518,12 +1519,13 @@ flatten!(-<span class="dv">1</span>)([[[<span class="dv">0</span>,<span class="d
 <span class="kw">import</span> std.algorithm;
 <span class="kw">import</span> tree5;
 
-<span class="kw">auto</span> sumLeaf(T, S)(T value, S seed)
+<span class="dt">typeof</span>(T.<span class="dt">init</span> + S.<span class="dt">init</span>)
+sumLeaf(T, S)(T value, S seed)
 {
     <span class="kw">return</span> value + seed;
 }
 
-<span class="kw">auto</span> sumBranch(T)(T value, T[] summedChildren)
+T sumBranch(T)(T value, T[] summedChildren)
 {
     <span class="kw">return</span> value + reduce!<span class="st">&quot;a+b&quot;</span>(summedChildren);
 }
@@ -1536,7 +1538,7 @@ flatten!(-<span class="dv">1</span>)([[[<span class="dv">0</span>,<span class="d
     <span class="kw">auto</span> t1 = tree(<span class="dv">1</span>, [t0,t0]);
     <span class="kw">auto</span> t2 = tree(<span class="dv">2</span>, [t1, t0, tree(<span class="dv">3</span>)]);
 
-    <span class="kw">auto</span> sum = t2.fold!(sumLeaf, sumBranch)(<span class="dv">0</span>);
+    <span class="dt">int</span> sum = t2.fold!(sumLeaf, sumBranch)(<span class="dv">0</span>);
     <span class="kw">assert</span>(sum == <span class="dv">2</span> + (<span class="dv">1</span> + <span class="dv">0</span> + <span class="dv">0</span>) + (<span class="dv">0</span>) + (<span class="dv">3</span>));
 }</code></pre>
 <p>In the same family, but a bit more interesting is getting all values for in-order iteration: given a tree node, return an array containing the local value and then the values for all nodes, recursively.</p>
@@ -2897,13 +2899,13 @@ Type0, Eliminate!(Type,  Type1, Type2, ...)</code></pre>
          <span class="kw">if</span> ((op == <span class="st">&quot;+&quot;</span> || op == <span class="st">&quot;-&quot;</span> || op == <span class="st">&quot;*&quot;</span> || op == <span class="st">&quot;/&quot;</span>)
          &amp;&amp; ((isNumeric!U) || <span class="kw">is</span>(U u == Number!V, V)))
     {
- <span class="kw">mixin</span>(q{<span class="kw">alias</span> <span class="dt">typeof</span>(a}~op~q{b}) Result;
-        <span class="kw">static</span> <span class="kw">if</span> (isNumeric!U)
-            <span class="kw">return</span> Number!Result(a<span class="st">&quot;~op~&quot;</span>b);
-        <span class="kw">else</span>
-            <span class="kw">return</span> Number!Result(a<span class="st">&quot;~op~&quot;</span>b.num);<span class="st">&quot;);</span>
-<span class="st">    }</span>
-<span class="st">}</span></code></pre>
+ <span class="kw">mixin</span>(<span class="st">&quot;alias typeof(a&quot;</span> ~ op ~ <span class="st">&quot;b) Result;</span>
+<span class="st">        static if (isNumeric!U)</span>
+<span class="st">            return Number!Result(a&quot;</span>~op~<span class="st">&quot;b);</span>
+<span class="st">        else</span>
+<span class="st">            return Number!Result(a&quot;</span>~op~<span class="st">&quot;b.num);&quot;</span>);
+    }
+}</code></pre>
 <p><code class="sourceCode d">op</code> being a template parameter, it's usable to do compile-time constant folding: in this case the concatenation of strings to generate D code. The way the code is written, <code class="sourceCode d">Number</code>s respect the global D promotion rules. A <code class="sourceCode d">Number!<span class="dt">int</span></code> plus a <code class="sourceCode d">Number!<span class="dt">double</span></code> returns a <code class="sourceCode d">Number!<span class="dt">double</span></code>.</p>
 <h4 id="special-case-in"><a href="#TOC"><span class="header-section-number">3.4.1.8</span> Special Case: in</a></h4>
 <blockquote>
@@ -5962,7 +5964,7 @@ memoize(<span class="kw">alias</span> fun, Discarding discarding = Discarding.ol
 {
     <span class="kw">enum</span> isEntry = __traits(compiles,
                      {
-                          <span class="dt">void</span> fun(T...)(Entry!T e) {};
+                          <span class="dt">void</span> fun(T...)(Entry!T e) {}
                           fun(E.<span class="dt">init</span>);
                      });
 }
