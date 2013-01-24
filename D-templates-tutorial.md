@@ -1499,7 +1499,7 @@ Taking inspiration from `reduce`{.d}, we need an seed value and _two_ folding fu
 module tree5;
 import std.array;
 
-auto tree(T)(T value, Tree!T[] children = null)
+Tree!(T) tree(T)(T value, Tree!T[] children = null)
 {
     return Tree!(T)(value, children);
 }
@@ -1512,7 +1512,8 @@ struct Tree(T)
 
     bool isLeaf() @property { return children.empty;}
 
-    auto fold(alias ifLeaf, alias ifBranch = ifLeaf, S)(S seed)
+    typeof(ifLeaf(T.init, S.init))
+    fold(alias ifLeaf, alias ifBranch = ifLeaf, S)(S seed)
     {
         if (isLeaf)
         {
@@ -1536,12 +1537,13 @@ module summingtree;
 import std.algorithm;
 import tree5;
 
-auto sumLeaf(T, S)(T value, S seed)
+typeof(T.init + S.init)
+sumLeaf(T, S)(T value, S seed)
 {
     return value + seed;
 }
 
-auto sumBranch(T)(T value, T[] summedChildren)
+T sumBranch(T)(T value, T[] summedChildren)
 {
     return value + reduce!"a+b"(summedChildren);
 }
@@ -1554,9 +1556,10 @@ void main()
     auto t1 = tree(1, [t0,t0]);
     auto t2 = tree(2, [t1, t0, tree(3)]);
 
-    auto sum = t2.fold!(sumLeaf, sumBranch)(0);
+    int sum = t2.fold!(sumLeaf, sumBranch)(0);
     assert(sum == 2 + (1 + 0 + 0) + (0) + (3));
 }
+
 ```
 
 In the same family, but a bit more interesting is getting all values for in-order iteration: given a tree node, return an array containing the local value and then the values for all nodes, recursively.
@@ -3145,7 +3148,7 @@ struct Number(T) if (isNumeric!T)
          if ((op == "+" || op == "-" || op == "*" || op == "/")
          && ((isNumeric!U) || is(U u == Number!V, V)))
     {
- mixin(q{alias typeof(a}~op~q{b}) Result;
+ mixin("alias typeof(a" ~ op ~ "b) Result;
         static if (isNumeric!U)
             return Number!Result(a"~op~"b);
         else
@@ -6712,7 +6715,7 @@ template isEntry(E)
 {
     enum isEntry = __traits(compiles,
                      {
-                          void fun(T...)(Entry!T e) {};
+                          void fun(T...)(Entry!T e) {}
                           fun(E.init);
                      });
 }
