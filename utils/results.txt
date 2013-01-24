@@ -1,73 +1,7 @@
 
-************templates_intro.tex **************************
-Found 1 named samples.
+************../D-templates-tutorial.md **************************
+Found 204 named samples.
 intro.d: OK
-
-Found 0 anonymous samples (no compilation attempted).
-Total of 1 samples found.
-********************************************************
-
-
-************templates_advanced.tex **************************
-Found 43 named samples.
-constrained.d: OK
-constraintsyntax.d: OK
-ctvalue.d: OK
-rangewrapper.d: OK
-constraints_error.d: OK (fail as expected).
-isserializable.d: OK
-hasarithmeticoperations.d: OK
-dropfront.d: OK
-tupledemonstration.d: OK
-ttflatten.d: OK
-ttiteration.d: OK
-emptytuple.d: OK
-variadic.d: OK
-popallfronts.d: OK
-areallranges.d: OK
-nameof2.d: OK
-nameof3.d: OK
-interfacelist.d: OK
-eliminate.d: OK
-noduplicates.d: OK
-superlist.d: OK
-checkedinheritance.d: OK
-number.d: OK
-mixinconcatenate.d: OK
-usingmixinconcatenate.d: OK
-publisher.d: OK
-friends.d: OK
-usingfriends.d: OK
-dispatcher.d: OK
-getset.d: OK
-transp.d: OK
-usingtransparent.d: OK
-transp2.d: OK
-descriptor.d: OK
-librarytypedef.d: OK
-compare.d: OK
-usingtuple.d: OK
-usingnamedtuple.d: OK
-isastringliteral.d: OK
-namedtuple.d: OK
-filelinetagging.d: OK
-usingunique.d: OK
-debugger.d: OK
-
-Found 28 anonymous samples (no compilation attempted).
-Total of 71 samples found.
-********************************************************
-
-
-************dtemplates.tex **************************
-Found no named sample.
-Found 0 anonymous samples (no compilation attempted).
-Total of 0 samples found.
-********************************************************
-
-
-************templates_basics.tex **************************
-Found 76 named samples.
 declaration.d: OK
 instantiation.d: OK
 internaldeclarations1.d: OK
@@ -75,7 +9,6 @@ internaldeclarations2.d: OK
 differentinstantiations.d: OK
 pair.d: OK
 nameof1.d: OK
-manyalias_error.d: OK (fail as expected).
 record.d: OK
 using_record.d: OK
 allarrays.d: OK
@@ -144,14 +77,81 @@ crtp.d: OK
 interfacesyntax.d: OK
 unionsyntax.d: OK
 enumsyntax.d: OK
-
-Found 13 anonymous samples (no compilation attempted).
-Total of 89 samples found.
-********************************************************
-
-
-************templates_examples.tex **************************
-Found 49 named samples.
+constrained.d: OK
+constraintsyntax.d: OK
+ctvalue.d: OK
+rangewrapper.d: OK
+constraints_error.d: OK (fail as expected).
+isserializable.d: OK
+hasarithmeticoperations.d: OK
+dropfront.d: OK
+tupledemonstration.d: OK
+ttflatten.d: OK
+ttiteration.d: OK
+emptytuple.d: OK
+variadic.d: OK
+popallfronts.d: OK
+areallranges.d: OK
+nameof2.d: OK
+nameof3.d: OK
+interfacelist.d: OK
+eliminate.d: OK
+noduplicates.d: OK
+superlist.d: OK
+checkedinheritance.d: OK
+number.d: OK
+mixinconcatenate.d: OK
+usingmixinconcatenate.d: OK
+publisher.d: OK
+friends.d: OK
+usingfriends.d: OK
+dispatcher.d: OK
+getset.d: OK
+transp.d: OK
+usingtransparent.d: OK
+transp2.d: OK
+descriptor.d: OK
+librarytypedef.d: OK
+compare.d: OK
+usingtuple.d: OK
+usingnamedtuple.d: OK
+isastringliteral.d: OK
+namedtuple.d: OK
+filelinetagging.d: OK
+usingunique.d: OK
+debugger.d: OK
+usingmystruct1.d: OK
+mystruct1.d: OK
+mystruct2.d: OK
+usingmystruct2.d: OK
+mystruct3.d: OK
+getset2.d: OK
+getset3.d: OK
+stringinterpolation.d: OK
+sortingnetwork.d: OK
+buildsortingcode.d: OK
+networksort.d: OK
+nameof.d: OK
+usingallmembers1.d: OK
+allmemberstemplate.d: OK
+allmemberstemplate2.d: OK
+templateintrospection.d: OK
+allmembersmodule.d: OK
+member.d: OK
+makemember.d: OK
+overloads1.d: OK
+myclass.d: OK
+usingoverloads1.d: OK
+overloads2.d: OK
+allmembers.d: OK
+usingallmembers2.d: OK
+implements.d: OK
+cclass.d: OK
+parent.d: OK
+qualifiedname.d: OK
+usingqualifiedname.d: OK
+scopename.d: OK
+usingscopename.d: OK
 staticmap.d: OK
 qualified.d: OK
 tester.d: OK
@@ -201,61 +201,14 @@ getformatters.d: OK
 verifychecks.d: OK
 checkedwrite.d: OK
 forwarder.d: OK
-
-Found 33 anonymous samples (no compilation attempted).
-Total of 82 samples found.
-********************************************************
-
-
-************templates_around.tex **************************
-Found 33 named samples.
-usingmystruct1.d: OK
-mystruct1.d: OK
-mystruct2.d: OK
-usingmystruct2.d: OK
-mystruct3.d: OK
-getset2.d: OK
-getset3.d: OK
-usinginterpolate.d: OK
-stringinterpolation.d: OK
-sortingnetwork.d: OK
-buildsortingcode.d: OK
-networksort.d: OK
-nameof.d: OK
-usingallmembers1.d: OK
-allmemberstemplate.d: OK
-allmemberstemplate2.d: OK
-templateintrospection.d: OK
-allmembersmodule.d: OK
-member.d: OK
-makemember.d: OK
-overloads1.d: OK
-myclass.d: OK
-usingoverloads1.d: OK
-overloads2.d: OK
-allmembers.d: OK
-usingallmembers2.d: OK
-implements.d: OK
-cclass.d: OK
-parent.d: OK
-qualifiedname.d: OK
-usingqualifiedname.d: OK
-scopename.d: OK
-usingscopename.d: OK
-
-Found 12 anonymous samples (no compilation attempted).
-Total of 45 samples found.
-********************************************************
-
-
-************templates_appendix.tex **************************
-Found 4 named samples.
 canbeinstantiated.d: OK
 validcall.d: OK
 istuple.d: OK
 maker.d: OK
 
-Found 8 anonymous samples (no compilation attempted).
-Total of 12 samples found.
+Successful compilation for 204 / 204
+
+Found 95 anonymous samples (no compilation attempted).
+Total of 299 samples found.
 ********************************************************
 
