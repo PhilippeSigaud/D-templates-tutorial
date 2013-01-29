@@ -41,3 +41,5 @@ From the D mailing lists, related to templates (to be put somewhere in the text)
 "You can't use methods (delegates) for template parameters, because they need a context, which is not known at compile-time."
 
 "If exactly one of two equally good matched functions is a templated one, the other one is chosen. Now that you have templated the second function, both are an equally good match and both are templated."
+
+"When you put a unittest inside the definition of a class/struct, it gets run for every instantiation of said class, and has access to "T". This is good for writing generic tests for the current T type. This can be useful to test things that depend on T, such as making sure some functions are indeed safe, or whatnot." (monarch_dodra)
