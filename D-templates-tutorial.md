@@ -2214,9 +2214,143 @@ Yes, that works. It's called CRTP, which stands for Curiously Recurring Template
 
 As you can see in the Wikipedia document it's used either to obtain a sort of compile-time binding or to inject code in your derived class. For the latter, D offers [mixin templates](#mixin-templates) which you should have a look at. CRTP comes from C++ where you have multiple inheritance. In D, I fear it's not so interesting. Feel free to prove me wrong, I'll gladly change this section.
 
-### Example
+### Example: Automatic Dynamic Dispatch
 
-> **Unfinished!**  I want to add an example with `duplicator`{.d}, a template that takes a class and creates another class which is its clone: same base, same interfaces, etc.
+This example comes from Andrej Mitrovic. You can also find it on the D wiki: <http://wiki.dlang.org/Dispatching_an_object_based_on_its_dynamic_type>.
+
+Sometimes you may need to call a function with an object where the function only accepts a certain derived object type. In such a case you need to ensure that the dynamic type of an object is of a specific type before attempting to cast it to that type and passing it over to a function. For example:
+
+```d
+class A { }
+class B : A { }
+class C : A { }
+
+void foo(B b) { }
+void foo(C c) { }
+
+void main()
+{
+    A b = new B;
+    A c = new C;
+
+    foo(b);  // not accepted, object must be casted to either B or C
+    foo(c);  // ditto
+}
+```
+
+Since the objects `b` and `c` of static type `A` could be of any dynamic type derived from class `A`, the user would have to try and cast the objects to know whether they can call `foo` with such objects. The code to do the dispatching mechanism by hand would typically look like:
+
+```d
+import std.stdio;
+
+class A { }
+class B : A { }
+class C : A { }
+
+void foo(B b) { writeln("called foo(B b);"); }
+void foo(C c) { writeln("called foo(C c);"); }
+
+void main()
+{
+    A b = new B;
+    A c = new C;
+ 
+    if (auto obj = cast(C)b)
+        foo(obj);
+    else if (auto obj = cast(B)b)
+        foo(obj);
+ 
+    if (auto obj = cast(C)c)
+        foo(obj);
+    else if (auto obj = cast(B)b)
+        foo(obj);
+}
+```
+
+However this is both inefficient and hard to type, it introduces copy-pasted code, and is error-prone since adding a new leaf class means the user has to inspect and edit the dispatch code. An alternative method is to use the `classinfo` structure (retrieved via `typeid()`) associated with every instantiated object, and to compare this to all existing classinfo structs. Once we have a match we can safely do a static cast of an object and pass it to a function.
+
+With the help of templates we can automate the entire process. The only information such a template needs is the list of leaf classes so it can construct a tree class to properly dispatch the object. A full implementation is provided here:
+
+```d
+import std.stdio;
+import std.typetuple;
+import std.traits;
+import std.string;
+
+template ClassTreeImpl(Leaves...)
+{
+    static if (Leaves.length > 1)
+    {
+        alias TypeTuple!(Leaves[0], BaseClassesTuple!(Leaves[0]),
+                         ClassTreeImpl!(Leaves[1..$])) ClassTreeImpl;
+    }
+    else
+    static if (Leaves.length == 1)
+    {
+        alias TypeTuple!(Leaves[0], BaseClassesTuple!(Leaves[0])) ClassTreeImpl;
+    }
+    else
+    {
+        alias TypeTuple!() ClassTreeImpl;
+    }
+}
+
+template ClassTree(Leaves...)
+{
+    alias DerivedToFront!(NoDuplicates!(ClassTreeImpl!(Leaves))) ClassTree;
+}
+
+template AutoDispatch(Leaves...)
+{
+    void AutoDispatch(alias func, Args...)(Args args)
+        if (Args.length >= 1 && is(Args[0] == class))
+    {
+        auto objInfo = typeid(args[0]);
+        foreach (Base; ClassTree!Leaves)
+        {
+            if (objInfo == Base.classinfo)
+            {
+                static if (__traits(compiles, { // avoid CT errors due to unrolled static foreach
+                    return func(cast(Base)(cast(void*)args[0]), args[1..$]); }() ))
+                {
+                    return func(cast(Base)(cast(void*)args[0]), args[1..$]);
+                }
+            }
+        }
+
+        string[] arguments;
+        arguments ~= objInfo.toString();
+        foreach (arg; args[1..$])
+            arguments ~= typeof(arg).stringof;
+
+        assert(0, format("function '%s' is not callable with types '(%s)'",
+                         __traits(identifier, func), arguments.join(", ")));
+    }
+}
+
+class A { }
+class B : A { }
+class C : B { }
+class D : B { }
+
+void foo(C c, int x) { writefln("foo(C) : received %s", x); }
+void foo(D d, int x, int y) { writefln("foo(D) : received %s %s", x, y); }
+
+void main()
+{
+    A c = new C;
+    A d = new D;
+    A a = new A;
+
+    alias AutoDispatch!(C, D) callFunc;
+
+    callFunc!foo(c, 1);    // ok
+    callFunc!foo(d, 2, 3); // ok
+    callFunc!foo(a, 3);    // will assert at runtime
+}
+```
+
+`AutoDispatch` takes a list of leaf classes, and extracts the tree class by using the traits found in [std.traits](http://dlang.org/phobos/std_traits.html). The inner `AutoDispatch` function can then be used to dispatch an object and any additional arguments to a function. The implementation only works for single-object arguments, but a more general solution that dispatches multiple objects is possible to implement.
 
 
 ## Other Templates?
