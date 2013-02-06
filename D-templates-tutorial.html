@@ -99,7 +99,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><a href="#parametrized-base-class"><span class="toc-section-number">2.6.6</span> Parametrized Base Class</a></li>
 <li><a href="#adding-functionalities-through-inheritance"><span class="toc-section-number">2.6.7</span> Adding Functionalities Through Inheritance</a></li>
 <li><a href="#the-curiously-recurring-template-pattern"><span class="toc-section-number">2.6.8</span> The Curiously Recurring Template Pattern</a></li>
-<li><a href="#example"><span class="toc-section-number">2.6.9</span> Example</a></li>
+<li><a href="#example-automatic-dynamic-dispatch"><span class="toc-section-number">2.6.9</span> Example: Automatic Dynamic Dispatch</a></li>
 </ul></li>
 <li><a href="#other-templates"><span class="toc-section-number">2.7</span> Other Templates?</a><ul>
 <li><a href="#interface-templates"><span class="toc-section-number">2.7.1</span> Interface Templates</a></li>
@@ -2097,10 +2097,128 @@ T[] inOrderB(T)(T value, T[][] inOrderChildren)
 <span class="kw">class</span> Derived : Base!Derived { <span class="co">/*...*/</span> }</code></pre>
 <p>Hold on, what does that mean? <code class="sourceCode d">Base</code> is easy to understand. But what about <code class="sourceCode d">Derived</code>? It says it inherits from another class that is templated on... <code class="sourceCode d">Derived</code> <em>itself</em>? But <code class="sourceCode d">Derived</code> is not defined at this stage! Or is it? Yes, that works. It's called CRTP, which stands for Curiously Recurring Template Pattern (see <a href="http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern">Wikipedia</a> on this). But what could be the interest of such a trick?</p>
 <p>As you can see in the Wikipedia document it's used either to obtain a sort of compile-time binding or to inject code in your derived class. For the latter, D offers <a href="#mixin-templates">mixin templates</a> which you should have a look at. CRTP comes from C++ where you have multiple inheritance. In D, I fear it's not so interesting. Feel free to prove me wrong, I'll gladly change this section.</p>
-<h3 id="example"><a href="#TOC"><span class="header-section-number">2.6.9</span> Example</a></h3>
-<blockquote>
-<p><strong>Unfinished!</strong> I want to add an example with <code class="sourceCode d">duplicator</code>, a template that takes a class and creates another class which is its clone: same base, same interfaces, etc.</p>
-</blockquote>
+<h3 id="example-automatic-dynamic-dispatch"><a href="#TOC"><span class="header-section-number">2.6.9</span> Example: Automatic Dynamic Dispatch</a></h3>
+<p>This example comes from Andrej Mitrovic. You can also find it on the D wiki: <a href="http://wiki.dlang.org/Dispatching_an_object_based_on_its_dynamic_type"><code class="url">http://wiki.dlang.org/Dispatching_an_object_based_on_its_dynamic_type</code></a>.</p>
+<p>Sometimes you may need to call a function with an object where the function only accepts a certain derived object type. In such a case you need to ensure that the dynamic type of an object is of a specific type before attempting to cast it to that type and passing it over to a function. For example:</p>
+<pre class="sourceCode d"><code class="sourceCode d"><span class="kw">class</span> A { }
+<span class="kw">class</span> B : A { }
+<span class="kw">class</span> C : A { }
+
+<span class="dt">void</span> foo(B b) { }
+<span class="dt">void</span> foo(C c) { }
+
+<span class="dt">void</span> main()
+{
+    A b = <span class="kw">new</span> B;
+    A c = <span class="kw">new</span> C;
+
+    foo(b);  <span class="co">// not accepted, object must be casted to either B or C</span>
+    foo(c);  <span class="co">// ditto</span>
+}</code></pre>
+<p>Since the objects <code>b</code> and <code>c</code> of static type <code>A</code> could be of any dynamic type derived from class <code>A</code>, the user would have to try and cast the objects to know whether they can call <code>foo</code> with such objects. The code to do the dispatching mechanism by hand would typically look like:</p>
+<pre class="sourceCode d"><code class="sourceCode d"><span class="kw">import</span> std.stdio;
+
+<span class="kw">class</span> A { }
+<span class="kw">class</span> B : A { }
+<span class="kw">class</span> C : A { }
+
+<span class="dt">void</span> foo(B b) { writeln(<span class="st">&quot;called foo(B b);&quot;</span>); }
+<span class="dt">void</span> foo(C c) { writeln(<span class="st">&quot;called foo(C c);&quot;</span>); }
+
+<span class="dt">void</span> main()
+{
+    A b = <span class="kw">new</span> B;
+    A c = <span class="kw">new</span> C;
+ 
+    <span class="kw">if</span> (<span class="kw">auto</span> obj = <span class="kw">cast</span>(C)b)
+        foo(obj);
+    <span class="kw">else</span> <span class="kw">if</span> (<span class="kw">auto</span> obj = <span class="kw">cast</span>(B)b)
+        foo(obj);
+ 
+    <span class="kw">if</span> (<span class="kw">auto</span> obj = <span class="kw">cast</span>(C)c)
+        foo(obj);
+    <span class="kw">else</span> <span class="kw">if</span> (<span class="kw">auto</span> obj = <span class="kw">cast</span>(B)b)
+        foo(obj);
+}</code></pre>
+<p>However this is both inefficient and hard to type, it introduces copy-pasted code, and is error-prone since adding a new leaf class means the user has to inspect and edit the dispatch code. An alternative method is to use the <code>classinfo</code> structure (retrieved via <code>typeid()</code>) associated with every instantiated object, and to compare this to all existing classinfo structs. Once we have a match we can safely do a static cast of an object and pass it to a function.</p>
+<p>With the help of templates we can automate the entire process. The only information such a template needs is the list of leaf classes so it can construct a tree class to properly dispatch the object. A full implementation is provided here:</p>
+<pre class="sourceCode d"><code class="sourceCode d"><span class="kw">import</span> std.stdio;
+<span class="kw">import</span> std.typetuple;
+<span class="kw">import</span> std.traits;
+<span class="kw">import</span> std.string;
+
+<span class="kw">template</span> ClassTreeImpl(Leaves...)
+{
+    <span class="kw">static</span> <span class="kw">if</span> (Leaves.<span class="dt">length</span> &gt; <span class="dv">1</span>)
+    {
+        <span class="kw">alias</span> TypeTuple!(Leaves[<span class="dv">0</span>], BaseClassesTuple!(Leaves[<span class="dv">0</span>]),
+                         ClassTreeImpl!(Leaves[<span class="dv">1</span>..$])) ClassTreeImpl;
+    }
+    <span class="kw">else</span>
+    <span class="kw">static</span> <span class="kw">if</span> (Leaves.<span class="dt">length</span> == <span class="dv">1</span>)
+    {
+        <span class="kw">alias</span> TypeTuple!(Leaves[<span class="dv">0</span>], BaseClassesTuple!(Leaves[<span class="dv">0</span>])) ClassTreeImpl;
+    }
+    <span class="kw">else</span>
+    {
+        <span class="kw">alias</span> TypeTuple!() ClassTreeImpl;
+    }
+}
+
+<span class="kw">template</span> ClassTree(Leaves...)
+{
+    <span class="kw">alias</span> DerivedToFront!(NoDuplicates!(ClassTreeImpl!(Leaves))) ClassTree;
+}
+
+<span class="kw">template</span> AutoDispatch(Leaves...)
+{
+    <span class="dt">void</span> AutoDispatch(<span class="kw">alias</span> func, Args...)(Args args)
+        <span class="kw">if</span> (Args.<span class="dt">length</span> &gt;= <span class="dv">1</span> &amp;&amp; <span class="kw">is</span>(Args[<span class="dv">0</span>] == <span class="kw">class</span>))
+    {
+        <span class="kw">auto</span> objInfo = <span class="kw">typeid</span>(args[<span class="dv">0</span>]);
+        <span class="kw">foreach</span> (Base; ClassTree!Leaves)
+        {
+            <span class="kw">if</span> (objInfo == Base.classinfo)
+            {
+                <span class="kw">static</span> <span class="kw">if</span> (__traits(compiles, { <span class="co">// avoid CT errors due to unrolled static foreach</span>
+                    <span class="kw">return</span> func(<span class="kw">cast</span>(Base)(<span class="kw">cast</span>(<span class="dt">void</span>*)args[<span class="dv">0</span>]), args[<span class="dv">1</span>..$]); }() ))
+                {
+                    <span class="kw">return</span> func(<span class="kw">cast</span>(Base)(<span class="kw">cast</span>(<span class="dt">void</span>*)args[<span class="dv">0</span>]), args[<span class="dv">1</span>..$]);
+                }
+            }
+        }
+
+        <span class="dt">string</span>[] arguments;
+        arguments ~= objInfo.toString();
+        <span class="kw">foreach</span> (arg; args[<span class="dv">1</span>..$])
+            arguments ~= <span class="dt">typeof</span>(arg).<span class="dt">stringof</span>;
+
+        <span class="kw">assert</span>(<span class="dv">0</span>, format(<span class="st">&quot;function &#39;%s&#39; is not callable with types &#39;(%s)&#39;&quot;</span>,
+                         __traits(identifier, func), arguments.join(<span class="st">&quot;, &quot;</span>)));
+    }
+}
+
+<span class="kw">class</span> A { }
+<span class="kw">class</span> B : A { }
+<span class="kw">class</span> C : B { }
+<span class="kw">class</span> D : B { }
+
+<span class="dt">void</span> foo(C c, <span class="dt">int</span> x) { writefln(<span class="st">&quot;foo(C) : received %s&quot;</span>, x); }
+<span class="dt">void</span> foo(D d, <span class="dt">int</span> x, <span class="dt">int</span> y) { writefln(<span class="st">&quot;foo(D) : received %s %s&quot;</span>, x, y); }
+
+<span class="dt">void</span> main()
+{
+    A c = <span class="kw">new</span> C;
+    A d = <span class="kw">new</span> D;
+    A a = <span class="kw">new</span> A;
+
+    <span class="kw">alias</span> AutoDispatch!(C, D) callFunc;
+
+    callFunc!foo(c, <span class="dv">1</span>);    <span class="co">// ok</span>
+    callFunc!foo(d, <span class="dv">2</span>, <span class="dv">3</span>); <span class="co">// ok</span>
+    callFunc!foo(a, <span class="dv">3</span>);    <span class="co">// will assert at runtime</span>
+}</code></pre>
+<p><code>AutoDispatch</code> takes a list of leaf classes, and extracts the tree class by using the traits found in <a href="http://dlang.org/phobos/std_traits.html">std.traits</a>. The inner <code>AutoDispatch</code> function can then be used to dispatch an object and any additional arguments to a function. The implementation only works for single-object arguments, but a more general solution that dispatches multiple objects is possible to implement.</p>
 <h2 id="other-templates"><a href="#TOC"><span class="header-section-number">2.7</span> Other Templates?</a></h2>
 <p>Two other aggregate types in D can be templated using the same syntax: interfaces and unions.</p>
 <h3 id="interface-templates"><a href="#TOC"><span class="header-section-number">2.7.1</span> Interface Templates</a></h3>
