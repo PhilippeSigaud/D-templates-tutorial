@@ -44,5 +44,4 @@ D code blocks are between `\begin{dcode}` and `\end{dcode}` commands. Transform 
 
 ## Utils
 
-The `utils` folder contains a small D script to extract the hundreds of modules present in the text and test their compilation.
-I have to update it to make it parse the markdown file instead.
+The `utils` folder contains a small D script to extract the hundreds of modules present in the text and test their compilation. You can also find there the extracted and tested modules.
