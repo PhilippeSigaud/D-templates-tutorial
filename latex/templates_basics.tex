@@ -39,7 +39,7 @@ They can be integral values (\D{int}, \D{ulong}, \ldots), enum-based, strings, c
 Template parameters tuples will capture un\-der one id\-en\-ti\-fier an en\-ti\-re list of tem\-plate pa\-ra\-me\-ters (types, names, literals, \ldots). Tuples will store any template argument you will throw at them. If no argument is passed, you will just get a zero-length tuple. Really, as they can deal with types as well as symbols, these tuples are a bit of a mongrel type but they are wonderfully powerful and easy to use, as you will see in section \ref{tuples}. The syntax is \DD{identifier...} (yes, three dots) and the tuple must be the last parameter of a template. 
 \end{description}
 
-Of those, types and aliases are the most common, while floating point values are fairly rare (their use as arguments for compile-time calculations have been superseded by D's Compile-Time Function Evaluation, aka CTFE\index{Compile-Time Function Evaluation|see{CTFE}}\index{CTFE}, described in section \ref{ctfe}). You'll see different uses of these parameters in this document.
+Of those, types and aliases are the most common, while literal values are fairly rare (their use as arguments for compile-time calculations have been superseded by D's Compile-Time Function Evaluation, aka CTFE\index{Compile-Time Function Evaluation|see{CTFE}}\index{CTFE}, described in section \ref{ctfe}). You'll see different uses of these parameters in this document.
 
 Note that pointers, arrays, objects (instantiated classes), structs or functions are not part of this list. But as I said, alias parameters\index{template!parameters!alias} allow you to capture and use array, class, function or struct \emph{names} and then access their capacities.
 
