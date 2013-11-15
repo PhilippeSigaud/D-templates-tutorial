@@ -418,7 +418,7 @@ template AllArraysOf(T)
 #### Syntax
 
 The `static if`{.d} construct[^staticifconstruct]
-lets you decide between two code paths at compile time. It's not specific to templates (you can use it in other part of your code), but it's incredibly useful to have your templates adapt themselves to the arguments. That way, using compile-time-calculated predicates based on the template arguments, you'll generate different code and customize the template to your need.
+lets you decide between two code paths at compile time. It's not specific to templates (you can use it in other parts of your code), but it's incredibly useful to have your templates adapt themselves to the arguments. That way, using compile-time-calculated predicates based on the template arguments, you'll generate different code and customize the template to your need.
 
 [^staticifconstruct]: It's _both_ an statement and a declaration, so I'll call it a construct.
 
