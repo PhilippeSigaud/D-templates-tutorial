@@ -394,7 +394,7 @@ Although, in this case, the eponymous member hides the other members: `Pair` and
 
 ### Inner alias
 
-A common use for templates is to do some type magics: deducing types, assembling them in new way, etc. Types are not first-class entities in D (there is no `type` type), but they can easily be manipulated as any other symbol, by aliasing them. So, when a template has to expose a type, it's done by aliasing it to a new name.
+A common use for templates is to do some type magic: deducing types, assembling them in new way, etc. Types are not first-class entities in D (there is no `type` type), but they can easily be manipulated as any other symbol, by aliasing them. So, when a template has to expose a type, it's done by aliasing it to a new name.
 
 
 ```{.d}
