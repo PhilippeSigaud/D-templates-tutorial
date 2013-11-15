@@ -877,7 +877,7 @@ void main()
 As you can see, this results in very simple calling code. So we can both declare function templates and call them with a very clean syntax. The same can be done with structs or classes and such, as you will see in the next sections. In fact, the syntax is so clean that, if you are like me, you may forget from time to time that you are _not_ manipulating a function (or a struct, etc.): you are manipulating a template, a parameterized piece of code.
 
 
-> **A Mantra.** `XXX`{.d} templates are not `XXX`{.d}s, they are templates. With `XXX`{.d} being any of (function, struct, class, interface, union). Templates are parameterized scopes and scopes are not first-class in D: they have no type, they cannot be assigned to a variable, they cannot be returned from functions. That means, for example, that you _cannot_ return function templates, you cannot inherit from class templates and so on. Of course, _instantiated_ templates are perfect examples of functions, classes, and such. Them you can inherit, return...
+> **A Mantra.** `XXX`{.d} templates are not `XXX`{.d}s, they are templates. With `XXX`{.d} being any of (function, struct, class, interface, union). Templates are parameterized scopes and scopes are not first-class in D: they have no type, they cannot be assigned to a variable, they cannot be returned from functions. That means, for example, that you _cannot_ return function templates, you cannot inherit from class templates and so on. Of course, _instantiated_ templates are perfect examples of functions, classes, and such. Those you can inherit, return...
 
 We may encounter **The Mantra** again in this tutorial.
 
