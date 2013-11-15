@@ -1639,7 +1639,7 @@ void main()
 }
 ```
 
-That way, a `Holder!int} can be constructed with any value, but if the conversion is possible, it will always hold an `int`{.d}.
+That way, a `Holder!int`{.d} can be constructed with any value, but if the conversion is possible, it will always hold an `int`{.d}.
 
 ### Inner Structs
 
