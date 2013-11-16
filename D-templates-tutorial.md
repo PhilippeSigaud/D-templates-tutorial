@@ -394,7 +394,7 @@ Although, in this case, the eponymous member hides the other members: `Pair` and
 
 ### Inner alias
 
-A common use for templates is to do some type magics: deducing types, assembling them in new way, etc. Types are not first-class entities in D (there is no `type` type), but they can easily be manipulated as any other symbol, by aliasing them. So, when a template has to expose a type, it's done by aliasing it to a new name.
+A common use for templates is to do some type magic: deducing types, assembling them in new way, etc. Types are not first-class entities in D (there is no `type` type), but they can easily be manipulated as any other symbol, by aliasing them. So, when a template has to expose a type, it's done by aliasing it to a new name.
 
 
 ```{.d}
@@ -418,7 +418,7 @@ template AllArraysOf(T)
 #### Syntax
 
 The `static if`{.d} construct[^staticifconstruct]
-lets you decide between two code paths at compile time. It's not specific to templates (you can use it in other part of your code), but it's incredibly useful to have your templates adapt themselves to the arguments. That way, using compile-time-calculated predicates based on the template arguments, you'll generate different code and customize the template to your need.
+lets you decide between two code paths at compile time. It's not specific to templates (you can use it in other parts of your code), but it's incredibly useful to have your templates adapt themselves to the arguments. That way, using compile-time-calculated predicates based on the template arguments, you'll generate different code and customize the template to your need.
 
 [^staticifconstruct]: It's _both_ an statement and a declaration, so I'll call it a construct.
 
@@ -877,7 +877,7 @@ void main()
 As you can see, this results in very simple calling code. So we can both declare function templates and call them with a very clean syntax. The same can be done with structs or classes and such, as you will see in the next sections. In fact, the syntax is so clean that, if you are like me, you may forget from time to time that you are _not_ manipulating a function (or a struct, etc.): you are manipulating a template, a parameterized piece of code.
 
 
-> **A Mantra.** `XXX`{.d} templates are not `XXX`{.d}s, they are templates. With `XXX`{.d} being any of (function, struct, class, interface, union). Templates are parameterized scopes and scopes are not first-class in D: they have no type, they cannot be assigned to a variable, they cannot be returned from functions. That means, for example, that you _cannot_ return function templates, you cannot inherit from class templates and so on. Of course, _instantiated_ templates are perfect examples of functions, classes, and such. Them you can inherit, return...
+> **A Mantra.** `XXX`{.d} templates are not `XXX`{.d}s, they are templates. With `XXX`{.d} being any of (function, struct, class, interface, union). Templates are parameterized scopes and scopes are not first-class in D: they have no type, they cannot be assigned to a variable, they cannot be returned from functions. That means, for example, that you _cannot_ return function templates, you cannot inherit from class templates and so on. Of course, _instantiated_ templates are perfect examples of functions, classes, and such. Those you can inherit, return...
 
 We may encounter **The Mantra** again in this tutorial.
 
@@ -1393,9 +1393,9 @@ A struct template is a template like any other: you can declare templates inside
 
 ##### Mapping on a Tree
 
-Let us use that to give our `Tree`{.d} a mapping ability. For a range, you can use [std.algorithm.map](http://dlang.org/phobos/std_algorithm.html#map) to apply a function in turn to each element, thus delivering a transformed range. The same process can be done for a tree, thereby keeping the overall _shape_ but modifying the elements. We could easily make that a free function, but this _is_ the member function section.
+Let us use a templated member function to give our `Tree`{.d} a mapping ability. For a range, you can use [std.algorithm.map](http://dlang.org/phobos/std_algorithm.html#map) to apply a function in turn to each element, thus delivering a transformed range. The same process can be done for a tree, thereby keeping the overall _shape_ but modifying the elements. We could easily make that a free function, but this _is_ the member function section.
 
-Let's think a little bit about it before coding. `map`{.d} should be a function template that accepts any function name as a template alias parameter (like [std.algorithm.map](http://dlang.org/phobos/std_algorithm.html#map)). Let's call this alias `fun`{.d}. The `value`{.d} member should be transformed by `fun`{.d}, that's easy to do. We want to return a new `Tree`{.d}, which will have for type parameter the result type of `fun`{.d}. If `fun`{.d} transforms `A`{.d}s into `B`{.d}s, then a `Tree!A` will be mapped to a `Tree!B`. However, since `fun`{.d} can be a function template, it may not have a pre-defined return type that could be obtained by [std.traits.ReturnType](http://dlang.org/phobos/std_traits.html#ReturnType). We will just apply it on a `T`{.d} value (obtained by `T.init` and take this type. So `B`{.d} will be `typeof(fun(T.init))`.
+Let's think a little bit about it before coding. `map`{.d} should be a function template that accepts any function name as a template alias parameter (like [std.algorithm.map](http://dlang.org/phobos/std_algorithm.html#map)). Let's call this alias `fun`{.d}. The `value`{.d} member should be transformed by `fun`{.d}, that's easy to do. We want to return a new `Tree`{.d}, which will have as its type parameter the result type of `fun`{.d}. If `fun`{.d} transforms `A`{.d}s into `B`{.d}s, then a `Tree!A` will be mapped to a `Tree!B`. However, since `fun`{.d} can be a function template, it may not have a pre-defined return type that could be obtained by [std.traits.ReturnType](http://dlang.org/phobos/std_traits.html#ReturnType). We will just apply it on a `T`{.d} value (obtained by `T.init` and take this type. So `B`{.d} will be `typeof(fun(T.init))`.
 
 What about the children? We will map `fun`{.d} on them too and collect the result into a new children array. They will have the same type: `Tree!(B)`. If the mapped `Tree`{.d} is a leaf (ie: if it has no children), the process will stop.
 
@@ -1639,7 +1639,7 @@ void main()
 }
 ```
 
-That way, a `Holder!int} can be constructed with any value, but if the conversion is possible, it will always hold an `int`{.d}.
+That way, a `Holder!int`{.d} can be constructed with any value, but if the conversion is possible, it will always hold an `int`{.d}.
 
 ### Inner Structs
 
