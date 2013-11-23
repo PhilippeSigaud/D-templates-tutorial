@@ -2604,13 +2604,13 @@ So in the end, the conclusion is a bit of _D Zen_: you are given tools, powerful
 
 ## Predicate Templates
 
-When you find yourself typing again and again the same `is`{.d} expression or the same complicated constraint, it's time to abstract it into another template, a `bool`{.d}-becoming one. If you have a look [this section](#istype), you'll see a way to test if a particular piece of D code is OK (compilable) or not. Another way to obtain this is by using `__traits(compiles, some Code)`{.d}.
+When you find yourself typing again and again the same `is`{.d} expression or the same complicated constraint, it's time to abstract it into another template, a `bool`{.d}-becoming one. If you have a look at [this section](#istype), you'll see a way to test if a particular piece of D code is OK (compilable) or not. Another way to obtain this is by using `__traits(compiles, some Code)`{.d}.
 
 In [Examples](#examples), the section [Type Sorcery](#mapping-filtering-and-folding-types) shows another example of a predicate template.
 
 ### Testing for a member
 
-For example, if you want to test is some type can be serialized, through a `size_t serialize()`{.d} member function:
+For example, if you want to test if some type can be serialized, through a `size_t serialize()`{.d} member function:
 
 
 ```{.d}
