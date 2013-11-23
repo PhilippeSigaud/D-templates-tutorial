@@ -2482,7 +2482,7 @@ auto callTwice(alias fun, T)(T arg)
 
 ### Constraints Usage
 
-Constraints come from the same idea than C++0x `concept`{.d}, er..., concept, although simpler to define, understand and, as shown by D, implement. The idea is to define a set of conditions a type must respect to be a representative of a `concept', and check for it before instantiating.
+Constraints come from the same idea as C++0x `concept`{.d}, er..., concept, although simpler to define, understand and, as shown by D, implement. The idea is to define a set of conditions a type must respect to be a representative of a `concept', and check for it before instantiating.
 
 Have a look at constraints poster-child: _ranges_.[^rangetutorial] They were rapidly described in section [flatten](#example-flattening-arrays-and-ranges).
 
@@ -2509,7 +2509,7 @@ auto rangeWrapper(Range)(Range range) if (isInputRange!Range)
 }
 ```
 
-In fact, it's a bit like a sort of compile-time interface or compile-time duck-typing: we do _not_ care about `Range`{.d}'s 'kind': it may by a `struct`{.d} or a `class`{.d} for all we know. What is important is that it respects the _input range_ concept.
+In fact, it's a bit like a compile-time interface or compile-time duck-typing: we do _not_ care about `Range`{.d}'s 'kind': it may by a `struct`{.d} or a `class`{.d} for all we know. What is important is that it respects the _input range_ concept.
 
 The good news is that the compiler will complain when it cannot instantiate a template due to constraints being not respected. It gives better error messages this way (although not as good as you might need).
 
