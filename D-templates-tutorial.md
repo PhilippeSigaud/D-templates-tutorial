@@ -77,7 +77,7 @@ This document is just a markdown file [hosted on Github](http://github.com/Phili
 
 As soon as I publicly released this document, D community members gave me help, suggestions, corrections, and code samples. This is cool to see a D network emerge and people participating in common projects. The following people helped me:
 
-Andrej Mitrovic, Justin Whear, Zachary Lund, Jacob Carlborg, Timon Gehr, Simen Kjaeras, Andrei Alexandrescu, Bjorn Lietz-Spendig.
+Craig Dillabaugh, Andrej Mitrovic, Justin Whear, Zachary Lund, Jacob Carlborg, Timon Gehr, Simen Kjaeras, Andrei Alexandrescu, Bjorn Lietz-Spendig.
 
 Thanks guys!
 
