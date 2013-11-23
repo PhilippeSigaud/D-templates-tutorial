@@ -27,7 +27,7 @@ Using markdown files and [Pandoc](http://johnmacfarlane.net/pandoc/), I generate
 
 ## LaTeX notes
 
-This tutorial doc used to be made of LaTeX files. You can still find them in the `latex` folder, but I'll phase them out (I just keep
+This tutorial doc used to be made of LaTeX files. You can still find them in the `latex` folder, but I'll phase them out
 
 The master document is `dtemplates.tex` and calls the other subfiles:
 
