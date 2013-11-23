@@ -2673,7 +2673,7 @@ import std.range;
 
 struct Flatten(Range) if (isInputRange!Range)
 {
-    /* same code than before */
+    /* same code as before */
 
     static if (isForwardRange!Range)
         Flatten save() @property
@@ -2693,7 +2693,7 @@ You could extend the pattern in the same way by allowing `Flatten`{.d} to be a b
 ### Definition and Basic Properties
 
 And now comes one of my favourite subjects: template tuple parameters. As seen in section [Declarations](#template-declarations) these are declared by putting a `identifier...`{.d} at the last parameter of a template. The tuple will then absorb any type, alias or literal passed to it.
-For this very reason (that it can bunch of types interspersed with symbols), some people consider it a mongrel addition to D templates. That is true, but the ease of use and the flexibility it gives us is in my opinion well worth the cost of a little cleanliness.
+For this very reason (that it can be a bunch of types interspersed with symbols), some people consider it a mongrel addition to D templates. That is true, but the ease of use and the flexibility it gives us is in my opinion well worth the cost of a little cleanliness.
 D template tuples have a `.length`{.d} member (defined at compile-time, obviously), their elements can be accessed using the standard indexing syntax and they can even be sliced (the `$`{.d} symbol is aliased to the tuple length):
 
 ```{.d}
