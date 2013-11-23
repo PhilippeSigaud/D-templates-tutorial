@@ -2407,7 +2407,7 @@ In the previous part, we saw what everyone should know about D templates. But in
 
 ## Constraints
 
-Templates constraints are a way to block a template instantiation if some condition is not met. Any condition that can be determined at compile-time is authorized, which makes constraints a superset of [templates specializations](#templates-specializations). As such, their usage grew rapidly once they were introduced and, if Phobos is any indication, templates specializations are on the contrary becoming less common.
+Template constraints are a way to block a template instantiation if some condition is not met. Any condition that can be determined at compile-time is authorized, which makes constraints a superset of [template specializations](#templates-specializations). As such, their usage grew rapidly once they were introduced and, if Phobos is any indication, templates specializations are on the contrary becoming less common.
 
 ### Syntax
 
@@ -2482,7 +2482,7 @@ auto callTwice(alias fun, T)(T arg)
 
 ### Constraints Usage
 
-Constraints come from the same idea than C++0x `concept`{.d}, er..., concept, although simpler to define, understand and, as shown by D, implement. The idea is to define a set of conditions a type must respect to be a representative of a `concept', and check for it before instantiating.
+Constraints come from the same idea as C++0x `concept`{.d}, er..., concept, although simpler to define, understand and, as shown by D, implement. The idea is to define a set of conditions a type must respect to be a representative of a `concept', and check for it before instantiating.
 
 Have a look at constraints poster-child: _ranges_.[^rangetutorial] They were rapidly described in section [flatten](#example-flattening-arrays-and-ranges).
 
@@ -2509,7 +2509,7 @@ auto rangeWrapper(Range)(Range range) if (isInputRange!Range)
 }
 ```
 
-In fact, it's a bit like a sort of compile-time interface or compile-time duck-typing: we do _not_ care about `Range`{.d}'s 'kind': it may by a `struct`{.d} or a `class`{.d} for all we know. What is important is that it respects the _input range_ concept.
+In fact, it's a bit like a compile-time interface or compile-time duck-typing: we do _not_ care about `Range`{.d}'s 'kind': it may by a `struct`{.d} or a `class`{.d} for all we know. What is important is that it respects the _input range_ concept.
 
 The good news is that the compiler will complain when it cannot instantiate a template due to constraints being not respected. It gives better error messages this way (although not as good as you might need).
 
@@ -2604,13 +2604,13 @@ So in the end, the conclusion is a bit of _D Zen_: you are given tools, powerful
 
 ## Predicate Templates
 
-When you find yourself typing again and again the same `is`{.d} expression or the same complicated constraint, it's time to abstract it into another template, a `bool`{.d}-becoming one. If you have a look [this section](#istype), you'll see a way to test if a particular piece of D code is OK (compilable) or not. Another way to obtain this is by using `__traits(compiles, some Code)`{.d}.
+When you find yourself typing again and again the same `is`{.d} expression or the same complicated constraint, it's time to abstract it into another template, a `bool`{.d}-becoming one. If you have a look at [this section](#istype), you'll see a way to test if a particular piece of D code is OK (compilable) or not. Another way to obtain this is by using `__traits(compiles, some Code)`{.d}.
 
 In [Examples](#examples), the section [Type Sorcery](#mapping-filtering-and-folding-types) shows another example of a predicate template.
 
 ### Testing for a member
 
-For example, if you want to test is some type can be serialized, through a `size_t serialize()`{.d} member function:
+For example, if you want to test if some type can be serialized, through a `size_t serialize()`{.d} member function:
 
 
 ```{.d}
@@ -2673,7 +2673,7 @@ import std.range;
 
 struct Flatten(Range) if (isInputRange!Range)
 {
-    /* same code than before */
+    /* same code as before */
 
     static if (isForwardRange!Range)
         Flatten save() @property
@@ -2693,7 +2693,7 @@ You could extend the pattern in the same way by allowing `Flatten`{.d} to be a b
 ### Definition and Basic Properties
 
 And now comes one of my favourite subjects: template tuple parameters. As seen in section [Declarations](#template-declarations) these are declared by putting a `identifier...`{.d} at the last parameter of a template. The tuple will then absorb any type, alias or literal passed to it.
-For this very reason (that it can bunch of types interspersed with symbols), some people consider it a mongrel addition to D templates. That is true, but the ease of use and the flexibility it gives us is in my opinion well worth the cost of a little cleanliness.
+For this very reason (that it can be a bunch of types interspersed with symbols), some people consider it a mongrel addition to D templates. That is true, but the ease of use and the flexibility it gives us is in my opinion well worth the cost of a little cleanliness.
 D template tuples have a `.length`{.d} member (defined at compile-time, obviously), their elements can be accessed using the standard indexing syntax and they can even be sliced (the `$`{.d} symbol is aliased to the tuple length):
 
 ```{.d}
