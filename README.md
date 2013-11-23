@@ -25,23 +25,6 @@ The markdown syntax used for the doc is the extended version used by Pandoc (mai
 Using markdown files and [Pandoc](http://johnmacfarlane.net/pandoc/), I generate the HTML, pdf and epub versions. Feel free to comment on them also.
 
 
-## LaTeX notes
-
-This tutorial doc used to be made of LaTeX files. You can still find them in the `latex` folder, but I'll phase them out (I just keep
-
-The master document is `dtemplates.tex` and calls the other subfiles:
-
-* `dtemplates_intro.tex`
-* `dtemplates_basics.tex`
-* `dtemplates_advanced.tex`
-* `dtemplates_around.tex`
-* `dtemplates_examples.tex`
-* `dtemplates_appendix.tex`
-
-
-The LaTeX files use the [minted](http://code.google.com/p/minted/) package. `minted` uses Python's [Pygment](pygments.org) highlighter.
-D code blocks are between `\begin{dcode}` and `\end{dcode}` commands. Transform them into `verbatim` commands if you do not want to use `minted`.
-
 ## Utils
 
 The `utils` folder contains a small D script to extract the hundreds of modules present in the text and test their compilation. You can also find there the extracted and tested modules.
