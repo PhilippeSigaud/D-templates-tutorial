@@ -2407,7 +2407,7 @@ In the previous part, we saw what everyone should know about D templates. But in
 
 ## Constraints
 
-Templates constraints are a way to block a template instantiation if some condition is not met. Any condition that can be determined at compile-time is authorized, which makes constraints a superset of [templates specializations](#templates-specializations). As such, their usage grew rapidly once they were introduced and, if Phobos is any indication, templates specializations are on the contrary becoming less common.
+Template constraints are a way to block a template instantiation if some condition is not met. Any condition that can be determined at compile-time is authorized, which makes constraints a superset of [template specializations](#templates-specializations). As such, their usage grew rapidly once they were introduced and, if Phobos is any indication, templates specializations are on the contrary becoming less common.
 
 ### Syntax
 
