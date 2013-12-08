@@ -8037,18 +8037,16 @@ import std.typecons;
 
 template isTuple(T)
 {
-    static if (is(typeof({
-              void tupleTester(InnerTypes...)(Tuple!(InnerTypes) tup) {}
-              T.init possibleTuple;
-              tupleTester(possibleTuple);
-              }())))
-        enum bool isTuple = true;
-    else
-        enum bool isTuple = false;
+    enum bool isTuple =
+        is(typeof({
+            void tupleTester(InnerTypes...)(Tuple!(InnerTypes) tup) {}
+            T.init possibleTuple;
+            tupleTester(possibleTuple);
+        }()));
 }
 ```
 
-Line 7 defines the function template `tupleTester`{.d}, that only accepts `Tuple`{.d}s as arguments (even though it does nothing with them). We create something of type `T` on line 8, using the `.init`{.d} property inherent in all D types, and try to call `tupleTester`{.d} with it. If `T` is indeed a `Tuple`{.d} this entire block statement is valid, the resulting delegate call indeed has a type and `is`{.d} returns `true`{.d}.
+Line 8 defines the function template `tupleTester`{.d}, that only accepts `Tuple`{.d}s as arguments (even though it does nothing with them). We create something of type `T` on line 9, using the `.init`{.d} property inherent in all D types, and try to call `tupleTester`{.d} with it. If `T` is indeed a `Tuple`{.d} this entire block statement is valid, the resulting delegate call indeed has a type and `is`{.d} returns `true`{.d}.
 
 There are two things to note here: first, `isTuple`{.d} works for any templated type called `Tuple`{.d}, not only [std.typecons.Tuple](http://dlang.org/phobos/std_typecons.html#Tuple). If you want to restrict it, change `tupleTester`{.d} definition. Secondly, we do not get access to the inner types this way. For [std.typecons.Tuple](http://dlang.org/phobos/std_typecons.html#Tuple) it's not really a problem, as they can be accessed with the `someTuple.Types`{.d} alias, but still...
 
