@@ -83,8 +83,182 @@ Thanks guys!
 
 # Basics
 
-A template is a recipe, a blueprint that will generate code at your command and according to compile-time parameters you'll give. Templates are _parameterized_ code. Each template definition is written once in a module and can then be instantiated many times with different parameters, possibly resulting in quite different code, depending on the arguments you used.
+## Why Templates?
 
+Here you are, reading a book-size document on D templates. But why should you be interested in templates? Let say you have this wonderful tree struct:
+
+```{.d}
+module basicTree1;
+
+struct Tree {
+    int value;
+    Tree[] children;
+    
+    size_t size() {
+        size_t s = 1;
+        foreach(child; children)
+            s += child.size();
+        return s;
+    }
+    
+    bool isLeaf() @property {
+        return children.length == 0;
+    }
+}
+```
+
+Which is used like this;
+
+```{.d}
+module usingBasicTree1;
+
+import basicTree1;
+
+void main()
+{
+    auto tree = Tree(0, [Tree(1), Tree(2, [Tree(3), Tree(4)], Tree(5))]);
+    assert(!tree.isLeaf);
+    assert(tree.size() == 6);
+}
+```
+
+All is well and good, this is a nice basic `int`{.d}-holding n-ary tree. But what if, after some time, you need a `float`{.d}-holding one?
+No problem, this can be coded easily, with a bit of copy-pasting. First, we change `Tree` to `IntTree` and then create a `FloatTree` node:
+
+```{.d}
+module basicTree2;
+
+struct IntTree {
+    int value;
+    Tree[] children;
+    
+    size_t size() {
+        size_t s = 1;
+        foreach(child; children)
+            s += child.size();
+        return s;
+    }
+    
+    bool isLeaf() @property {
+        return children.length == 0;
+    }
+}
+
+struct FloatTree {
+    float value;
+    Tree[] children;
+    
+    size_t size() {
+        size_t s = 1;
+        foreach(child; children)
+            s += child.size();
+        return s;
+    }
+    
+    bool isLeaf() @property {
+        return children.length == 0;
+    }
+}
+```
+
+But, ugh, the *only* change is for the type of `value`, which becomes a `float`{.d} instead of an `int`{.d}. What a waste! And what if we need another tree, for example holding functions (a tree of callbacks, say)? There must be a better way.
+
+Let's observe the previous code. As I said, the only change is the type of `value`. What we need here is a way to produce code by generating different tree types, injecting the type for `value` as user-defined input. It's a bit like a function: pushing parameters and getting a result. Let's imagine some code with a placeholder, let's call it `Type`, to represent the type of `value`.
+
+```{.d}
+struct Tree {
+    Type value;
+    Tree[] children;
+    
+    size_t size() {
+        size_t s = 1;
+        foreach(child; children)
+            s += child.size();
+        return s;
+    }
+    
+    bool isLeaf() @property {
+        return children.length == 0;
+    }
+}
+```
+
+But here `Type` is a symbol introduced without warning in the struct scope. If you try to compile that code, the compiler will rightfully complain and ask you 'where does `Type` come from?'. With functions, parameters are introduced in a parameter list(!) that will push them into the following scope, the function body. That's what we want here. We should tell the compiler that `Type` is our placeholder, to be provided latter on. Let's continue with our imaginary syntax here:
+
+```{.d}
+module genericTree;
+
+struct Tree(Type) {
+    Type value;
+    Tree[] children;
+    
+    size_t size() {
+        size_t s = 1;
+        foreach(child; children)
+            s += child.size();
+        return s;
+    }
+    
+    bool isLeaf() @property {
+        return children.length == 0;
+    }
+}
+```
+
+See how I introduced `Type` in a (one-element) parameter list, right after `Tree`? Ideally, this is what a struct definition abstracted on the type of `value` should look like, right? A sort of... recipe to be used to generate the `Tree` we need.
+
+Look no further, the previous definition is standard D for a struct template! You can compile it and use it to your heart content (see the next chapters to do that). 
+
+That's the essence of templates: writing some code, seeing way to abstract it on certain items (types, symbols, numbers, the possibility are numerous) and defining such a generic recipe, for further perusal.
+
+## What is a Template?
+
+In the next chapters, you'll see how to define [function](#function-templates), [struct](#struct-templates) and [class](#class-templates) templates. The nifty syntax demonstrated just before is a special case for these constructs. It's a simplified version of the full template declaration syntax, which we will see in the next section.
+
+But before that, I'd like to introduce what a template *really* is, because this definition is the most fundamental of the whole document. As I said, a template is a way to define a blueprint to generate some code, be it a class definition, a function or... what? What could be the most abstract unit of code?
+
+Let us say you have a wonderful piece of code, full of function definitions, structs and their methods, new symbols, and so on. This piece of code offer a few entry points for further parameterization: some types, some symbols could be abstracted away and put into a template parameter list.
+
+```{.d}
+// Could be parameterized on Type, as seen before
+struct Tree { ... } 
+
+// Could be parameterized on the Tree type also
+// And maybe on f?
+Tree mapOnTree(Tree input, Tree delegate(Tree) f) { ... }
+
+void printTree(Tree input) { ... }
+
+// What about defining a different TreeArray for all possible Trees?
+alias TreeArray = Tree[];
+```
+
+But where is the basic unit to hold this code? Well, a code block of course, or a *scope*. Ideally, we would like a way to group all the previous declaration into one unit, with the same parameter list:
+
+```{.d}
+// scope?
+(Type)
+{
+    struct Tree { /* using Type here */}
+    Tree mapOnTree(Tree input, Tree delegate(Tree) f) { /* here also */ }
+    void printTree(Tree input) { /* the same */ }
+    alias TreeArray = Tree[]; // You get it
+}
+```
+ 
+Since we will need to 'call' it to produce some code (a bit like you'd call a function), this code block needs a name. And then, we just need to tell the compiler: 'here, this is a blueprint'. The D keyword for that is (you got it) `template`{.d}:
+
+```{.d}
+template MyDefs(Type)
+{
+    struct Tree {...}
+    Tree mapOnTree(Tree input, Tree delegate(Tree) f) {...}
+    void printTree(Tree input) {...}
+    alias TreeArray = Tree[];
+}
+```
+
+Here you are. This is what a template is, at its core: a named, parameterized, code block, ready to be instantiated just for you.
 
 ## Template Declarations
 
@@ -100,21 +274,21 @@ template templateName(list, of, parameters)
 
 `templateName` is your usual D identifier and the list of parameters is a comma-separated list of zero or more template parameters. These can be:
 
-Types
+Types (`identifier`)
 
 :    An `identifier` alone by itself is considered a type name. The common D style is to use identifiers beginning with a capital letter (`Range`, `Rest`), as for any user-defined types. Many D templates use the C++ tradition of one-capital-letter names for types, starting from `T` (`U`, `V`, ...). Do not feel constrained by this, use what makes your templates most easy to understand.
 
-Aliases
+Aliases (`alias identifier`{.d})
 
-:   These will capture symbols: variable names, class names, even other template names. They will also accept many compile-time literals: strings, arrays, function literals, ... Mostly, if you need a widely-accepting template, use an alias parameter. They will _not_ accept built-in types as arguments, however. You declare them with `alias identifier`{.d}.
+:   You declare them with `alias identifier`{.d}. They will capture not types but *symbols*: variable names, class *names*, even other template names. They will also accept many compile-time literals: strings, arrays, function literals, ... Mostly, if you need a widely-accepting template, use an `alias` parameter. Note that they will _not_ accept built-in types as arguments, however, since `int` is not a valid identifier in D (it's a keyword). 
 
-Literal values
+Literal values (`typeName identifier`)
 
-:   They can be integral values (`int`{.d}, `ulong`{.d}, ...), enum-based, strings, chars, floating-point values or boolean values. I think the rule is that any expression that can be evaluated at compile-time is OK. They are all declared like this: `typeName identifier`. For example : `int depth`{.d} or `string name`{.d}.
+:   They are all declared like this: `typeName identifier`. Literal values can be integral values (`int`{.d}, `ulong`{.d}, ...), `enum`{.d}-based, strings, `chars`{.d}, floating-point values or boolean values. Any expression that can be evaluated at compile-time is OK. For example : `int depth`{.d} or `string name`{.d}.
 
-Template parameters tuples
+Template parameters tuples (`identifier...`)
 
-:   Template parameters tuples will capture under one identifier an entire list of template parameters (types, names, literals, ...). Tuples will store any template argument you will throw at them. If no argument is passed, you will just get a zero-length tuple. Really, as they can deal with types as well as symbols, these tuples are a bit of a mongrel type but they are wonderfully powerful and easy to use, as you will see in section [Tuples](#template-tuple-parameters). The syntax is `identifier...` (yes, three dots) and the tuple must be the last parameter of a template.
+:   The syntax is `identifier...` (yes, three dots) and the tuple must be the last parameter of a template. Template parameters tuples will capture under one identifier *an entire list of template parameters* (types, names, literals, ...). These tuples will store any template argument you will throw at them. If no argument is passed, you will just get an empty, zero-length, tuple. Really, as they can deal with types as well as symbols, these tuples are a bit of a mongrel type but they are wonderfully powerful and easy to use, as you will see in section [Tuples](#template-tuple-parameters). 
 
 
 
@@ -123,15 +297,15 @@ Of those, types and aliases are the most common, while floating point values are
 Note that pointers, arrays, objects (instantiated classes), structs or functions are not part of this list. But as I said, alias parameters allow you to capture and use array, class, function or struct _names_ and then access their capacities.
 
 
-> **Aliases, Symbols and Names.** There is big difference between built-in types like `int`{.d} or `double[3]`{.d} and user-defined types. A user-defined type, say a class called `MyClass`, is a type name. So, it's _both_ a type (the class `MyClass`, accepted by type templates arguments) and a name (`MyClass`, accepted by `alias` template parameters). On the other hand, `int`{.d}, being a D keyword is not a symbol nor a name. It's just a type. You cannot pass it to an alias template parameter.
+> **Aliases, Symbols and Names.** There is big difference between built-in types like `int`{.d} or `double[3]`{.d} and user-defined types. A user-defined type, say a class called `MyClass`, is a type name. So, it's _both_ a type (the class `MyClass`, accepted by type templates arguments) and a name, a symbol (`MyClass`, accepted by `alias` template parameters). On the other hand, `int`{.d}, being a D keyword is not a symbol nor a name. It's just a type. You cannot pass it to an alias template parameter.
 
 
 The template body can contain any standard D declarations: variable, function, class, interface, other templates, alias declarations,... The only exception I can think of is declaring a `module`, as this is done at the top-level scope.
 
 
-> **Syntax and Semantics.** And then there is a catch: code inside a `template`{.d} declaration must only be syntactically correct D code (that is: code that looks like D code). The semantics are not checked until instantiation. That means you can code happily, writing templates upon templates and the compiler won't bat an eye if you do not exercise your templates by instantiating them.
+> **Syntax and Semantics.** Code inside a `template`{.d} declaration only has to be syntactically correct D code (that is: code that looks like D code). The semantics are not checked until instantiation. That means you can code happily, writing templates upon templates and the compiler won't bat an eye if you do not exercise your templates by instantiating them.
 
-Inside the template body, the parameters are all accessible as placeholders for the future arguments. Also, the template's own name refers to its current instantiation when the code is generated. This is mostly used in struct (see sections [Struct Templates](#struct-templates) and [Class Templates](#class-templates)).
+Inside the template body, the parameters are all accessible as placeholders for the future arguments. Also, the template's own name refers to its current instantiation when the code is generated. This is mostly used in [struct templates](#struct-templates) and [class templates](#class-templates).
 
 Here are some template declaration examples:
 
@@ -140,8 +314,8 @@ module declaration;
 
 template ArrayOf(T) // T is a type
 {
-    alias T[] ArrayType;
-    alias T ElementType;
+    alias ArrayType   = T[];
+    alias ElementType = T;
 }
 
 template Transformer(From, To) // From and To are types, too
@@ -163,7 +337,8 @@ template Transformer(From, To) // From and To are types, too
 template nameOf(alias a)
 {
     enum string name = a.stringof; // enum: manifest constant
-                                   // determined at compile-time
+                                   // determined at compile-time.
+                                   // See below.
 }
 
 template ComplicatedOne(T, string s, alias a, bool b, int i)
@@ -182,14 +357,15 @@ template Multiple(T,U)   { /*...*/ } // Two args,
 template Multiple(T,U,V) { /*...*/ } // and three.
 ```
 
-The real syntax for template declarations is slightly more complex, I'll introduce more of it in the next sections. You'll see for example type restrictions in section [Templates Specializations](#templates-specializations), default values in section [Default Values](#default-values), instantiation constraints in [Template Constraints](#constraints), and more on tuples in section [tuples](#template-tuple-parameters).
+The full syntax for template declarations is slightly more complex, I'll introduce more of it in the next sections. You'll see for example type restrictions in section [Templates Specializations](#templates-specializations), default values in section [Default Values](#default-values), instantiation constraints in [Template Constraints](#constraints), and more on tuples in section [tuples](#template-tuple-parameters).
 
 There is a limitation that's interesting to keep in mind: templates can be declared in almost any scope, except inside a (regular) function.
-
 
 > **enum.** In the previous code, see line 27? It defines a `string`{.d} called `name` as a member of `nameOf`. The `enum`{.d} placed right before means `name` is a compile-time constant. You can see it as a kind of storage class, in the line of `immutable`{.d} or `const`{.d}, one that means the value is totally defined and fixed at runtime. You'll see numerous examples of `enum`{.d} in this document.
 
 ## Instantiating a Template
+
+### Syntax
 
 To instantiate a template, use the following syntax:
 
@@ -197,21 +373,48 @@ To instantiate a template, use the following syntax:
 templateName!(list, of, arguments)
 ```
 
+Note the exclamation point (`!`) before the comma-separated argument list. That's what differentiate template arguments lists from standard (funtion) argument lists. If both are present (for function templates), we will use:
 
-Note the exclamation point (`!`) before the comma-separated argument list. If the argument list contains only one argument (one token), you can drop the parenthesis:
+```
+templateName!(template, argument, list)(runtime, agument, list)
+```
 
+There is a small trick to get a shorter instantiation syntax: if the argument list contains only one argument with a length of one token, you can drop the parenthesis, like this:
 
 ```{.d}
 templateName!argument
 ```
 
+So, these are all valid template instantiations:
 
-> **Templates as templates arguments.** Arguments can themselves be the result of another template instantiation. If a template returns a type upon instantiation, it's perfectly OK to use it inside another template argument list. In this document you'll regularly see Matrioshka calls like this: `firstTemp!(secondTempl!(Arguments), OtherArguments)`.
+```{.d}
+Template!(int)
+Template!int
 
+Template!("string arg")
+Template!"string arg"
+
+map!(foo)(range); // foo is a symbol, capture by an alias.
+                  // range is a runtime argument.
+map!foo(range);   // ditto
+
+// But:
+Multiple!(int, double)
+// And not:
+// Multiple!int, double //??
+```
+
+### Templates as Template Arguments
+
+Arguments can themselves be the result of another template instantiation. If a template returns a type upon instantiation, it's perfectly OK to use it inside another template argument list. In this document you'll regularly see Matrioshka calls like this: `firstTemp!(secondTempl!(Arguments), OtherArguments)`.
+
+### Selecting among Declarations
 
 The compiler will have a look at the declarations (if more than one template was declared with the called name) and select the one with the correct number of arguments and the correct types to instantiate. If more than one template can be instantiated, it will complain  and stop there (though, have a look on [template specializations](#templates-specializations) and [template constraints](#constraints).
 
-When you instantiate a template, the global effect is that a new named scope is created in the template declaration scope. The name of this new scope is the template name with its argument list: `templateName!(args)`. Inside the scope, the parameters are now 'replaced' with the corresponding arguments (storage classes get applied, variables are initialized, ...). Here's what possible instantiations of the previous templates might look like:
+### Effect of Instantiation
+
+When you instantiate a template, the global effect is that a new named scope (code block) is created at the template declaration scope. The name of this new scope is the template name with its argument list: `templateName!(args)`. Inside this block, the parameters are now 'replaced' with the corresponding arguments (storage classes get applied, variables are initialized, ...). Here's what possible instantiations of the previous templates might look like:
 
 ```{.d}
 module instantiation;
@@ -223,42 +426,43 @@ void main()
 
      // From is an alias for the type double
      // To for the type int
-    alias Transformer!(double,int) transfo;
+    alias transfo = Transformer!(double,int);
 
     struct MyStruct { /*...*/ }
 
     // "MyStruct" is a identifier -> captured by alias
     auto name = nameOf!(MyStruct).name;
 
-    alias
+    alias complicatedExample =
     ComplicatedOne!( int[]   // a type
                    , "Hello" // a string literal
                    , ArrayOf // a name
                    , true    // a boolean literal
                    , 1+2     // calculated to be the integral '3'.
-                   ) complicatedExample;
+                   );
 
-    alias Minimalist!() min1;
+    alias min1 = Minimalist!(); // No argument
 
-    // Rest is (double,string,"abc")
-    // Rest is (double,string,"abc")
-    alias OneOrMore!( int
+    // FirstType is 'int'
+    // Rest is 'double,string,"abc"'
+    alias oneOrMore =
+          OneOrMore!( int
                     , double, string, "abc"
-                    ) oneOrMore;
+                    );
 
     // Types is a 1-element tuple: (int)
-    alias ZeroOrMore!(int) zero1;
+    alias zero1 = ZeroOrMore!(int);
     // Types is (int,double,string)
-    alias ZeroOrMore!(int,double,string) zero2;
+    alias zero2 = ZeroOrMore!(int,double,string);
     // Types is the empty tuple: ()
-    alias ZeroOrMore!() zero3;
+    alias zero3 = ZeroOrMore!();
 
     // Selects the one-arg version
-    alias Multiple!(int) mult1;
+    alias mult1 = Multiple!(int);
     // The three args version.
-    alias Multiple!(int,double,string) mult2;
+    alias mult2 = Multiple!(int,double,string);
     // Error! No 0-arg version
-    //alias Multiple!() mult3;
+    //alias mult3 = Multiple!();
 }
 ```
 
@@ -284,12 +488,11 @@ void main()
 
 Obviously, using templates like this, with their full name, is a pain. The nifty D `alias`{.d} declaration is your friend:
 
-
 ```{.d}
 module internaldeclarations2;
 import declaration;
 
-alias Transformer!(double, string) DtoS;
+alias DtoS = Transformer!(double, string);
 
 void main()
 {
@@ -305,19 +508,19 @@ You must keep in mind that instantiating a template means generating code. Using
 module differentinstantiations;
 import declaration;
 
-alias Transformer!(string,double) StoD;
-alias Transformer!(double,string) DtoS;
-alias Transformer!(string,int)    StoI;
+alias StoD = Transformer!(string,double);
+alias DtoS = Transformer!(double,string);
+alias StoI = Transformer!(string,int);
 // Now we can use three different functions and three different classes.
 ```
 
 
-> **void.** Note that `void`{.d} is a D type and, as such, a possible template argument for a type parameter. Take care: many templates make no sense when `void`{.d} is used as a type. In the following sections and in the appendix, you'll see ways to restrict arguments to only certain types.
+> **void.** Note that `void`{.d} is a valid D type and, as such, a possible template argument for a type parameter. Take care: many templates make no sense when `void`{.d} is used as a type. In the following sections and in the appendix, you'll see ways to restrict arguments to only certain types.
 
 
 ## Template Building Blocks
 
-Up to now, templates may not seem that interesting to you, even with a simple declaration and instantiation syntax. But wait! D introduced a few nifty tricks that both simplify and greatly expand templates use. This section will introduce you to your future best friends, the foundations on which your templates will be built.
+Up to now, templates may not seem that interesting to you, even with a simple declaration and instantiation syntax. But wait! D introduced a few nifty tricks that both simplify and greatly expand template uses. This section will introduce you to your future best friends, the foundations on which your templates will be built.
 
 ### The Eponymous Trick
 
