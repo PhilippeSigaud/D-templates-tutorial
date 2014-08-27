@@ -107,7 +107,7 @@ struct Tree {
 }
 ```
 
-Which is used like this;
+Which is used like this:
 
 ```{.d}
 module usingBasicTree1;
@@ -161,7 +161,7 @@ struct FloatTree {
 }
 ```
 
-But, ugh, the *only* change is for the types of `value` and `children`, which become a `float`{.d} and `FloatTree`  instead of an `int`{.d} a,d `IntTree`. What a waste! And what if we need another tree, for example holding functions (a tree of callbacks, say)? There must be a better way.
+But that's a lot of code duplication: the only changes are the types of `value` and `children`, which become a `float`{.d} and `FloatTree`  instead of an `int`{.d} and `IntTree`. What a waste! And what if we need another tree, for example holding functions (a tree of callbacks, say)? There must be a better way.
 
 Let's observe the previous code. What we need here is a way to produce code by generating different tree types, injecting the type for `value` as user-defined input. It's a bit like a function: pushing parameters and getting a result. Let's imagine some code with a placeholder, let's call it `Type`, to represent the type of `value`.
 
