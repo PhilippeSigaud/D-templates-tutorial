@@ -1,7 +1,7 @@
 module differentinstantiations;
 import declaration;
 
-alias Transformer!(string,double) StoD;
-alias Transformer!(double,string) DtoS;
-alias Transformer!(string,int)    StoI;
+alias StoD = Transformer!(string,double);
+alias DtoS = Transformer!(double,string);
+alias StoI = Transformer!(string,int);
 // Now we can use three different functions and three different classes.

@@ -7,40 +7,41 @@ void main()
 
      // From is an alias for the type double
      // To for the type int
-    alias Transformer!(double,int) transfo;
+    alias transfo = Transformer!(double,int);
 
     struct MyStruct { /*...*/ }
 
     // "MyStruct" is a identifier -> captured by alias
     auto name = nameOf!(MyStruct).name;
 
-    alias
+    alias complicatedExample =
     ComplicatedOne!( int[]   // a type
                    , "Hello" // a string literal
                    , ArrayOf // a name
                    , true    // a boolean literal
                    , 1+2     // calculated to be the integral '3'.
-                   ) complicatedExample;
+                   );
 
-    alias Minimalist!() min1;
+    alias min1 = Minimalist!(); // No argument
 
-    // Rest is (double,string,"abc")
-    // Rest is (double,string,"abc")
-    alias OneOrMore!( int
+    // FirstType is 'int'
+    // Rest is 'double,string,"abc"'
+    alias oneOrMore =
+          OneOrMore!( int
                     , double, string, "abc"
-                    ) oneOrMore;
+                    );
 
     // Types is a 1-element tuple: (int)
-    alias ZeroOrMore!(int) zero1;
+    alias zero1 = ZeroOrMore!(int);
     // Types is (int,double,string)
-    alias ZeroOrMore!(int,double,string) zero2;
+    alias zero2 = ZeroOrMore!(int,double,string);
     // Types is the empty tuple: ()
-    alias ZeroOrMore!() zero3;
+    alias zero3 = ZeroOrMore!();
 
     // Selects the one-arg version
-    alias Multiple!(int) mult1;
+    alias mult1 = Multiple!(int);
     // The three args version.
-    alias Multiple!(int,double,string) mult2;
+    alias mult2 = Multiple!(int,double,string);
     // Error! No 0-arg version
-    //alias Multiple!() mult3;
+    //alias mult3 = Multiple!();
 }

@@ -3,13 +3,10 @@ import std.conv;
 
 bool validCall(alias fun, Args...)(Args args)
 {
-    static if (is( typeof({ /* code to test */
-                            fun(args);
-                            /* end of code to test */
-                          }())))
-        return true;
-    else
-        return false;
+    return is( typeof({ /* code to test */
+                        fun(args);
+                        /* end of code to test */
+                      }()));
 }
 
 // Usage:

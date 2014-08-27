@@ -1,17 +1,16 @@
 module allmembersmodule;
 import std.algorithm;
-import std.ctype;
+import std.compiler;
 
 // Huuuge list of names
 enum algos = [__traits(allMembers, std.algorithm)];
 // A bit shorter
-enum ctypes = [__traits(allMembers, std.ctype)];
+enum compiler = [__traits(allMembers, std.compiler)];
 
 void main()
 {
-    assert(ctypes == ["object","std","isalnum","isalpha",
-                      "iscntrl","isdigit","islower",
-                      "ispunct","isspace","isupper","isxdigit",
-                      "isgraph","isprint","isascii","tolower",
-                      "toupper","_ctype"]);
+    assert(compiler == ["object", "name",
+                        "Vendor", "vendor",
+                        "version_major", "version_minor",
+                        "D_major", "D_minor"]);
 }

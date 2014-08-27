@@ -8,7 +8,7 @@ module codesamples;
 import std.algorithm: startsWith, endsWith;
 //import std.array;
 import std.conv: to;
-//import std.exception;
+import std.exception;
 //import std.file;
 //import std.format;
 //import std.path;
@@ -21,7 +21,7 @@ void main(string[] args)
 {
     immutable string samplesDir = "code";
     enum modName = regex("module (.+?);");
-    //enforce(args.length == 2, "Need an input file name.");
+    enforce(args.length == 2, "Need an input file name.");
     string fileName = args[1];
     //if (!exists(samplesDir)) mkdir(samplesDir);
     auto compilationResults = File("results.txt", "w");

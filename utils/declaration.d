@@ -2,8 +2,8 @@ module declaration;
 
 template ArrayOf(T) // T is a type
 {
-    alias T[] ArrayType;
-    alias T ElementType;
+    alias ArrayType   = T[];
+    alias ElementType = T;
 }
 
 template Transformer(From, To) // From and To are types, too
@@ -25,7 +25,8 @@ template Transformer(From, To) // From and To are types, too
 template nameOf(alias a)
 {
     enum string name = a.stringof; // enum: manifest constant
-                                   // determined at compile-time
+                                   // determined at compile-time.
+                                   // See below.
 }
 
 template ComplicatedOne(T, string s, alias a, bool b, int i)

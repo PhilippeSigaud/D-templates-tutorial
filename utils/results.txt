@@ -1,7 +1,11 @@
 
 ************../D-templates-tutorial.md **************************
-Found 204 named samples.
+Found 208 named samples.
 intro.d: OK
+basicTree1.d: OK
+usingBasicTree1.d: OK
+basicTree2.d: OK
+genericTree.d: OK
 declaration.d: OK
 instantiation.d: OK
 internaldeclarations1.d: OK
@@ -151,7 +155,7 @@ parent.d: OK
 qualifiedname.d: OK
 usingqualifiedname.d: OK
 scopename.d: OK
-usingscopename.d: OK
+usingscopename.d:  *** ERROR! ***
 staticmap.d: OK
 qualified.d: OK
 tester.d: OK
@@ -206,9 +210,9 @@ validcall.d: OK
 istuple.d: OK
 maker.d: OK
 
-Successful compilation for 204 / 204
+Successful compilation for 207 / 208
 
-Found 95 anonymous samples (no compilation attempted).
-Total of 299 samples found.
+Found 100 anonymous samples (no compilation attempted).
+Total of 308 samples found.
 ********************************************************
 
