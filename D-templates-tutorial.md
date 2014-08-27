@@ -1155,8 +1155,7 @@ in
 {
     // no need to do that for a complex.
     static if (isNumeric!N)
-        enforce(n > 0);
-
+        assert(n > 0);
 }
 body
 {
