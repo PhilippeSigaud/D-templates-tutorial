@@ -87,14 +87,14 @@
         <span class="kw">return</span> children.<span class="dt">length</span> == <span class="dv">0</span>;
     }
 }</code></pre>
-<p>Which is used like this;</p>
+<p>Which is used like this:</p>
 <pre class="sourceCode d"><code class="sourceCode d"><span class="kw">module</span> usingBasicTree1;
 
 <span class="kw">import</span> basicTree1;
 
 <span class="dt">void</span> main()
 {
-    <span class="kw">auto</span> tree = Tree(<span class="dv">0</span>, [Tree(<span class="dv">1</span>), Tree(<span class="dv">2</span>, [Tree(<span class="dv">3</span>), Tree(<span class="dv">4</span>)], Tree(<span class="dv">5</span>))]);
+    <span class="kw">auto</span> tree = Tree(<span class="dv">0</span>, [Tree(<span class="dv">1</span>), Tree(<span class="dv">2</span>, [Tree(<span class="dv">3</span>), Tree(<span class="dv">4</span>), Tree(<span class="dv">5</span>)])]);
     <span class="kw">assert</span>(!tree.isLeaf);
     <span class="kw">assert</span>(tree.size() == <span class="dv">6</span>);
 }</code></pre>
@@ -103,7 +103,7 @@
 
 <span class="kw">struct</span> IntTree {
     <span class="dt">int</span> value;
-    Tree[] children;
+    IntTree[] children;
     
     <span class="dt">size_t</span> size() {
         <span class="dt">size_t</span> s = <span class="dv">1</span>;
@@ -119,7 +119,7 @@
 
 <span class="kw">struct</span> FloatTree {
     <span class="dt">float</span> value;
-    Tree[] children;
+    FloatTree[] children;
     
     <span class="dt">size_t</span> size() {
         <span class="dt">size_t</span> s = <span class="dv">1</span>;
@@ -132,8 +132,8 @@
         <span class="kw">return</span> children.<span class="dt">length</span> == <span class="dv">0</span>;
     }
 }</code></pre>
-<p>But, ugh, the <em>only</em> change is for the type of <code>value</code>, which becomes a <code class="sourceCode d"><span class="dt">float</span></code> instead of an <code class="sourceCode d"><span class="dt">int</span></code>. What a waste! And what if we need another tree, for example holding functions (a tree of callbacks, say)? There must be a better way.</p>
-<p>Let's observe the previous code. As I said, the only change is the type of <code>value</code>. What we need here is a way to produce code by generating different tree types, injecting the type for <code>value</code> as user-defined input. It's a bit like a function: pushing parameters and getting a result. Let's imagine some code with a placeholder, let's call it <code>Type</code>, to represent the type of <code>value</code>.</p>
+<p>But that's a lot of code duplication: the only changes are the types of <code>value</code> and <code>children</code>, which become a <code class="sourceCode d"><span class="dt">float</span></code> and <code>FloatTree</code> instead of an <code class="sourceCode d"><span class="dt">int</span></code> and <code>IntTree</code>. What a waste! And what if we need another tree, for example holding functions (a tree of callbacks, say)? There must be a better way.</p>
+<p>Let's observe the previous code. What we need here is a way to produce code by generating different tree types, injecting the type for <code>value</code> as user-defined input. It's a bit like a function: pushing parameters and getting a result. Let's imagine some code with a placeholder, let's call it <code>Type</code>, to represent the type of <code>value</code>.</p>
 <pre class="sourceCode d"><code class="sourceCode d"><span class="kw">struct</span> Tree {
     Type value;
     Tree[] children;
@@ -4522,20 +4522,19 @@ sort32!<span class="st">&quot;a &gt; b&quot;</span>(myArr);</code></pre>
 <p>Another fun fact is that D modules are amenable to <code class="sourceCode d">__traits</code>'s calls, though that's true only for packaged modules (that is, <code class="sourceCode d"><span class="kw">import</span> pack.mod;</code> imports the <code class="sourceCode d">pack</code> and <code class="sourceCode d">mod</code> symbols, but <code class="sourceCode d"><span class="kw">import</span> mod;</code> imports nothing).</p>
 <pre class="sourceCode d"><code class="sourceCode d"><span class="kw">module</span> allmembersmodule;
 <span class="kw">import</span> std.algorithm;
-<span class="kw">import</span> std.ctype;
+<span class="kw">import</span> std.compiler;
 
 <span class="co">// Huuuge list of names</span>
 <span class="kw">enum</span> algos = [__traits(allMembers, std.algorithm)];
 <span class="co">// A bit shorter</span>
-<span class="kw">enum</span> ctypes = [__traits(allMembers, std.ctype)];
+<span class="kw">enum</span> compiler = [__traits(allMembers, std.compiler)];
 
 <span class="dt">void</span> main()
 {
-    <span class="kw">assert</span>(ctypes == [<span class="st">&quot;object&quot;</span>,<span class="st">&quot;std&quot;</span>,<span class="st">&quot;isalnum&quot;</span>,<span class="st">&quot;isalpha&quot;</span>,
-                      <span class="st">&quot;iscntrl&quot;</span>,<span class="st">&quot;isdigit&quot;</span>,<span class="st">&quot;islower&quot;</span>,
-                      <span class="st">&quot;ispunct&quot;</span>,<span class="st">&quot;isspace&quot;</span>,<span class="st">&quot;isupper&quot;</span>,<span class="st">&quot;isxdigit&quot;</span>,
-                      <span class="st">&quot;isgraph&quot;</span>,<span class="st">&quot;isprint&quot;</span>,<span class="st">&quot;isascii&quot;</span>,<span class="st">&quot;tolower&quot;</span>,
-                      <span class="st">&quot;toupper&quot;</span>,<span class="st">&quot;_ctype&quot;</span>]);
+    <span class="kw">assert</span>(compiler == [<span class="st">&quot;object&quot;</span>, <span class="st">&quot;name&quot;</span>,
+                        <span class="st">&quot;Vendor&quot;</span>, <span class="st">&quot;vendor&quot;</span>,
+                        <span class="st">&quot;version_major&quot;</span>, <span class="st">&quot;version_minor&quot;</span>,
+                        <span class="st">&quot;D_major&quot;</span>, <span class="st">&quot;D_minor&quot;</span>]);
 }</code></pre>
 <p>In the previous code, you see that among <code>a</code> members, there is <code class="sourceCode d"><span class="st">&quot;object&quot;</span></code> (the implicit <code class="sourceCode d">object.d</code> module module} imported by the runtime), and <code class="sourceCode d"><span class="st">&quot;std&quot;</span></code>, the global package that shows here whenever you import a <code class="sourceCode d">std.*</code> module. It would be easy to imagine a template that recursively explores the members, finds the modules and tries to recurse into them to get a complete import-tree with a template. Alas, <code class="sourceCode d"><span class="st">&quot;std&quot;</span></code> blocks that, since the package itself does not have a member.<a href="#fn14" class="footnoteRef" id="fnref14"><sup>14</sup></a></p>
 <blockquote>
@@ -4871,6 +4870,7 @@ sort32!<span class="st">&quot;a &gt; b&quot;</span>(myArr);</code></pre>
 }</code></pre>
 <p>The idea is to declare local enum called <code class="sourceCode d">scopeName</code> and take the qualified name of its own parent in the same expression (yes, that works!).</p>
 <p>To use <code class="sourceCode d">getScopeName</code>, just mix it in where you need a local scope name:</p>
+<p><em>BUG</em>: Something changed since I last tested this code (2012). As of now (DMD 2.066, August 2014), this does not work anymore. I'll add it to my TODO list.</p>
 <pre class="sourceCode d"><code class="sourceCode d"><span class="kw">module</span> usingscopename;
 <span class="kw">import</span> std.stdio;
 <span class="kw">import</span> scopename;
@@ -5029,12 +5029,20 @@ sort32!<span class="st">&quot;a &gt; b&quot;</span>(myArr);</code></pre>
     <span class="kw">else</span>
         <span class="kw">enum</span> isType = <span class="kw">false</span>;
 }</code></pre>
-<p>Hey, wait! OK with having two specialised templates, one on template type parameters and another on aliases. But why the <code class="sourceCode d"><span class="kw">static</span> <span class="kw">if</span></code>? It's because user-defined types (<code class="sourceCode d">MyClass</code> and such) are <em>both</em> a type and a symbol (we saw that in section <a href="#template-declarations">Template Declarations</a>). For this particular use, I want them to be considered as types, contrary to other symbols (function names, module names, variables, ...). Hence the <code class="sourceCode d"><span class="kw">is</span></code><code class="sourceCode d">()</code> test. If you simplify the second <code class="sourceCode d">isType</code> to just give <code class="sourceCode d"><span class="kw">false</span></code>, what you get is a builtin-type detector, which may also be interesting:</p>
+<p>Hey, wait! OK with having two specialised templates, one on template type parameters and another on aliases. But why the <code class="sourceCode d"><span class="kw">static</span> <span class="kw">if</span></code>? It's because user-defined types (<code class="sourceCode d">MyClass</code> and such) are <em>both</em> a type and a symbol (we saw that in section <a href="#template-declarations">Template Declarations</a>). For this particular use, I want them to be considered as types, contrary to other symbols (function names, module names, variables, ...). Hence the <code class="sourceCode d"><span class="kw">is</span></code><code class="sourceCode d">()</code> test. We can change things a bit to get a built-in types detector, which may also be interesting. Built-in types <em>cannot</em> be used as alias parameters, so let's test for that:</p>
 <pre class="sourceCode d"><code class="sourceCode d"><span class="kw">module</span> isbuiltintype;
+
+<span class="kw">template</span> isSymbol(<span class="kw">alias</span> a)
+{
+    <span class="kw">enum</span> isSymbol = <span class="kw">true</span>;
+}
 
 <span class="kw">template</span> isBuiltinType(T)
 {
-    <span class="kw">enum</span> isBuiltinType = <span class="kw">true</span>;
+    <span class="kw">static</span> <span class="kw">if</span> (__traits(compiles, isSymbol!(T)))
+        <span class="kw">enum</span> isBuiltinType = <span class="kw">false</span>;
+    <span class="kw">else</span>
+        <span class="kw">enum</span> isBuiltinType = <span class="kw">true</span>;
 }
 
 <span class="kw">template</span> isBuiltinType(<span class="kw">alias</span> a)
@@ -5192,7 +5200,7 @@ sort32!<span class="st">&quot;a &gt; b&quot;</span>(myArr);</code></pre>
 <span class="kw">alias</span> TypeTuple!(<span class="dt">int</span>, <span class="dt">bool</span>, <span class="dt">double</span>, <span class="dt">float</span> <span class="kw">delegate</span>(<span class="dt">float</span>), <span class="dt">string</span>[]) Types;
 
 <span class="kw">alias</span> staticReduce!(Max, Types) MaxType;
-<span class="kw">static</span> <span class="kw">assert</span>(<span class="kw">is</span>(MaxType == <span class="dt">double</span>));</code></pre>
+<span class="kw">static</span> <span class="kw">assert</span>(<span class="kw">is</span>(MaxType == <span class="dt">float</span> <span class="kw">delegate</span>(<span class="dt">float</span>)));</code></pre>
 <p>You can vary your definition of <code class="sourceCode d">Max</code> according to taste. Here I used the built-in <code class="sourceCode d">.<span class="dt">sizeof</span></code> property to compare two unknown types. To compare on the names, I'd have used <code class="sourceCode d">.<span class="dt">stringof</span></code> and so on.</p>
 <h4 id="sorting-types">Sorting Types</h4>
 <blockquote>
