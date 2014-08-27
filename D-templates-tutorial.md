@@ -116,7 +116,7 @@ import basicTree1;
 
 void main()
 {
-    auto tree = Tree(0, [Tree(1), Tree(2, [Tree(3), Tree(4)], Tree(5))]);
+    auto tree = Tree(0, [Tree(1), Tree(2, [Tree(3), Tree(4), Tree(5)])]);
     assert(!tree.isLeaf);
     assert(tree.size() == 6);
 }
@@ -130,7 +130,7 @@ module basicTree2;
 
 struct IntTree {
     int value;
-    Tree[] children;
+    IntTree[] children;
     
     size_t size() {
         size_t s = 1;
@@ -146,7 +146,7 @@ struct IntTree {
 
 struct FloatTree {
     float value;
-    Tree[] children;
+    FloatTree[] children;
     
     size_t size() {
         size_t s = 1;
@@ -161,9 +161,9 @@ struct FloatTree {
 }
 ```
 
-But, ugh, the *only* change is for the type of `value`, which becomes a `float`{.d} instead of an `int`{.d}. What a waste! And what if we need another tree, for example holding functions (a tree of callbacks, say)? There must be a better way.
+But, ugh, the *only* change is for the types of `value` and `children`, which become a `float`{.d} and `FloatTree`  instead of an `int`{.d} a,d `IntTree`. What a waste! And what if we need another tree, for example holding functions (a tree of callbacks, say)? There must be a better way.
 
-Let's observe the previous code. As I said, the only change is the type of `value`. What we need here is a way to produce code by generating different tree types, injecting the type for `value` as user-defined input. It's a bit like a function: pushing parameters and getting a result. Let's imagine some code with a placeholder, let's call it `Type`, to represent the type of `value`.
+Let's observe the previous code. What we need here is a way to produce code by generating different tree types, injecting the type for `value` as user-defined input. It's a bit like a function: pushing parameters and getting a result. Let's imagine some code with a placeholder, let's call it `Type`, to represent the type of `value`.
 
 ```{.d}
 struct Tree {
@@ -5331,20 +5331,19 @@ Another fun fact is that D modules are amenable to `__traits`{.d}'s calls, thoug
 ```{.d}
 module allmembersmodule;
 import std.algorithm;
-import std.ctype;
+import std.compiler;
 
 // Huuuge list of names
 enum algos = [__traits(allMembers, std.algorithm)];
 // A bit shorter
-enum ctypes = [__traits(allMembers, std.ctype)];
+enum compiler = [__traits(allMembers, std.compiler)];
 
 void main()
 {
-    assert(ctypes == ["object","std","isalnum","isalpha",
-                      "iscntrl","isdigit","islower",
-                      "ispunct","isspace","isupper","isxdigit",
-                      "isgraph","isprint","isascii","tolower",
-                      "toupper","_ctype"]);
+    assert(compiler == ["object", "name",
+                        "Vendor", "vendor",
+                        "version_major", "version_minor",
+                        "D_major", "D_minor"]);
 }
 ```
 
@@ -5749,6 +5748,8 @@ The idea is to declare local enum called `scopeName`{.d} and take the qualified 
 
 To use `getScopeName`{.d}, just mix it in where you need a local scope name:
 
+*BUG*: Something changed since I last tested this code (2012). As of now (DMD 2.066, August 2014), this does not work anymore. I'll add it to my TODO list.
+
 ```{.d}
 module usingscopename;
 import std.stdio;
@@ -5946,14 +5947,22 @@ template isType(alias a)
 }
 ```
 
-Hey, wait! OK with having two specialised templates, one on template type parameters and another on aliases. But why the `static if`{.d}? It's because user-defined types (`MyClass`{.d} and such) are _both_ a type and a symbol (we saw that in section [Template Declarations](#template-declarations)). For this particular use, I want them to be considered as types, contrary to other symbols (function names, module names, variables, ...). Hence the `is`{.d}`()`{.d} test. If you simplify the second `isType`{.d} to just give `false`{.d}, what you get is a builtin-type detector, which may also be interesting:
+Hey, wait! OK with having two specialised templates, one on template type parameters and another on aliases. But why the `static if`{.d}? It's because user-defined types (`MyClass`{.d} and such) are _both_ a type and a symbol (we saw that in section [Template Declarations](#template-declarations)). For this particular use, I want them to be considered as types, contrary to other symbols (function names, module names, variables, ...). Hence the `is`{.d}`()`{.d} test. We can change things a bit to get a built-in types detector, which may also be interesting. Built-in types *cannot* be used as alias parameters, so let's test for that:
 
 ```{.d}
 module isbuiltintype;
 
+template isSymbol(alias a)
+{
+    enum isSymbol = true;
+}
+
 template isBuiltinType(T)
 {
-    enum isBuiltinType = true;
+    static if (__traits(compiles, isSymbol!(T)))
+        enum isBuiltinType = false;
+    else
+        enum isBuiltinType = true;
 }
 
 template isBuiltinType(alias a)
@@ -6159,7 +6168,7 @@ import staticreduce;
 alias TypeTuple!(int, bool, double, float delegate(float), string[]) Types;
 
 alias staticReduce!(Max, Types) MaxType;
-static assert(is(MaxType == double));
+static assert(is(MaxType == float delegate(float)));
 ```
 
 You can vary your definition of `Max`{.d} according to taste. Here I used the built-in `.sizeof`{.d} property to compare two unknown types. To compare on the names, I'd have used `.stringof`{.d} and so on.
