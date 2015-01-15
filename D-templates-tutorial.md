@@ -207,7 +207,7 @@ struct Tree(Type) {
 
 See how I introduced `Type` in a (one-element) parameter list, right after `Tree`? Ideally, this is what a struct definition abstracted on the type of `value` should look like, right? A sort of... recipe to be used to generate the `Tree` we need.
 
-Look no further, the previous definition is standard D for a struct template! You can compile it and use it to your heart content (see the next chapters to do that). 
+Look no further, the previous definition is standard D for a struct template! You can compile it and use it to your heart's content (see the next chapters to do that). 
 
 That's the essence of templates: writing some code, seeing way to abstract it on certain items (types, symbols, numbers, the possibility are numerous) and defining such a generic recipe, for further perusal.
 
