@@ -3409,7 +3409,7 @@ Operation             Member template to define
 `v ` *op* ` u`        `opBinaryRight(string s, V)(V v) if (s == "`*op*`")`
 --------------------------------------------------------------------------------
 
-#### Assignement
+#### Assignment
 
 Concerned operators: `+`, `-`, `*`, `/`, `%`, `^^`, `~`, `&`, `|`, `^`, `<<`, `>>` and `>>>` (no `in`{.d}).
 
@@ -3418,7 +3418,7 @@ Operation             Member template to define
 `u ` *op* `= v`       `opOpAssign(string s, V)(V v) if (s == "`*op*`")`
 --------------------------------------------------------------------------------
 
-#### Index Assignement
+#### Index Assignment
 
 Concerned operators: `+`, `-`, `*`, `/`, `%`, `^^`, `~`, `&`, `|`, `^`, `<<`, `>>` and `>>>` (no `in`{.d}).
 
@@ -3428,7 +3428,7 @@ Operation                    Member template to define
                              `if (s == "`*op*`")`
 ---------------------------------------------------------------------------------------
 
-#### Slice Assignement
+#### Slice Assignment
 
 Concerned operators: `+`, `-`, `*`, `/`, `%`, `^^`, `~`, `&`, `|`, `^`, `<<`, `>>` and `>>>` (no `in`{.d}).
 
