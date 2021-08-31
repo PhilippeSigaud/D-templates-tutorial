@@ -502,7 +502,7 @@ void main()
 }
 ```
 
-You must keep in mind that instantiating a template means generating code. Using different arguments at different places in your code will instantiate _as many differently named scopes_. This is a major difference with _generics_ in languages like Java or C\#, where generic code is created only once and type erasure is used to link all this together. On the other hand, instantiating the same template, with the same arguments, will create only one piece of code.
+You must keep in mind that instantiating a template means generating code. Using different arguments at different places in your code will instantiate _as many differently named scopes_. This is a major difference with _generics_ in languages like Java, where generic code is created only once and type erasure is used to link all this together. On the other hand, instantiating the same template, with the same arguments, will create only one piece of code.
 
 ```{.d}
 module differentinstantiations;
