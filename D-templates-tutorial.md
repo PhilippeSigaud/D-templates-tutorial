@@ -55,7 +55,7 @@ Numbered lines will be used only when necessary.
 
 I will sometimes make a little explanatory detour, discussing a small piece of info too small to be in its own section but of interest to the reader nonetheless. These will be marked so:
 
-> **Semi-Literate Programming.** Most code samples presented in this document will compile with a reasonably recent D compiler. In the `utils` directory, there is a small D script called `codesamples.d` that extracts code samples from the mardkdown files.
+> **Semi-Literate Programming.** Most code samples presented in this document will compile with a reasonably recent D compiler. In the `utils` directory, there is a small D script called `codesamples.d` that extracts code samples from the markdown files.
 
 > Samples with a `module name;`{.d} declaration will be extracted, a file called `name.d` will be created and compiled (possibly with a stub `main()`{.d} if none exists). The previous code sample creates a file called `intro.d` and so on. The compilation results are put in a file called `result.txt`. Samples that depend on other samples just import them (yeah for D modularity, no need for specific mark-up to weave code together). Samples with a name ending in `_error` will *not* compile, as expected: they are there to show errors, mistakes and gotchas. Anonymous samples are not extracted: I use them to show small snippets not intended to stand by themselves, or just to show D-ish pseudocode.
 
